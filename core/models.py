@@ -6,27 +6,59 @@ class Responsable(models.Model):
     def __str__(self):
         return self.nombre
 
-class Dispositivo(models.Model):
-    responsable = models.ForeignKey(Responsable, on_delete=models.CASCADE, related_name='dispositivos')
-    codigo_interno = models.CharField(max_length=100, blank=True, null=True)
-    cpdogp_gobierno = models.CharField(max_length=100, blank=True, null=True)
-    fecha_ingreso = models.CharField(max_length=100, blank=True, null=True) # Using CharField as excel dates can be tricky or messy
-    descripcion = models.TextField(blank=True, null=True)
-    modelo = models.CharField(max_length=100, blank=True, null=True)
+class Equipo(models.Model):
+    responsable = models.ForeignKey(Responsable, on_delete=models.CASCADE, related_name='equipos')
+    codigo = models.CharField(max_length=100, blank=True, null=True)
     marca = models.CharField(max_length=100, blank=True, null=True)
+    modelo = models.CharField(max_length=100, blank=True, null=True)
+    descripcion = models.TextField(blank=True, null=True)
+    atendido = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.marca} {self.modelo} ({self.codigo_interno})"
+        return f"{self.marca} {self.modelo} ({self.codigo})"
 
-class Turno(models.Model):
-    responsable = models.OneToOneField(Responsable, on_delete=models.CASCADE, related_name='turno')
-    fecha = models.DateField()
-    hora_inicio = models.TimeField()
-    hora_fin = models.TimeField()
-    estacion = models.IntegerField(default=1) # 1, 2, or 3 representing the columns in the ERP
+class ConfiguracionCronograma(models.Model):
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_fin = models.DateField(null=True, blank=True)
+    hora_inicio = models.TimeField(default="08:00")
+    hora_fin = models.TimeField(default="17:00")
+    duracion_turno = models.IntegerField(default=30)
+    hora_almuerzo = models.TimeField(default="12:00")
+    duracion_almuerzo = models.IntegerField(default=60)
+    
+    MODO_EXCLUSION_CHOICES = [
+        ('none', 'No excluir'),
+        ('sundays', 'Solo Domingos'),
+        ('weekends', 'Sábados y Domingos'),
+    ]
+    modo_exclusion = models.CharField(max_length=20, choices=MODO_EXCLUSION_CHOICES, default='weekends')
 
     class Meta:
-        ordering = ['fecha', 'hora_inicio', 'estacion']
+        verbose_name = "Configuración de Cronograma"
+        verbose_name_plural = "Configuraciones de Cronograma"
+
+class Feriado(models.Model):
+    fecha = models.DateField(unique=True)
+    descripcion = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return f"Turno {self.responsable}: {self.fecha} {self.hora_inicio}-{self.hora_fin}"
+        return f"{self.fecha} - {self.descripcion or 'Feriado'}"
+
+class Turno(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('asignado', 'Asignado'),
+        ('en_proceso', 'En Proceso'),
+        ('completado', 'Completado'),
+    ]
+
+    responsable = models.OneToOneField(Responsable, on_delete=models.CASCADE, related_name='turno')
+    fecha = models.DateField(null=True, blank=True)
+    hora = models.TimeField(null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+
+    class Meta:
+        ordering = ['fecha', 'hora']
+
+    def __str__(self):
+        return f"Turno {self.responsable}: {self.fecha} {self.hora} ({self.estado})"

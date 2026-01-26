@@ -1,11 +1,16 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db.models import Count
+import json
+from datetime import datetime, date, timedelta
 from .forms import UploadFileForm
-from .services import procesar_archivo_activos, generar_cronograma
-from .models import Turno
+from .services import procesar_archivo_activos, asignar_turnos_automatico
+from .models import Turno, Responsable, Equipo, ConfiguracionCronograma, Feriado
 
 def index(request):
-    return redirect('upload_excel')
+    return redirect('ver_cronograma')
 
 def upload_excel(request):
     if request.method == 'POST':
@@ -13,55 +18,305 @@ def upload_excel(request):
         if form.is_valid():
             try:
                 procesar_archivo_activos(request.FILES['archivo'])
-                generar_cronograma() # Genera por defecto para Febrero 2026
-                messages.success(request, "Archivo procesado y cronograma generado con éxito.")
+                messages.success(request, "Archivo procesado con éxito.")
                 return redirect('ver_cronograma')
             except Exception as e:
                 messages.error(request, f"Error al procesar el archivo: {e}")
-    else:
-        form = UploadFileForm()
-    
-    return render(request, 'core/upload.html', {'form': form})
-
-from datetime import time, timedelta, datetime
-from .models import Turno, Dispositivo
+    return redirect('ver_cronograma')
 
 def ver_cronograma(request):
-    turnos = Turno.objects.select_related('responsable').prefetch_related('responsable__dispositivos').all().order_by('fecha', 'hora_inicio')
+    config = ConfiguracionCronograma.objects.last()
+    turnos = Turno.objects.select_related('responsable').prefetch_related('responsable__equipos').all()
+    feriados = Feriado.objects.all()
     
-    # Obtener dispositivos para el sidebar (aquellos cuyo responsable aún no tiene turno asignado)
-    dispositivos_agendados = Turno.objects.values_list('responsable_id', flat=True)
-    dispositivos = Dispositivo.objects.exclude(responsable_id__in=dispositivos_agendados).order_by('-id')[:20]
+    # Datos para el sidebar
+    responsables_stats = Responsable.objects.annotate(num_equipos=Count('equipos'))
     
-    # Preparar franjas horarias (08:00 a 17:00 cada 30 min)
-    horarios = []
-    curr = datetime.combine(datetime.today(), time(8, 0))
-    end = datetime.combine(datetime.today(), time(17, 0))
-    while curr <= end:
-        horarios.append(curr.time())
-        curr += timedelta(minutes=30)
-    
-    # Agrupar turnos por hora para la vista de grilla (3 estaciones simuladas)
-    primer_dia = turnos.first().fecha if turnos.exists() else None
-    filas_grilla = [] # [{'hora': h, 'slots': [t1, t2, t3]}]
-    
-    if primer_dia:
-        dia_turnos = turnos.filter(fecha=primer_dia)
-        for h in horarios:
-            slots = [None, None, None]
-            # Buscar turnos de esta hora para cada estación
-            for i in range(1, 4):
-                slots[i-1] = dia_turnos.filter(hora_inicio=h, estacion=i).first()
-            
-            filas_grilla.append({
-                'hora': h,
-                'slots': slots
-            })
-
     context = {
+        'config': config,
         'turnos': turnos,
-        'dispositivos': dispositivos,
-        'filas_grilla': filas_grilla,
-        'fecha_actual': primer_dia,
+        'feriados': feriados,
+        'responsables': responsables_stats,
+        'form': UploadFileForm(),
     }
     return render(request, 'core/cronograma.html', context)
+
+@require_POST
+def guardar_configuracion(request):
+    data = request.POST
+    try:
+        config, created = ConfiguracionCronograma.objects.get_or_create(id=1)
+        
+        # Asignar valores directamente (los campos ahora aceptan null)
+        if data.get('fecha_inicio'):
+            config.fecha_inicio = data.get('fecha_inicio')
+        if data.get('fecha_fin'):
+            config.fecha_fin = data.get('fecha_fin')
+        if data.get('hora_inicio'):
+            config.hora_inicio = data.get('hora_inicio')
+        if data.get('hora_fin'):
+            config.hora_fin = data.get('hora_fin')
+        if data.get('hora_almuerzo'):
+            config.hora_almuerzo = data.get('hora_almuerzo')
+        if data.get('duracion_turno'):
+            config.duracion_turno = int(data.get('duracion_turno'))
+        if data.get('duracion_almuerzo'):
+            config.duracion_almuerzo = int(data.get('duracion_almuerzo'))
+        
+        if data.get('modo_exclusion'):
+            config.modo_exclusion = data.get('modo_exclusion')
+        
+        config.save()
+        return JsonResponse({'status': 'ok', 'message': 'Configuración guardada correctamente'})
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"Error en guardar_configuracion: {error_detail}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@require_POST
+def generar_cronograma_view(request):
+    count, result = asignar_turnos_automatico()
+    if count > 0:
+        return JsonResponse({'status': 'ok', 'message': result})
+    else:
+        # result puede ser un string o un dict con detalles del error
+        return JsonResponse({'status': 'error', 'data': result if isinstance(result, dict) else {'message': result}}, status=400)
+
+@require_POST
+def actualizar_turno(request, turno_id):
+    turno = get_object_or_404(Turno, id=turno_id)
+    data = json.loads(request.body)
+    
+    if 'fecha' in data:
+        turno.fecha = data['fecha']
+    if 'hora' in data:
+        turno.hora = data['hora']
+    if 'estado' in data:
+        turno.estado = data['estado']
+        
+    turno.save()
+    return JsonResponse({'status': 'ok'})
+
+@require_POST
+def toggle_completado(request, turno_id):
+    turno = get_object_or_404(Turno, id=turno_id)
+    if turno.estado == 'completado':
+        turno.estado = 'asignado'
+    else:
+        turno.estado = 'completado'
+        # Si se marca como completado, marcar todos sus equipos como atendidos
+        turno.responsable.equipos.update(atendido=True)
+        
+    turno.save()
+    
+    # Devolver el estado de los equipos para actualizar el panel lateral
+    equipos_data = list(turno.responsable.equipos.values('id', 'atendido'))
+    
+    return JsonResponse({
+        'status': 'ok', 
+        'nuevo_estado': turno.estado,
+        'equipos': equipos_data
+    })
+
+@require_POST
+def toggle_equipo_atendido(request, equipo_id):
+    equipo = get_object_or_404(Equipo, id=equipo_id)
+    equipo.atendido = not equipo.atendido
+    equipo.save()
+    
+    # Calcular estadísticas del responsable
+    responsable = equipo.responsable
+    total_equipos = responsable.equipos.count()
+    equipos_atendidos = responsable.equipos.filter(atendido=True).count()
+    
+    # Sincronizar con el estado del Turno
+    turno = getattr(responsable, 'turno', None)
+    if turno:
+        if equipos_atendidos == total_equipos and total_equipos > 0:
+            turno.estado = 'completado'
+        elif equipos_atendidos > 0:
+            turno.estado = 'en_proceso'
+        else:
+            turno.estado = 'asignado'
+        turno.save()
+    
+    return JsonResponse({
+        'status': 'ok',
+        'atendido': equipo.atendido,
+        'equipos_atendidos': equipos_atendidos,
+        'total_equipos': total_equipos,
+        'turno_estado': turno.estado if turno else None
+    })
+
+@require_POST
+def add_feriado(request):
+    data = json.loads(request.body)
+    fecha = data.get('fecha')
+    if fecha:
+        Feriado.objects.get_or_create(fecha=fecha)
+        feriados = list(Feriado.objects.values_list('fecha', flat=True))
+        return JsonResponse({'status': 'ok', 'feriados': [f.strftime('%Y-%m-%d') for f in feriados]})
+    return JsonResponse({'status': 'error', 'message': 'Fecha inválida'}, status=400)
+
+@require_POST
+def remove_feriado(request):
+    data = json.loads(request.body)
+    fecha = data.get('fecha')
+    if fecha:
+        Feriado.objects.filter(fecha=fecha).delete()
+        feriados = list(Feriado.objects.values_list('fecha', flat=True))
+        return JsonResponse({'status': 'ok', 'feriados': [f.strftime('%Y-%m-%d') for f in feriados]})
+    return JsonResponse({'status': 'error', 'message': 'Fecha inválida'}, status=400)
+
+def exportar_excel(request):
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from django.http import HttpResponse
+    from datetime import datetime
+
+    # 1. Obtener Datos (Incluir turnos asignados, en proceso y completados)
+    turnos = Turno.objects.filter(estado__in=['asignado', 'en_proceso', 'completado']).select_related('responsable').prefetch_related('responsable__equipos')
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Cronograma de Mantenimiento"
+
+    # 2. Definir Estilos
+    header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid") # Azul oscuro
+    header_font = Font(color="FFFFFF", bold=True, size=11)
+    
+    success_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid") # Verde claro
+    success_font = Font(color="006100", bold=True)
+    
+    process_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid") # Amarillo claro
+    process_font = Font(color="9C5700", bold=True)
+    
+    info_fill = PatternFill(start_color="DDEBF7", end_color="DDEBF7", fill_type="solid") # Azul claro
+    
+    border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    center_align = Alignment(horizontal="center", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
+
+    # 3. Encabezado del Reporte
+    ws.merge_cells('A1:F1')
+    ws['A1'] = "SISTEMA TECHSCHEDULER - CRONOGRAMA DE MANTENIMIENTO PREVENTIVO"
+    ws['A1'].font = Font(bold=True, size=14, color="1F4E78")
+    ws['A1'].alignment = center_align
+
+    # 4. Resumen Ejecutivo
+    total = turnos.count()
+    completados = turnos.filter(estado='completado').count()
+    pendientes = total - completados
+    
+    ws['A3'] = "RESUMEN DE EJECUCIÓN"
+    ws['A3'].font = Font(bold=True, size=10, underline="single")
+    
+    ws['A4'] = "Total Responsables:"; ws['B4'] = total
+    ws['A5'] = "Mantenimientos Listos:"; ws['B5'] = completados; ws['B5'].font = success_font
+    ws['A6'] = "Mantenimientos Pendientes:"; ws['B6'] = pendientes; ws['B6'].font = Font(color="9C0006", bold=True)
+    
+    ws['D4'] = "Fecha Reporte:"; ws['E4'] = datetime.now().strftime("%d/%m/%Y %H:%M")
+    ws.merge_cells('D4:E4')
+
+    # 5. Tabla de Datos
+    headers = ['FECHA', 'HORA', 'RESPONSABLE', 'EQUIPOS', 'ESTADO', 'DETALLE TÉCNICO (MARCA, MODELO, ID)']
+    
+    start_row = 8
+    for i, h in enumerate(headers):
+        cell = ws.cell(row=start_row, column=i+1)
+        cell.value = h
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center_align
+        cell.border = border
+
+    # 6. Llenado de Datos
+    current_row = start_row + 1
+    for t in turnos:
+        # Fecha y Hora
+        c_fecha = ws.cell(row=current_row, column=1, value=t.fecha)
+        c_fecha.alignment = center_align
+        c_fecha.number_format = 'DD/MM/YYYY'
+        
+        ws.cell(row=current_row, column=2, value=t.hora.strftime("%H:%M") if t.hora else "--:--").alignment = center_align
+        
+        # Responsable
+        ws.cell(row=current_row, column=3, value=t.responsable.nombre).alignment = left_align
+        
+        # Equipos (conteo)
+        eq_all = t.responsable.equipos.all()
+        eq_count = eq_all.count()
+        atendidos = eq_all.filter(atendido=True).count()
+        ws.cell(row=current_row, column=4, value=f"{atendidos}/{eq_count}").alignment = center_align
+        
+        # Estado con Color
+        if t.estado == 'completado':
+            status_text = "LISTO"
+        elif t.estado == 'en_proceso' or (atendidos > 0 and atendidos < eq_count):
+            status_text = "EN PROCESO"
+        else:
+            status_text = "PENDIENTE"
+            
+        status_cell = ws.cell(row=current_row, column=5, value=status_text)
+        status_cell.alignment = center_align
+        
+        if status_text == 'LISTO':
+            status_cell.fill = success_fill
+            status_cell.font = success_font
+        elif status_text == 'EN PROCESO':
+            # Amarillo más potente
+            status_cell.fill = PatternFill(start_color="FFD966", end_color="FFD966", fill_type="solid")
+            status_cell.font = Font(color="9C5700", bold=True)
+        else:
+            status_cell.fill = info_fill
+            status_cell.font = Font(color="0070C0", bold=True)
+        
+        # Detalle granular por equipo (Incluye ID GOBIERNO)
+        detalles_lista = []
+        for eq in eq_all:
+            lbl = "[LISTO]" if eq.atendido else "[PENDIENTE]"
+            id_str = f"({eq.codigo})" if eq.codigo else "(S/N)"
+            detalles_lista.append(f"{lbl} {eq.marca} {eq.modelo} {id_str}")
+            
+        detalles_full = " | ".join(detalles_lista)
+        ws.cell(row=current_row, column=6, value=detalles_full).alignment = left_align
+        ws.cell(row=current_row, column=6).font = Font(size=8)
+        
+        # Bordes
+        for col in range(1, 7):
+            ws.cell(row=current_row, column=col).border = border
+            
+        current_row += 1
+
+    # 7. Ajuste de Estética Final
+    ws.column_dimensions['A'].width = 13
+    ws.column_dimensions['B'].width = 8
+    ws.column_dimensions['C'].width = 30
+    ws.column_dimensions['D'].width = 10
+    ws.column_dimensions['E'].width = 15
+    ws.column_dimensions['F'].width = 85
+
+    output = io.BytesIO()
+    wb.save(output)
+    response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=Cronograma_Mantenimiento_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    return response
+
+@require_POST
+def reset_database(request):
+    """
+    Limpia todos los datos de la base de datos para empezar de cero.
+    """
+    try:
+        from django.db import transaction
+        with transaction.atomic():
+            Turno.objects.all().delete()
+            Equipo.objects.all().delete()
+            Responsable.objects.all().delete()
+            Feriado.objects.all().delete()
+            ConfiguracionCronograma.objects.all().delete()
+        return JsonResponse({'status': 'ok', 'message': 'Sistema reiniciado correctamente.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
