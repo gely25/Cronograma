@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>{% block title %}Panel de Productividad - TechScheduler ERP{% endblock %}</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=Noto+Sans:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+            vertical-align: middle;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white h-screen flex flex-col overflow-hidden">
+    <!-- Top Navigation Bar -->
+    <header
+        class="flex items-center justify-between border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-4 shrink-0 z-20">
+        <div class="flex items-center gap-4 text-[#111318] dark:text-white">
+            <div class="size-8 text-primary flex items-center justify-center">
+                <span class="material-symbols-outlined text-4xl">grid_view</span>
+            </div>
+            <h2 class="text-xl font-bold leading-tight tracking-[-0.015em]">TechScheduler ERP</h2>
+        </div>
+        <div class="flex flex-1 justify-end gap-6 items-center">
+            <div class="flex items-center gap-2">
+                <button
+                    class="flex items-center justify-center rounded-lg h-10 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold hover:bg-slate-50 transition-colors">
+                    <span class="material-symbols-outlined mr-2 text-lg">calendar_month</span>
+                    <span>{% if fecha_actual %}{{ fecha_actual|date:"M d, Y" }}{% else %}Ene 26, 2026{% endif %}</span>
+                </button>
+                <div class="relative">
+                    <button
+                        class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold transition-colors shadow-sm">
+                        <span class="material-symbols-outlined mr-2 text-lg">analytics</span>
+                        <span>Reporting</span>
+                        <span class="material-symbols-outlined ml-1 text-lg">expand_more</span>
+                    </button>
+                </div>
+            </div>
+            <div
+                class="rounded-full size-10 ring-2 ring-slate-100 flex items-center justify-center bg-slate-200 overflow-hidden">
+                <span class="material-symbols-outlined text-slate-500">person</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar: Equipos Pendientes -->
+        <aside
+            class="w-[380px] flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+            <div class="px-6 pt-6 pb-2">
+                <h3 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em]">Equipos
+                    Pendientes</h3>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Arrastre al calendario para asignar</p>
+            </div>
+            <div class="px-6 py-4">
+                <div
+                    class="flex w-full items-stretch rounded-lg h-12 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700">
+                    <div class="text-slate-400 flex bg-slate-50 items-center justify-center pl-4 rounded-l-lg">
+                        <span class="material-symbols-outlined">search</span>
+                    </div>
+                    <input class="flex w-full flex-1 bg-slate-50 rounded-r-lg border-none focus:ring-0 px-3 text-base"
+                        placeholder="Buscar ID de equipo..." />
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto px-6 pb-6 space-y-3">
+                {% if dispositivos %}
+                {% for disp in dispositivos %}
+                <div
+                    class="group flex items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary/50 hover:shadow-md transition-all active:scale-95">
+                    <div
+                        class="text-slate-400 flex items-center justify-center rounded-lg bg-slate-100 shrink-0 size-12 group-hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined">drag_indicator</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-slate-900 dark:text-white text-lg font-semibold leading-tight truncate">{{
+                            disp.marca }} {{ disp.modelo }}</p>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm">ID: {{ disp.codigo_interno|default:disp.id
+                            }} • {{ disp.responsable.nombre }}</p>
+                    </div>
+                    <div class="shrink-0 text-slate-400">
+                        <span class="material-symbols-outlined">{% if "laptop" in disp.descripcion|lower %}laptop_mac{%
+                            else %}devices{% endif %}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-slate-400 text-sm text-center py-10">Carga un Excel para ver los equipos aquí.</p>
+                {% endif %}
+
+                <div class="pt-6 mt-6 border-t border-slate-100">
+                    <a href="{% url 'upload_excel' %}"
+                        class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-slate-600">
+                        <span class="material-symbols-outlined">upload_file</span>
+                        <span>Importar Nuevo Archivo</span>
+                    </a>
+                    <a href="{% url 'ver_cronograma' %}"
+                        class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-slate-600">
+                        <span class="material-symbols-outlined">calendar_month</span>
+                        <span>Ver Calendario Completo</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-[#0B1019] relative overflow-hidden">
+            {% if messages %}
+            <div class="p-8 pb-0">
+                {% for message in messages %}
+                <div
+                    class="p-4 rounded-xl text-sm font-bold flex items-center gap-3 border shadow-sm {% if message.tags == 'success' %}bg-green-50 text-green-700 border-green-200{% else %}bg-red-50 text-red-700 border-red-200{% endif %} mb-4">
+                    <span class="material-symbols-outlined">{% if message.tags == 'success' %}check_circle{% else
+                        %}error{% endif %}</span>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="flex-1 overflow-auto flex flex-col">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

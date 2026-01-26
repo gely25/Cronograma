@@ -1,0 +1,102 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Importación de Inventario - TechScheduler ERP{% endblock %}
+
+{% block content %}
+<div class="p-12 max-w-4xl mx-auto">
+    <div class="flex flex-col gap-8">
+        <!-- Header Section -->
+        <div class="flex flex-col gap-2">
+            <h1 class="text-slate-900 dark:text-white text-4xl font-black tracking-[-0.04em]">Importación de Inventario
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-xl font-normal">Prepare el motor de planificación cargando
+                los activos IT</p>
+        </div>
+
+        <!-- Main Card -->
+        <div
+            class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden group">
+            <form method="post" enctype="multipart/form-data" class="p-10">
+                {% csrf_token %}
+
+                <div class="flex flex-col gap-10">
+                    <!-- Dropzone -->
+                    <div id="dropzone"
+                        class="relative group/zone border-4 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem] p-16 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-primary/5 hover:border-primary/30 transition-all cursor-pointer"
+                        onclick="document.getElementById('id_archivo').click()">
+                        <div
+                            class="size-24 bg-white dark:bg-slate-800 rounded-3xl shadow-xl flex items-center justify-center mb-6 group-hover/zone:scale-110 group-hover/zone:rotate-6 transition-all">
+                            <span class="material-symbols-outlined text-primary text-5xl">upload_file</span>
+                        </div>
+                        <h3 class="text-slate-900 dark:text-white text-2xl font-black tracking-tight">Seleccione su
+                            Archivo Excel</h3>
+                        <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">Arrastre el archivo aquí o haga
+                            clic para explorar</p>
+                        <p
+                            class="text-[11px] font-black text-primary dark:text-blue-400 mt-6 px-4 py-1.5 bg-primary/10 rounded-full uppercase tracking-widest">
+                            Soporta .xlsx, .xls</p>
+
+                        <div class="hidden">
+                            {{ form.archivo }}
+                        </div>
+                        <div id="file-name"
+                            class="mt-8 text-primary font-black text-lg text-center animate-bounce overflow-hidden text-ellipsis max-w-full">
+                        </div>
+                    </div>
+
+                    <!-- Instructions / Grid -->
+                    <div class="grid grid-cols-2 gap-6">
+                        <div
+                            class="p-6 rounded-3xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/50">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="material-symbols-outlined text-primary">data_check</span>
+                                <span
+                                    class="text-blue-900 dark:text-blue-300 font-black text-sm uppercase tracking-wider">Validación
+                                    de Datos</span>
+                            </div>
+                            <p class="text-blue-700 dark:text-blue-400 text-sm leading-relaxed font-medium">
+                                El sistema consolidará automáticamente todos los dispositivos por **RESPONSABLE** único
+                                para asignar un solo turno de 30 minutos.
+                            </p>
+                        </div>
+                        <div
+                            class="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="material-symbols-outlined text-slate-400">format_list_bulleted</span>
+                                <span
+                                    class="text-slate-500 dark:text-slate-400 font-black text-sm uppercase tracking-wider">Columnas
+                                    Requeridas</span>
+                            </div>
+                            <p class="text-slate-400 dark:text-slate-500 text-[11px] font-bold leading-tight">
+                                RESPONSABLE • MARCA • MODELO • CÓDIGO INTERNO • DESCRIPCIÓN • FECHA INGRESO
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Action -->
+                    <button type="submit"
+                        class="w-full bg-primary hover:bg-primary-hover text-white py-6 rounded-[1.5rem] font-black text-xl shadow-2xl shadow-primary/40 flex items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95">
+                        <span class="material-symbols-outlined text-3xl">precision_manufacturing</span>
+                        Generar Cronograma Automatizado
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('id_archivo').onchange = function () {
+        if (this.files.length > 0) {
+            const dropzone = document.getElementById('dropzone');
+            dropzone.classList.add('bg-primary/10', 'border-primary/50');
+            document.getElementById('file-name').innerHTML = `
+                <div class="flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">description</span>
+                    ${this.files[0].name}
+                </div>
+            `;
+        }
+    };
+</script>
+{% endblock %}
