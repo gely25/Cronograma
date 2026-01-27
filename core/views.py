@@ -18,11 +18,51 @@ def upload_excel(request):
         if form.is_valid():
             try:
                 procesar_archivo_activos(request.FILES['archivo'])
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax'):
+                    return JsonResponse({'status': 'ok', 'message': "Archivo procesado con éxito."})
                 messages.success(request, "Archivo procesado con éxito.")
                 return redirect('ver_cronograma')
             except Exception as e:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax'):
+                    return JsonResponse({'status': 'error', 'message': f"Error al procesar el archivo: {e}"}, status=400)
                 messages.error(request, f"Error al procesar el archivo: {e}")
     return redirect('ver_cronograma')
+
+def api_get_datos(request):
+    """
+    Endpoint para obtener todos los datos necesarios para re-renderizar el cronograma.
+    """
+    config = ConfiguracionCronograma.objects.last()
+    turnos = Turno.objects.select_related('responsable').prefetch_related('responsable__equipos').all()
+    feriados = Feriado.objects.all()
+    
+    turnos_data = []
+    for t in turnos:
+        turnos_data.append({
+            'id': t.id,
+            'responsable': t.responsable.nombre,
+            'fecha': t.fecha.strftime('%Y-%m-%d') if t.fecha else '',
+            'hora': t.hora.strftime('%H:%M') if t.hora else '',
+            'estado': t.estado,
+            'equipos': [{
+                'id': e.id,
+                'marca': e.marca,
+                'modelo': e.modelo,
+                'codigo': e.codigo,
+                'descripcion': e.descripcion,
+                'atendido': e.atendido
+            } for e in t.responsable.equipos.all()]
+        })
+
+    data = {
+        'turnos': turnos_data,
+        'feriados': [f.fecha.strftime('%Y-%m-%d') for f in feriados],
+        'config': {
+            'inicio': config.fecha_inicio.strftime('%Y-%m-%d') if config and config.fecha_inicio else '',
+            'fin': config.fecha_fin.strftime('%Y-%m-%d') if config and config.fecha_fin else '',
+        }
+    }
+    return JsonResponse(data)
 
 def ver_cronograma(request):
     config = ConfiguracionCronograma.objects.last()

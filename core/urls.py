@@ -13,5 +13,6 @@ urlpatterns = [
     path('feriados/add/', views.add_feriado, name='add_feriado'),
     path('feriados/remove/', views.remove_feriado, name='remove_feriado'),
     path('exportar/', views.exportar_excel, name='exportar_excel'),
+    path('api/datos/', views.api_get_datos, name='api_get_datos'),
     path('reset-database/', views.reset_database, name='reset_database'),
 ]

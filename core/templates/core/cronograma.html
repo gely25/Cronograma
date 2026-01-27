@@ -697,7 +697,7 @@
         }
     }
 
-    function submitUpload() {
+    async function submitUpload() {
         const input = document.getElementById('fileInput');
         if (input.files.length > 0) {
             const fileName = input.files[0].name;
@@ -708,7 +708,55 @@
             fileNameDisplay.classList.remove('hidden');
             uploadText.textContent = "Cargando archivo...";
             
-            document.getElementById('uploadForm').submit();
+            const formData = new FormData(document.getElementById('uploadForm'));
+            formData.append('ajax', '1');
+
+            try {
+                const resp = await fetch('{% url "upload_excel" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': CSRF_TOKEN }
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    showToast(data.message || 'Archivo cargado con éxito');
+                    await refreshAllData();
+                    // Abrir panel de configuración automáticamente para el flujo solicitado
+                    if (containerId = document.getElementById('configContainer').classList.contains('hidden')) {
+                        toggleConfig();
+                    }
+                } else {
+                    showToast(data.message || 'Error al cargar archivo', 'error');
+                }
+            } catch (err) {
+                showToast('Error de conexión', 'error');
+            } finally {
+                uploadText.textContent = "Arraste su Excel aquí o haga clic";
+                input.value = '';
+            }
+        }
+    }
+
+    async function refreshAllData() {
+        try {
+            const resp = await fetch('{% url "api_get_datos" %}');
+            const data = await resp.json();
+            
+            // Actualizar variables globales
+            turnos = data.turnos;
+            feriados = data.feriados;
+            config = data.config;
+            
+            if (config.inicio) {
+                currentMonth = new Date(config.inicio + 'T00:00:00');
+            }
+
+            // Refrescar UI
+            initCalendar();
+            updateStats();
+            renderPendingAssets();
+        } catch (err) {
+            console.error('Error refreshing data:', err);
         }
     }
     function toggleConfig() {
@@ -837,7 +885,10 @@
                     
                     if (resp.ok) {
                         showToast(result.message || 'Cronograma generado correctamente');
-                        setTimeout(() => location.reload(), 1000);
+                        await refreshAllData();
+                        if (!document.getElementById('configContainer').classList.contains('hidden')) {
+                            toggleConfig();
+                        }
                     } else {
                         if (result.data && result.data.error_type === 'insufficient_slots') {
                             showErrorModal(result.data);
