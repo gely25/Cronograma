@@ -113,7 +113,7 @@ def asignar_turnos_automatico():
     total_responsables = Responsable.objects.count()
     total_turnos = Turno.objects.count()
     
-    print(f"📊 Estadísticas:")
+    print(f"Estadísticas:")
     print(f"  - Total responsables únicos: {total_responsables}")
     print(f"  - Total turnos en BD: {total_turnos}")
     print(f"  - Turnos pendientes: {turnos_pendientes.count()}")
@@ -147,4 +147,4 @@ def asignar_turnos_automatico():
         
         Turno.objects.bulk_update(turnos_actualizados, ['fecha', 'hora', 'estado'])
     
-    return len(turnos_actualizados), f"✅ Cronograma generado: {len(turnos_actualizados)} turnos asignados correctamente."
+    return len(turnos_actualizados), f"Cronograma generado: {len(turnos_actualizados)} turnos asignados correctamente."

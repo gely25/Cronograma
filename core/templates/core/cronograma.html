@@ -8,40 +8,156 @@
         background: white;
         border: 2px solid var(--border);
         border-radius: 12px;
-        min-height: 180px;
+        min-height: 120px;
         padding: 0.75rem;
-        transition: all 0.3s;
+        transition: all 0.3s ease;
         display: flex;
         flex-direction: column;
+        cursor: pointer;
+        position: relative;
     }
-    .calendar-day.weekend { background: #f8f9fa; opacity: 0.6; }
-    .calendar-day.holiday { background: #fef3c7; border-color: #f59e0b; }
-    .calendar-day.other-month { opacity: 0.3; }
+
+    .calendar-day:hover {
+        border-color: var(--blue);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .calendar-day.weekend {
+        background: #f8f9fa;
+        opacity: 0.6;
+    }
+
+    .calendar-day.holiday {
+        background: #fef3c7;
+        border-color: #f59e0b;
+    }
+
+    .calendar-day.other-month {
+        opacity: 0.3;
+        pointer-events: none;
+    }
+
     .calendar-day.today .day-number {
         background: var(--blue);
         color: white;
-        width: 30px; height: 30px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
     }
+
+    /* Shift count badge */
+    .shift-count-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        padding: 0 8px;
+        background: var(--blue-pastel);
+        color: var(--blue-text);
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .shift-count-badge.has-completed {
+        background: var(--green-pastel);
+        color: var(--green-text);
+    }
+
+    .shift-count-badge.has-in-progress {
+        background: var(--yellow-pastel);
+        color: var(--yellow-text);
+    }
+
+    /* Day detail panel */
+    .day-detail-panel {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 480px;
+        max-width: 90vw;
+        background: white;
+        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 60;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .day-detail-panel.open {
+        transform: translateX(0);
+    }
+
+    .day-detail-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 59;
+        pointer-events: none;
+    }
+
+    .day-detail-overlay.visible {
+        opacity: 1;
+        pointer-events: all;
+    }
+
+    /* Drag & Drop states */
+    .calendar-day.drag-over {
+        border-color: var(--blue);
+        background: var(--blue-pastel);
+        border-width: 3px;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .calendar-day.drag-source {
+        opacity: 0.5;
+    }
+
+    /* Shift cards in detail panel */
     .appointment-card {
         background: var(--blue-pastel);
-        color: var(--blue-text); 
-        padding: 0.6rem; 
-        border-radius: 10px; 
-        cursor: move; 
-        font-size: 0.8rem;
-        border: 1px solid rgba(30, 64, 175, 0.1);
+        color: var(--blue-text);
+        padding: 0.75rem;
+        border-radius: 12px;
+        cursor: move;
+        font-size: 0.875rem;
+        border: 2px solid rgba(30, 64, 175, 0.15);
+        transition: all 0.2s ease;
     }
-    .appointment-card.completed { 
-        background: var(--green-pastel); 
+
+    .appointment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
+    }
+
+    .appointment-card.completed {
+        background: var(--green-pastel);
         color: var(--green-text);
-        border-color: rgba(6, 95, 70, 0.1);
+        border-color: rgba(6, 95, 70, 0.15);
     }
-    .appointment-card.in-progress { 
-        background: var(--yellow-pastel); 
+
+    .appointment-card.in-progress {
+        background: var(--yellow-pastel);
         color: var(--yellow-text);
-        border-color: rgba(146, 64, 14, 0.1);
+        border-color: rgba(146, 64, 14, 0.15);
+    }
+
+    .appointment-card.dragging {
+        opacity: 0.5;
+        transform: rotate(2deg);
     }
 </style>
 {% endblock %}
@@ -59,11 +175,10 @@
 
     <!-- Upload Section (Drag & Drop) -->
     <div class="p-4 bg-white border-b border-gray-200">
-        <form action="{% url 'upload_excel' %}" method="POST" enctype="multipart/form-data" id="uploadForm" 
-              class="relative border-2 border-dashed border-blue-200 rounded-xl p-4 transition-all hover:bg-blue-50/50 hover:border-blue-400 group"
-              ondragover="handleUploadDragOver(event)" 
-              ondragleave="handleUploadDragLeave(event)" 
-              ondrop="handleUploadDrop(event)">
+        <form action="{% url 'upload_excel' %}" method="POST" enctype="multipart/form-data" id="uploadForm"
+            class="relative border-2 border-dashed border-blue-200 rounded-xl p-4 transition-all hover:bg-blue-50/50 hover:border-blue-400 group"
+            ondragover="handleUploadDragOver(event)" ondragleave="handleUploadDragLeave(event)"
+            ondrop="handleUploadDrop(event)">
             {% csrf_token %}
             <input type="file" name="archivo" id="fileInput" class="hidden" onchange="submitUpload()">
             <div class="text-center cursor-pointer" onclick="document.getElementById('fileInput').click()">
@@ -74,7 +189,8 @@
                 <p id="fileName" class="text-[10px] text-blue-500 font-medium mt-1 truncate hidden"></p>
             </div>
         </form>
-        <button onclick="resetSystem()" class="w-full mt-3 py-1.5 border-2 border-red-50 text-red-400 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:border-red-100 transition-all flex items-center justify-center gap-2">
+        <button onclick="resetSystem()"
+            class="w-full mt-3 py-1.5 border-2 border-red-50 text-red-400 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:border-red-100 transition-all flex items-center justify-center gap-2">
             <i data-lucide="trash-2" class="w-3 h-3"></i> Reiniciar Todo
         </button>
     </div>
@@ -88,59 +204,89 @@
             <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
                 <i data-lucide="layout-panel-left" class="w-3 h-3"></i> Panel de Control
             </h4>
-            <button id="toggleConfigBtn" onclick="toggleConfig()" class="text-[9px] font-bold text-blue-600 hover:text-blue-800 uppercase flex items-center gap-1">
-                <i data-lucide="settings" class="w-3 h-3"></i> <span id="toggleText">{% if turnos.count > 0 %}Reconfigurar{% else %}Cerrar{% endif %}</span>
+            <button id="toggleConfigBtn" onclick="toggleConfig()"
+                class="text-[9px] font-bold text-blue-600 hover:text-blue-800 uppercase flex items-center gap-1">
+                <i data-lucide="settings" class="w-3 h-3"></i> <span id="toggleText">
+                    {% if turnos.count > 0 %} Reconfigurar {% else %}Cerrar{% endif %}</span>
             </button>
         </div>
-        
+
         <!-- Setup Tools (Config + Holidays + Generate) -->
-        <div id="configContainer" class="p-3 space-y-4 border-b border-gray-100 {% if turnos.count > 0 %}hidden{% endif %}">
+        <div id="configContainer"
+            class="p-3 space-y-4 border-b border-gray-100 {% if turnos.count > 0 %}hidden{% endif %}">
             <form id="configForm" class="space-y-2">
                 <div>
                     <label class="text-[10px] font-bold text-gray-500 uppercase">Período</label>
                     <div class="grid grid-cols-2 gap-2 mt-1">
-                        <input type="date" name="fecha_inicio" value="{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}" class="text-xs rounded border-gray-300 w-full p-1">
-                        <input type="date" name="fecha_fin" value="{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}" class="text-xs rounded border-gray-300 w-full p-1">
+                        <input type="date" name="fecha_inicio"
+                            value="{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}"
+                            class="text-xs rounded border-gray-300 w-full p-1">
+                        <input type="date" name="fecha_fin"
+                            value="{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}"
+                            class="text-xs rounded border-gray-300 w-full p-1">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Inicio</label>
-                        <input type="time" name="hora_inicio" value="{% if config %}{{ config.hora_inicio|time:'H:i' }}{% else %}08:00{% endif %}" class="text-xs rounded border-gray-300 w-full p-1 mt-1">
+                        <input type="time" name="hora_inicio"
+                            value="{% if config %}{{ config.hora_inicio|time:'H:i' }}{% else %}08:00{% endif %}"
+                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
                     </div>
                     <div>
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Fin</label>
-                        <input type="time" name="hora_fin" value="{% if config %}{{ config.hora_fin|time:'H:i' }}{% else %}17:00{% endif %}" class="text-xs rounded border-gray-300 w-full p-1 mt-1">
+                        <input type="time" name="hora_fin"
+                            value="{% if config %}{{ config.hora_fin|time:'H:i' }}{% else %}17:00{% endif %}"
+                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Turno (m)</label>
-                        <input type="number" name="duracion_turno" value="{% if config %}{{ config.duracion_turno }}{% else %}30{% endif %}" class="text-xs rounded border-gray-300 w-full p-1 mt-1">
+                        <input type="number" name="duracion_turno"
+                            value="{% if config %}{{ config.duracion_turno }}{% else %}30{% endif %}"
+                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
                     </div>
                     <div>
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Almuerzo (m)</label>
-                        <input type="number" name="duracion_almuerzo" value="{% if config %}{{ config.duracion_almuerzo }}{% else %}60{% endif %}" class="text-xs rounded border-gray-300 w-full p-1 mt-1">
+                        <input type="number" name="duracion_almuerzo"
+                            value="{% if config %}{{ config.duracion_almuerzo }}{% else %}60{% endif %}"
+                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <label class="text-[10px] font-bold text-gray-500 uppercase whitespace-nowrap">Ini. Almuerzo:</label>
-                    <input type="time" name="hora_almuerzo" value="{% if config %}{{ config.hora_almuerzo|time:'H:i' }}{% else %}12:00{% endif %}" class="text-xs rounded border-gray-300 p-1 flex-1">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase whitespace-nowrap">Ini.
+                        Almuerzo:</label>
+                    <input type="time" name="hora_almuerzo"
+                        value="{% if config %}{{ config.hora_almuerzo|time:'H:i' }}{% else %}12:00{% endif %}"
+                        class="text-xs rounded border-gray-300 p-1 flex-1">
                 </div>
 
                 <div class="space-y-1">
                     <label class="text-[10px] font-bold text-gray-500 uppercase">Días no laborables</label>
                     <select name="modo_exclusion" class="text-xs rounded border-gray-300 w-full p-1">
-                        <option value="none" {% if config.modo_exclusion == 'none' %}selected{% endif %}>No excluir fines de semana</option>
-                        <option value="sundays" {% if config.modo_exclusion == 'sundays' %}selected{% endif %}>Excluir solo Domingos</option>
-                        <option value="weekends" {% if config.modo_exclusion == 'weekends' or not config %}selected{% endif %}>Excluir Sábados y Domingos</option>
+                        <option value="none"
+                            {% if config and config.modo_exclusion == 'none' %}selected{% endif %}>
+                            No excluir fines de semana
+                        </option>
+
+                        <option value="sundays"
+                            {% if config and config.modo_exclusion == 'sundays' %}selected{% endif %}>
+                            Excluir solo Domingos
+                        </option>
+
+                        <option value="weekends"
+                            {% if not config or config.modo_exclusion == 'weekends' %}selected{% endif %}>
+                            Excluir Sábados y Domingos
+                        </option>
                     </select>
                 </div>
 
-                <button type="button" onclick="guardarConfig()" class="w-full py-2 bg-gray-800 text-white rounded-lg font-bold text-[10px] hover:bg-black transition flex items-center justify-center gap-2">
+                <button type="button" onclick="guardarConfig()"
+                    class="w-full py-2 bg-gray-800 text-white rounded-lg font-bold text-[10px] hover:bg-black transition flex items-center justify-center gap-2">
                     <i data-lucide="save" class="w-3 h-3"></i> GUARDAR CAMBIOS
                 </button>
             </form>
@@ -149,19 +295,23 @@
                 <label class="text-[10px] font-bold text-gray-500 uppercase">Feriados</label>
                 <div class="flex gap-1 mt-1">
                     <input type="date" id="newHolidayDate" class="text-xs rounded border-gray-300 flex-1 p-1">
-                    <button onclick="addFeriado()" class="px-2 bg-gray-200 rounded font-bold hover:bg-gray-300 text-sm">+</button>
+                    <button onclick="addFeriado()"
+                        class="px-2 bg-gray-200 rounded font-bold hover:bg-gray-300 text-sm">+</button>
                 </div>
                 <div class="flex flex-wrap gap-1 mt-2" id="holidaysList">
                     {% for f in feriados %}
-                    <span class="bg-yellow-100 text-yellow-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    <span
+                        class="bg-yellow-100 text-yellow-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                         {{ f.fecha|date:"d/m" }}
-                        <button onclick="removeFeriado('{{ f.fecha|date:'Y-m-d' }}')" class="hover:text-red-600">×</button>
+                        <button onclick="removeFeriado('{{ f.fecha|date:'Y-m-d' }}')"
+                            class="hover:text-red-600">×</button>
                     </span>
                     {% endfor %}
                 </div>
             </div>
 
-            <button onclick="generarCronograma()" class="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-xl font-black text-xs shadow-lg hover:shadow-xl hover:from-amber-500 hover:to-amber-600 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+            <button onclick="generarCronograma()"
+                class="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-xl font-black text-xs shadow-lg hover:shadow-xl hover:from-amber-500 hover:to-amber-600 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
                 <i data-lucide="zap" class="w-4 h-4 fill-current"></i> REGENERAR CRONOGRAMA
             </button>
         </div>
@@ -190,7 +340,8 @@
             <p class="text-sm text-gray-500">Planificación Mensual Dinámica</p>
         </div>
         <div class="flex gap-3">
-            <a href="{% url 'exportar_excel' %}" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-bold shadow hover:bg-black transition flex items-center gap-2">
+            <a href="{% url 'exportar_excel' %}"
+                class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-bold shadow hover:bg-black transition flex items-center gap-2">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
             </a>
         </div>
@@ -201,97 +352,127 @@
     </div>
 </div>
 
-    <!-- CONFIRMATION MODAL -->
-    <div id="confirmationModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-        <div id="confirmModalContent" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-all duration-300 p-6">
-            <div class="text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                    <i data-lucide="help-circle" class="w-6 h-6 text-blue-600"></i>
-                </div>
-                <h3 class="text-lg font-bold text-gray-900" id="confirmTitle">Confirmar Acción</h3>
-                <p class="text-xs text-gray-500 mt-2" id="confirmMessage">¿Estás seguro de realizar esta acción?</p>
+<!-- CONFIRMATION MODAL -->
+<div id="confirmationModal"
+    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    <div id="confirmModalContent"
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-all duration-300 p-6">
+        <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                <i data-lucide="help-circle" class="w-6 h-6 text-blue-600"></i>
             </div>
-            <div class="mt-6 flex gap-3">
-                <button onclick="closeConfirmModal()" class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors">
-                    Cancelar
-                </button>
-                <button id="confirmActionBtn" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-blue-500/30">
-                    Confirmar
-                </button>
-            </div>
+            <h3 class="text-lg font-bold text-gray-900" id="confirmTitle">Confirmar Acción</h3>
+            <p class="text-xs text-gray-500 mt-2" id="confirmMessage">¿Estás seguro de realizar esta acción?</p>
+        </div>
+        <div class="mt-6 flex gap-3">
+            <button onclick="closeConfirmModal()"
+                class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors">
+                Cancelar
+            </button>
+            <button id="confirmActionBtn"
+                class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-blue-500/30">
+                Confirmar
+            </button>
         </div>
     </div>
 
     <!-- DETAIL MODAL -->
-<div id="detailModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl max-w-lg w-full p-8 relative max-h-[80vh] overflow-y-auto">
-        <button onclick="document.getElementById('detailModal').classList.add('hidden')" class="absolute top-4 right-4 text-2xl text-gray-400">×</button>
-        <div id="modalContent"></div>
-    </div>
-</div>
-
-<!-- ERROR MODAL (Insufficient Slots) -->
-<div id="errorModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[60] backdrop-blur-sm">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-0 overflow-hidden shadow-2xl transform transition-all scale-95 opacity-0" id="errorModalContainer">
-        <div class="bg-red-50 p-6 flex items-center gap-4 border-b border-red-100">
-            <div class="size-12 bg-red-100 rounded-full flex items-center justify-center text-2xl text-red-600 animate-pulse">
-                ⚠️
-            </div>
-            <div>
-                <h3 class="text-xl font-black text-red-900 uppercase tracking-tight">Capacidad Insuficiente</h3>
-                <p class="text-xs text-red-600 font-bold">No hay suficientes espacios para todos los turnos</p>
-            </div>
-        </div>
-        
-        <div class="p-8 space-y-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Slots Disponibles</p>
-                    <p class="text-2xl font-black text-gray-800" id="errorSlotsGen">0</p>
-                    <p class="text-[10px] text-gray-500 font-bold" id="errorDaysLab">0 días laborales</p>
-                </div>
-                <div class="bg-red-50 p-4 rounded-xl border border-red-100">
-                    <p class="text-[10px] font-black text-red-400 uppercase mb-1">Slots Faltantes</p>
-                    <p class="text-2xl font-black text-red-600" id="errorSlotsMiss">0</p>
-                    <p class="text-[10px] text-red-500 font-bold">Acción requerida</p>
-                </div>
-            </div>
-
-            <div>
-                <div class="flex justify-between text-[10px] font-black uppercase mb-2">
-                    <span class="text-gray-400">Cobertura del Plan</span>
-                    <span class="text-blue-600" id="errorPercentText">0%</span>
-                </div>
-                <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
-                    <div id="errorProgressBar" class="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-1000" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <div class="space-y-3">
-                <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">💡 Recomendaciones</h4>
-                <ul id="errorSuggestions" class="space-y-2">
-                    <!-- Dynamic suggestions -->
-                </ul>
-            </div>
-        </div>
-
-        <div class="p-6 bg-gray-50 border-t border-gray-100 flex gap-3">
-            <button onclick="closeErrorModal()" class="flex-1 py-3 bg-gray-800 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95">
-                Entendido
-            </button>
-            <button onclick="closeErrorModal(); toggleConfig();" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/30">
-                ⚙️ Ajustar Configuración
-            </button>
+    <div id="detailModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl max-w-lg w-full p-8 relative max-h-[80vh] overflow-y-auto">
+            <button onclick="document.getElementById('detailModal').classList.add('hidden')"
+                class="absolute top-4 right-4 text-2xl text-gray-400">×</button>
+            <div id="modalContent"></div>
         </div>
     </div>
-</div>
 
-{% endblock %}
+    <!-- DAY DETAIL PANEL -->
+    <div id="dayDetailOverlay" class="day-detail-overlay" onclick="closeDayDetailPanel()"></div>
+    <div id="dayDetailPanel" class="day-detail-panel">
+        <!-- Panel Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 flex justify-between items-center">
+            <div>
+                <h3 class="text-2xl font-black" id="dayDetailDate">-</h3>
+                <p class="text-sm opacity-90 font-medium" id="dayDetailSubtitle">Turnos del día</p>
+            </div>
+            <button onclick="closeDayDetailPanel()" class="hover:bg-white/20 rounded-lg p-2 transition-colors">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
 
-{% block extra_js %}
-<script>
-    // Data from Django
-    let turnos = [
+        <!-- Panel Content -->
+        <div class="flex-1 overflow-y-auto p-6 bg-gray-50" id="dayDetailContent">
+            <p class="text-center text-gray-400 italic text-sm py-8">Cargando...</p>
+        </div>
+    </div>
+
+    <!-- ERROR MODAL (Insufficient Slots) -->
+    <div id="errorModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[60] backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-0 overflow-hidden shadow-2xl transform transition-all scale-95 opacity-0"
+            id="errorModalContainer">
+            <div class="bg-red-50 p-6 flex items-center gap-4 border-b border-red-100">
+                <div
+                    class="size-12 bg-red-100 rounded-full flex items-center justify-center text-2xl text-red-600 animate-pulse">
+                    ⚠️
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-red-900 uppercase tracking-tight">Capacidad Insuficiente</h3>
+                    <p class="text-xs text-red-600 font-bold">No hay suficientes espacios para todos los turnos</p>
+                </div>
+            </div>
+
+            <div class="p-8 space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                        <p class="text-[10px] font-black text-gray-400 uppercase mb-1">Slots Disponibles</p>
+                        <p class="text-2xl font-black text-gray-800" id="errorSlotsGen">0</p>
+                        <p class="text-[10px] text-gray-500 font-bold" id="errorDaysLab">0 días laborales</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                        <p class="text-[10px] font-black text-red-400 uppercase mb-1">Slots Faltantes</p>
+                        <p class="text-2xl font-black text-red-600" id="errorSlotsMiss">0</p>
+                        <p class="text-[10px] text-red-500 font-bold">Acción requerida</p>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-[10px] font-black uppercase mb-2">
+                        <span class="text-gray-400">Cobertura del Plan</span>
+                        <span class="text-blue-600" id="errorPercentText">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
+                        <div id="errorProgressBar"
+                            class="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-1000"
+                            style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">💡 Recomendaciones</h4>
+                    <ul id="errorSuggestions" class="space-y-2">
+                        <!-- Dynamic suggestions -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-50 border-t border-gray-100 flex gap-3">
+                <button onclick="closeErrorModal()"
+                    class="flex-1 py-3 bg-gray-800 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95">
+                    Entendido
+                </button>
+                <button onclick="closeErrorModal(); toggleConfig();"
+                    class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/30">
+                    ⚙️ Ajustar Configuración
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% endblock %}
+
+    {% block extra_js %}
+    <script>
+        // Data from Django
+            let turnos = [
         {% for t in turnos %}
         {
             id: {{ t.id }},
@@ -301,134 +482,172 @@
             estado: "{{ t.estado }}",
             equipos: [
                 {% for e in t.responsable.equipos.all %}
-                { 
+                {
                     id: {{ e.id }},
-                    marca: "{{ e.marca }}", 
-                    modelo: "{{ e.modelo }}", 
+                    marca: "{{ e.marca }}",
+                    modelo: "{{ e.modelo }}",
                     codigo: "{{ e.codigo }}",
                     descripcion: "{{ e.descripcion }}",
                     atendido: {{ e.atendido|yesno:"true,false" }}
-                },
+                }{% if not forloop.last %},{% endif %}
                 {% endfor %}
             ]
-        },
+        }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ];
-    let feriados = [{% for f in feriados %}"{{ f.fecha|date:'Y-m-d' }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    let feriados = [
+        {% for f in feriados %}
+            "{{ f.fecha|date:'Y-m-d' }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
     let config = {
-        inicio: "{{ config.fecha_inicio|date:'Y-m-d'|default:'' }}",
-        fin: "{{ config.fecha_fin|date:'Y-m-d'|default:'' }}",
+        inicio: "{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}",
+        fin: "{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}",
     };
 
-    let currentMonth = new Date();
-    if (config.inicio) {
-        currentMonth = new Date(config.inicio + 'T00:00:00');
-    }
+        let currentMonth = new Date();
+        if (config.inicio) {
+            currentMonth = new Date(config.inicio + 'T00:00:00');
+        }
 
-    function initCalendar() {
-        const container = document.getElementById('calendarContainer');
-        container.innerHTML = '';
+        function initCalendar() {
+            const container = document.getElementById('calendarContainer');
+            container.innerHTML = '';
 
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-        
-        const header = document.createElement('div');
-        header.className = 'flex justify-between items-center mb-6';
-        header.innerHTML = `
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+
+            const header = document.createElement('div');
+            header.className = 'flex justify-between items-center mb-6';
+            header.innerHTML = `
             <h3 class="text-xl font-bold">${currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()}</h3>
             <div class="flex gap-2">
                 <button onclick="changeMonth(-1)" class="p-2 border rounded hover:bg-gray-100 transition">←</button>
                 <button onclick="changeMonth(1)" class="p-2 border rounded hover:bg-gray-100 transition">→</button>
             </div>
         `;
-        container.appendChild(header);
+            container.appendChild(header);
 
-        const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-7 gap-4';
-        
-        ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(day => {
-            const h = document.createElement('div');
-            h.className = 'text-center font-bold text-gray-400 text-xs uppercase mb-2';
-            h.textContent = day;
-            grid.appendChild(h);
-        });
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-7 gap-4';
 
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+            ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(day => {
+                const h = document.createElement('div');
+                h.className = 'text-center font-bold text-gray-400 text-xs uppercase mb-2';
+                h.textContent = day;
+                grid.appendChild(h);
+            });
 
-        // Padding
-        for (let i = 0; i < firstDay; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'calendar-day other-month';
-            grid.appendChild(cell);
-        }
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-        for (let d = 1; d <= daysInMonth; d++) {
-            const cellDate = new Date(year, month, d);
-            const dateStr = cellDate.toISOString().split('T')[0];
-            const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
-            const isHoliday = feriados.includes(dateStr);
-            const isToday = new Date().toDateString() === cellDate.toDateString();
-            const dayTurnos = turnos.filter(t => t.fecha === dateStr);
-            const turnosCount = dayTurnos.length;
+            // Padding for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day other-month';
+                grid.appendChild(cell);
+            }
 
-            const cell = document.createElement('div');
-            cell.className = `calendar-day ${isWeekend ? 'weekend' : ''} ${isHoliday ? 'holiday' : ''} ${isToday ? 'today' : ''}`;
-            cell.dataset.date = dateStr;
+            // Render each day
+            for (let d = 1; d <= daysInMonth; d++) {
+                const cellDate = new Date(year, month, d);
+                // Fix timezone issue by manually formatting YYYY-MM-DD
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+                const isHoliday = feriados.includes(dateStr);
+                const isToday = new Date().toDateString() === cellDate.toDateString();
+                const dayTurnos = turnos.filter(t => t.fecha === dateStr);
+                const turnosCount = dayTurnos.length;
 
-            cell.innerHTML = `
-                <div class="flex justify-between items-start mb-2 border-b border-gray-200 pb-2">
+                const cell = document.createElement('div');
+                cell.className = `calendar-day ${isWeekend ? 'weekend' : ''} ${isHoliday ? 'holiday' : ''} ${isToday ? 'today' : ''}`;
+                cell.dataset.date = dateStr;
+
+                // Click handler to open day detail panel
+                if (!isWeekend && !isHoliday) {
+                    cell.onclick = () => {
+                        console.log('Click on day:', dateStr);
+                        openDayDetailPanel(dateStr);
+                    };
+                    cell.style.cursor = 'pointer';
+                }
+
+                // Determine badge status
+                let badgeClass = 'shift-count-badge';
+                if (turnosCount > 0) {
+                    const hasCompleted = dayTurnos.some(t => t.estado === 'completado');
+                    const hasInProgress = dayTurnos.some(t => t.estado === 'en_proceso');
+
+                    if (hasCompleted) badgeClass += ' has-completed';
+                    else if (hasInProgress) badgeClass += ' has-in-progress';
+                }
+
+                cell.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
                     <span class="day-number font-bold text-lg">${d}</span>
                     <div class="flex flex-col items-end gap-1">
                         ${isHoliday ? '<span class="text-[8px] bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full font-black">🎉 FERIADO</span>' : ''}
-                        ${!isHoliday && turnosCount > 0 ? `<span class="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">${turnosCount} turno${turnosCount !== 1 ? 's' : ''}</span>` : ''}
+                        ${!isHoliday && turnosCount > 0 ? `<span class="${badgeClass}">${turnosCount}</span>` : ''}
                     </div>
                 </div>
-                <div class="space-y-2 overflow-y-auto flex-1 appointment-list" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+                <div class="flex-1 flex items-center justify-center">
+                    ${!isHoliday && turnosCount > 0 ? '<p class="text-xs text-gray-400 font-medium">Click para ver detalles</p>' : ''}
                 </div>
             `;
 
-            const list = cell.querySelector('.appointment-list');
-            dayTurnos.forEach(t => {
-                const card = createCard(t);
-                list.appendChild(card);
-            });
+                // Setup drag and drop for day cells
+                cell.ondragover = (e) => {
+                    e.preventDefault();
+                    cell.classList.add('drag-over');
+                };
 
-            grid.appendChild(cell);
+                cell.ondragleave = () => {
+                    cell.classList.remove('drag-over');
+                };
+
+                cell.ondrop = (e) => {
+                    e.preventDefault();
+                    cell.classList.remove('drag-over');
+                    handleDayDrop(e, dateStr);
+                };
+
+                grid.appendChild(cell);
+            }
+
+            container.appendChild(grid);
         }
 
-        container.appendChild(grid);
-    }
+        function getDeviceIcon(equipos) {
+            if (!equipos || equipos.length === 0) return 'help-circle';
+            const marcas = equipos.map(e => (e.marca || '').toLowerCase());
+            const descrip = equipos.map(e => (e.descripcion || '').toLowerCase());
+            const allStr = marcas.join(' ') + ' ' + descrip.join(' ');
 
-    function getDeviceIcon(equipos) {
-        if (!equipos || equipos.length === 0) return 'help-circle';
-        const marcas = equipos.map(e => (e.marca || '').toLowerCase());
-        const descrip = equipos.map(e => (e.descripcion || '').toLowerCase());
-        const allStr = marcas.join(' ') + ' ' + descrip.join(' ');
-        
-        if (allStr.includes('laptop') || allStr.includes('portatil')) return 'laptop';
-        if (allStr.includes('impresora') || allStr.includes('printer')) return 'printer';
-        if (allStr.includes('monitor') || allStr.includes('pantalla')) return 'monitor';
-        if (allStr.includes('servidor') || allStr.includes('server')) return 'server';
-        return 'pc-case'; 
-    }
+            if (allStr.includes('laptop') || allStr.includes('portatil')) return 'laptop';
+            if (allStr.includes('impresora') || allStr.includes('printer')) return 'printer';
+            if (allStr.includes('monitor') || allStr.includes('pantalla')) return 'monitor';
+            if (allStr.includes('servidor') || allStr.includes('server')) return 'server';
+            return 'pc-case';
+        }
 
-    function createCard(t) {
-        let cardClass = "appointment-card transition-all";
-        if (t.estado === 'completado') cardClass += " completed";
-        else if (t.estado === 'en_proceso') cardClass += " in-progress";
-        
-        const card = document.createElement('div');
-        card.className = cardClass;
-        card.draggable = true;
-        card.dataset.id = t.id;
-        
-        const deviceIcon = getDeviceIcon(t.equipos);
-        const atendidos = t.equipos.filter(e => e.atendido).length;
-        const total = t.equipos.length;
-        const progressStr = `${atendidos}/${total}`;
-        
-        card.innerHTML = `
+        function createCard(t) {
+            let cardClass = "appointment-card transition-all";
+            if (t.estado === 'completado') cardClass += " completed";
+            else if (t.estado === 'en_proceso') cardClass += " in-progress";
+
+            const card = document.createElement('div');
+            card.className = cardClass;
+            card.draggable = true;
+            card.dataset.id = t.id;
+
+            const deviceIcon = getDeviceIcon(t.equipos);
+            const atendidos = t.equipos.filter(e => e.atendido).length;
+            const total = t.equipos.length;
+            const progressStr = `${atendidos}/${total}`;
+
+            card.innerHTML = `
             <div class="flex justify-between text-[10px] font-bold opacity-90 mb-1">
                 <span class="flex items-center gap-1"><i data-lucide="${getDeviceIcon(t.equipos)}" class="w-3 h-3"></i> ${t.hora}</span>
                 <button onclick="toggleCompletado(${t.id}, event)" class="hover:scale-110 transition-transform" 
@@ -444,142 +663,321 @@
                 </button>
             </div>
         `;
-        card.ondragstart = (e) => {
-            e.dataTransfer.setData('text/plain', t.id);
-            card.classList.add('dragging');
-        };
-        card.ondragend = () => card.classList.remove('dragging');
-        
-        // Soporte para intercambio (Swap)
-        card.ondragover = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            card.classList.add('bg-blue-100', 'border-blue-400', 'scale-105');
-        };
-        card.ondragleave = () => {
-            card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
-        };
-        card.ondrop = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
-            const draggedId = e.dataTransfer.getData('text/plain');
-            if (draggedId != t.id) {
-                handleSwap(draggedId, t.id);
+            card.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', t.id);
+                card.classList.add('dragging');
+            };
+            card.ondragend = () => card.classList.remove('dragging');
+
+            // Soporte para intercambio (Swap)
+            card.ondragover = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                card.classList.add('bg-blue-100', 'border-blue-400', 'scale-105');
+            };
+            card.ondragleave = () => {
+                card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
+            };
+            card.ondrop = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
+                const draggedId = e.dataTransfer.getData('text/plain');
+                if (draggedId != t.id) {
+                    handleSwap(draggedId, t.id);
+                }
+            };
+
+            return card;
+        }
+
+        function handleSwap(idA, idB) {
+            const turnoA = turnos.find(t => t.id == idA);
+            const turnoB = turnos.find(t => t.id == idB);
+
+            showConfirmModal(
+                'Intercambiar Turnos',
+                `¿Estás seguro de intercambiar los turnos de ${turnoA.responsable} y ${turnoB.responsable}?`,
+                () => realizarIntercambio(idA, idB)
+            );
+        }
+
+        async function realizarIntercambio(idA, idB) {
+            try {
+                const resp = await fetch('/turno/intercambiar/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': CSRF_TOKEN,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ turno_a_id: idA, turno_b_id: idB })
+                });
+
+                const data = await resp.json();
+                if (resp.ok) {
+                    showToast(data.message);
+                    await refreshAllData();
+                } else {
+                    showToast(data.message || 'Error al intercambiar', 'error');
+                }
+            } catch (err) {
+                showToast('Error de conexión', 'error');
             }
-        };
+        }
 
-        return card;
-    }
+        async function handleDrop(e) {
+            e.preventDefault();
+            const turnoId = e.dataTransfer.getData('text/plain');
+            const newDate = e.currentTarget.closest('.calendar-day').dataset.date;
 
-    function handleSwap(idA, idB) {
-        const turnoA = turnos.find(t => t.id == idA);
-        const turnoB = turnos.find(t => t.id == idB);
-        
-        showConfirmModal(
-            'Intercambiar Turnos',
-            `¿Estás seguro de intercambiar los turnos de ${turnoA.responsable} y ${turnoB.responsable}?`,
-            () => realizarIntercambio(idA, idB)
-        );
-    }
+            if (!newDate) return;
 
-    async function realizarIntercambio(idA, idB) {
-        try {
-            const resp = await fetch('/turno/intercambiar/', {
+            // AJAX update
+            const resp = await fetch(`/turno/${turnoId}/actualizar/`, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': CSRF_TOKEN,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ turno_a_id: idA, turno_b_id: idB })
+                body: JSON.stringify({ fecha: newDate })
             });
-            
-            const data = await resp.json();
+
             if (resp.ok) {
-                showToast(data.message);
-                await refreshAllData();
-            } else {
-                showToast(data.message || 'Error al intercambiar', 'error');
+                const t = turnos.find(x => x.id == turnoId);
+                t.fecha = newDate;
+                initCalendar();
             }
-        } catch (err) {
-            showToast('Error de conexión', 'error');
-        }
-    }
-
-    async function handleDrop(e) {
-        e.preventDefault();
-        const turnoId = e.dataTransfer.getData('text/plain');
-        const newDate = e.currentTarget.closest('.calendar-day').dataset.date;
-        
-        if (!newDate) return;
-
-        // AJAX update
-        const resp = await fetch(`/turno/${turnoId}/actualizar/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': CSRF_TOKEN,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ fecha: newDate })
-        });
-
-        if (resp.ok) {
-            const t = turnos.find(x => x.id == turnoId);
-            t.fecha = newDate;
-            initCalendar();
-        }
-    }
-
-    async function toggleCompletado(id, e) {
-        e.stopPropagation();
-        const t = turnos.find(x => x.id == id);
-        
-        // Si tiene más de un equipo y se intenta marcar como listo (estado no es completado aún)
-        // abrimos los detalles para asegurar el marcado individual correcto.
-        if (t.equipos.length > 1 && t.estado !== 'completado') {
-            showDetails(id);
-            showToast('Múltiples equipos detectados: verifique individualmente', 'info');
-            return;
         }
 
-        const resp = await fetch(`/turno/${id}/toggle/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': CSRF_TOKEN }
-        });
-        if (resp.ok) {
-            const data = await resp.json();
-            
-            // Sincronizar estado del turno
-            t.estado = data.nuevo_estado;
-            
-            // Sincronizar estado de los equipos locales si el backend los envió
-            if (data.equipos) {
-                data.equipos.forEach(eqResp => {
-                    const eqLocal = t.equipos.find(e => e.id == eqResp.id);
-                    if (eqLocal) eqLocal.atendido = eqResp.atendido;
+        // Day Detail Panel Functions
+        async function openDayDetailPanel(dateStr) {
+            try {
+                console.log('Opening details for:', dateStr);
+                const panel = document.getElementById('dayDetailPanel');
+                const overlay = document.getElementById('dayDetailOverlay');
+                const content = document.getElementById('dayDetailContent');
+                const dateTitle = document.getElementById('dayDetailDate');
+
+                if (!panel || !overlay || !content || !dateTitle) {
+                    console.error('Missing panel elements', { panel, overlay, content, dateTitle });
+                    return;
+                }
+
+                // Format date for display
+                // Use explicit splitting to avoid timezone issues with Date constructor
+                const [y, m, d] = dateStr.split('-').map(Number);
+                const date = new Date(y, m - 1, d); // Month is 0-indexed
+
+                const formattedDate = date.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
                 });
-            }
-            
-            // Actualizar TODO para que el panel de pendientes también se refresque
-            initCalendar();
-            renderPendingAssets();
-            updateStats();
-            
-            // Si el modal está abierto para este turno, refrescarlo
-            const modal = document.getElementById('detailModal');
-            if (modal && !modal.classList.contains('hidden')) {
-                showDetails(id);
+                dateTitle.textContent = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+
+                // Show loading state
+                content.innerHTML = '<p class="text-center text-gray-400 italic text-sm py-8">Cargando turnos...</p>';
+
+                // Open panel
+                overlay.classList.add('visible');
+                panel.classList.add('open');
+
+                // Get shifts for this day
+                const dayTurnos = turnos.filter(t => t.fecha === dateStr);
+                console.log(`Found ${dayTurnos.length} turns for ${dateStr}`);
+
+                if (dayTurnos.length === 0) {
+                    content.innerHTML = `
+                <div class="text-center py-12">
+                    <i data-lucide="calendar-x" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 font-medium">No hay turnos asignados para este día</p>
+                </div>
+            `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                // Render shifts
+                content.innerHTML = '<div class="space-y-3"></div>';
+                const container = content.querySelector('div');
+
+                dayTurnos.forEach(t => {
+                    const card = createShiftCardForPanel(t);
+                    container.appendChild(card);
+                });
+
+                lucide.createIcons();
+            } catch (err) {
+                console.error('Error opening day detail panel:', err);
+                showToast('Error al abrir detalles del día', 'error');
             }
         }
-    }
 
-    function showDetails(id, e) {
-        if (e) e.stopPropagation();
-        const t = turnos.find(x => x.id == id);
-        const modal = document.getElementById('detailModal');
-        const content = document.getElementById('modalContent');
-        
-        content.innerHTML = `
+        function closeDayDetailPanel() {
+            const panel = document.getElementById('dayDetailPanel');
+            const overlay = document.getElementById('dayDetailOverlay');
+
+            panel.classList.remove('open');
+            overlay.classList.remove('visible');
+        }
+
+        function createShiftCardForPanel(t) {
+            let cardClass = "appointment-card mb-3";
+            if (t.estado === 'completado') cardClass += " completed";
+            else if (t.estado === 'en_proceso') cardClass += " in-progress";
+
+            const card = document.createElement('div');
+            card.className = cardClass;
+            card.draggable = true;
+            card.dataset.id = t.id;
+
+            const atendidos = t.equipos.filter(e => e.atendido).length;
+            const total = t.equipos.length;
+            const progressStr = `${atendidos}/${total}`;
+
+            card.innerHTML = `
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <i data-lucide="${getDeviceIcon(t.equipos)}" class="w-4 h-4"></i>
+                        <span class="font-black text-base uppercase">${t.responsable}</span>
+                    </div>
+                    <div class="text-xs opacity-80">
+                        <i data-lucide="clock" class="w-3 h-3 inline"></i> ${t.hora}
+                    </div>
+                </div>
+                <button onclick="toggleCompletado(${t.id}, event)"
+                        class="hover:scale-110 transition-transform p-2 rounded-lg hover:bg-white/50"
+                        title="${t.estado === 'completado' ? 'Marcar pendiente' : 'Marcar listo'}">
+                    <i data-lucide="${t.estado === 'completado' ? 'check-circle-2' : (t.estado === 'en_proceso' ? 'clock' : 'circle')}"
+                       class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="bg-white/50 rounded-lg p-3 mb-3">
+                <p class="text-[10px] font-bold text-gray-500 uppercase mb-2">Equipos (${progressStr})</p>
+                <div class="space-y-1">
+                    ${t.equipos.map(e => `
+                        <div class="flex items-center justify-between text-xs py-1">
+                            <span class="${e.atendido ? 'line-through opacity-60' : 'font-medium'}">${e.marca} ${e.modelo}</span>
+                            <i data-lucide="${e.atendido ? 'check-circle-2' : 'circle'}"
+                               class="w-3 h-3 ${e.atendido ? 'text-green-600' : 'text-gray-400'}"></i>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="showDetails(${t.id}, event)"
+                        class="flex-1 py-2 bg-white/70 hover:bg-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                    <i data-lucide="eye" class="w-3 h-3"></i> Ver Detalles
+                </button>
+            </div>
+        `;
+
+            // Drag handlers
+            card.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', t.id);
+                card.classList.add('dragging');
+                document.querySelectorAll('.calendar-day').forEach(day => {
+                    if (!day.classList.contains('other-month') && !day.classList.contains('weekend')) {
+                        day.classList.add('drag-source');
+                    }
+                });
+            };
+
+            card.ondragend = () => {
+                card.classList.remove('dragging');
+                document.querySelectorAll('.calendar-day').forEach(day => {
+                    day.classList.remove('drag-source');
+                });
+            };
+
+            return card;
+        }
+
+        async function handleDayDrop(e, newDate) {
+            const turnoId = e.dataTransfer.getData('text/plain');
+            if (!turnoId || !newDate) return;
+
+            const turno = turnos.find(t => t.id == turnoId);
+            if (turno && turno.fecha === newDate) return; // Same day, do nothing
+
+            // Update via API
+            const resp = await fetch(`/turno/${turnoId}/actualizar/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ fecha: newDate })
+            });
+
+            if (resp.ok) {
+                showToast(`Turno movido a ${newDate}`);
+                await refreshAllData();
+
+                // If panel is open, refresh it with the new date's shifts
+                const panel = document.getElementById('dayDetailPanel');
+                if (panel.classList.contains('open')) {
+                    openDayDetailPanel(newDate);
+                }
+            } else {
+                showToast('Error al mover turno', 'error');
+            }
+        }
+
+        async function toggleCompletado(id, e) {
+            e.stopPropagation();
+            const t = turnos.find(x => x.id == id);
+
+            // Si tiene más de un equipo y se intenta marcar como listo (estado no es completado aún)
+            // abrimos los detalles para asegurar el marcado individual correcto.
+            if (t.equipos.length > 1 && t.estado !== 'completado') {
+                showDetails(id);
+                showToast('Múltiples equipos detectados: verifique individualmente', 'info');
+                return;
+            }
+
+            const resp = await fetch(`/turno/${id}/toggle/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+
+                // Sincronizar estado del turno
+                t.estado = data.nuevo_estado;
+
+                // Sincronizar estado de los equipos locales si el backend los envió
+                if (data.equipos) {
+                    data.equipos.forEach(eqResp => {
+                        const eqLocal = t.equipos.find(e => e.id == eqResp.id);
+                        if (eqLocal) eqLocal.atendido = eqResp.atendido;
+                    });
+                }
+
+                // Actualizar TODO para que el panel de pendientes también se refresque
+                initCalendar();
+                renderPendingAssets();
+                updateStats();
+
+                // Si el modal está abierto para este turno, refrescarlo
+                const modal = document.getElementById('detailModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    showDetails(id);
+                }
+            }
+        }
+
+        function showDetails(id, e) {
+            if (e) e.stopPropagation();
+            const t = turnos.find(x => x.id == id);
+            const modal = document.getElementById('detailModal');
+            const content = document.getElementById('modalContent');
+
+            content.innerHTML = `
             <h3 class="text-2xl font-bold mb-4">${t.responsable}</h3>
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="p-3 bg-gray-50 rounded">
@@ -608,85 +1006,85 @@
                 `).join('')}
             </div>
         `;
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
 
-    async function toggleEquipo(equipoId, turnoId) {
-        const resp = await fetch(`/equipo/${equipoId}/toggle-atendido/`, {
-            method: 'POST',
-            headers: { 'X-CSRFToken': CSRF_TOKEN }
-        });
-        
-        if (resp.ok) {
-            const data = await resp.json();
-            // Update local data
-            const turno = turnos.find(t => t.id == turnoId);
-            const equipo = turno.equipos.find(e => e.id == equipoId);
-            
-            equipo.atendido = data.atendido;
-            
-            // Sincronizar estado del turno si el backend lo envió
-            if (data.turno_estado) {
-                turno.estado = data.turno_estado;
-            }
-            
-            // Re-render UI components
-            initCalendar();
-            renderPendingAssets();
-            updateStats();
-            
-            // Only update modal if it's currently showing THIS turno
-            const modal = document.getElementById('detailModal');
-            if (modal && !modal.classList.contains('hidden')) {
-                showDetails(turnoId);
+        async function toggleEquipo(equipoId, turnoId) {
+            const resp = await fetch(`/equipo/${equipoId}/toggle-atendido/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                // Update local data
+                const turno = turnos.find(t => t.id == turnoId);
+                const equipo = turno.equipos.find(e => e.id == equipoId);
+
+                equipo.atendido = data.atendido;
+
+                // Sincronizar estado del turno si el backend lo envió
+                if (data.turno_estado) {
+                    turno.estado = data.turno_estado;
+                }
+
+                // Re-render UI components
+                initCalendar();
+                renderPendingAssets();
+                updateStats();
+
+                // Only update modal if it's currently showing THIS turno
+                const modal = document.getElementById('detailModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    showDetails(turnoId);
+                }
             }
         }
-    }
 
-    function renderPendingAssets() {
-        const panel = document.getElementById('pendingAssetsPanel');
-        if (!panel) return;
-        
-        const pendingItems = [];
-        turnos.forEach(t => {
-            if (t.estado !== 'completado') {
-                const total = t.equipos.length;
-                const atendidos = t.equipos.filter(e => e.atendido).length;
-                
-                t.equipos.forEach(e => {
-                    if (!e.atendido) {
-                        pendingItems.push({ 
-                            ...e, 
-                            responsable: t.responsable, 
-                            turnoId: t.id,
-                            fecha: t.fecha,
-                            hora: t.hora,
-                            progreso: `${atendidos + 1}/${total}`,
-                            enProceso: t.estado === 'en_proceso'
-                        });
-                    }
-                });
+        function renderPendingAssets() {
+            const panel = document.getElementById('pendingAssetsPanel');
+            if (!panel) return;
+
+            const pendingItems = [];
+            turnos.forEach(t => {
+                if (t.estado !== 'completado') {
+                    const total = t.equipos.length;
+                    const atendidos = t.equipos.filter(e => e.atendido).length;
+
+                    t.equipos.forEach(e => {
+                        if (!e.atendido) {
+                            pendingItems.push({
+                                ...e,
+                                responsable: t.responsable,
+                                turnoId: t.id,
+                                fecha: t.fecha,
+                                hora: t.hora,
+                                progreso: `${atendidos + 1}/${total}`,
+                                enProceso: t.estado === 'en_proceso'
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Sort by Date THEN Time sequence
+            pendingItems.sort((a, b) => {
+                if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+                return a.hora.localeCompare(b.hora);
+            });
+
+            if (pendingItems.length === 0) {
+                panel.innerHTML = '<p class="text-[10px] text-gray-400 italic text-center py-4">Sin equipos pendientes</p>';
+                return;
             }
-        });
-        
-        // Sort by Date THEN Time sequence
-        pendingItems.sort((a, b) => {
-            if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-            return a.hora.localeCompare(b.hora);
-        });
 
-        if (pendingItems.length === 0) {
-            panel.innerHTML = '<p class="text-[10px] text-gray-400 italic text-center py-4">Sin equipos pendientes</p>';
-            return;
-        }
-        
-        panel.innerHTML = pendingItems.map(p => {
-            // Format date for better readability (e.g., "Lun 26")
-            const d = new Date(p.fecha + 'T00:00:00');
-            const dateStr = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).toUpperCase();
-            
-            return `
+            panel.innerHTML = pendingItems.map(p => {
+                // Format date for better readability (e.g., "Lun 26")
+                const d = new Date(p.fecha + 'T00:00:00');
+                const dateStr = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).toUpperCase();
+
+                return `
             <div class="p-3 border border-gray-200 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex gap-1">
@@ -727,375 +1125,375 @@
                 </div>
             </div>
             `;
-        }).join('');
-        lucide.createIcons();
-    }
-
-    function handleUploadDragOver(e) {
-        e.preventDefault();
-        e.currentTarget.classList.add('bg-blue-50', 'border-blue-500');
-    }
-
-    function handleUploadDragLeave(e) {
-        e.preventDefault();
-        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
-    }
-
-    function handleUploadDrop(e) {
-        e.preventDefault();
-        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            document.getElementById('fileInput').files = files;
-            submitUpload();
+            }).join('');
+            lucide.createIcons();
         }
-    }
 
-    async function submitUpload() {
-        const input = document.getElementById('fileInput');
-        if (input.files.length > 0) {
-            const fileName = input.files[0].name;
-            const fileNameDisplay = document.getElementById('fileName');
-            const uploadText = document.getElementById('uploadText');
-            
-            fileNameDisplay.textContent = fileName;
-            fileNameDisplay.classList.remove('hidden');
-            uploadText.textContent = "Cargando archivo...";
-            
-            const formData = new FormData(document.getElementById('uploadForm'));
-            formData.append('ajax', '1');
+        function handleUploadDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('bg-blue-50', 'border-blue-500');
+        }
 
+        function handleUploadDragLeave(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
+        }
+
+        function handleUploadDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                submitUpload();
+            }
+        }
+
+        async function submitUpload() {
+            const input = document.getElementById('fileInput');
+            if (input.files.length > 0) {
+                const fileName = input.files[0].name;
+                const fileNameDisplay = document.getElementById('fileName');
+                const uploadText = document.getElementById('uploadText');
+
+                fileNameDisplay.textContent = fileName;
+                fileNameDisplay.classList.remove('hidden');
+                uploadText.textContent = "Cargando archivo...";
+
+                const formData = new FormData(document.getElementById('uploadForm'));
+                formData.append('ajax', '1');
+
+                try {
+                    const resp = await fetch('{% url "upload_excel" %}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-CSRFToken': CSRF_TOKEN }
+                    });
+                    const data = await resp.json();
+                    if (resp.ok) {
+                        showToast(data.message || 'Archivo cargado con éxito');
+                        await refreshAllData();
+                        // Abrir panel de configuración automáticamente para el flujo solicitado
+                        if (containerId = document.getElementById('configContainer').classList.contains('hidden')) {
+                            toggleConfig();
+                        }
+                    } else {
+                        showToast(data.message || 'Error al cargar archivo', 'error');
+                    }
+                } catch (err) {
+                    showToast('Error de conexión', 'error');
+                } finally {
+                    uploadText.textContent = "Arraste su Excel aquí o haga clic";
+                    input.value = '';
+                }
+            }
+        }
+
+        async function refreshAllData() {
             try {
-                const resp = await fetch('{% url "upload_excel" %}', {
+                const resp = await fetch('{% url "api_get_datos" %}');
+                const data = await resp.json();
+
+                // Actualizar variables globales
+                turnos = data.turnos;
+                feriados = data.feriados;
+                config = data.config;
+
+                if (config.inicio) {
+                    currentMonth = new Date(config.inicio + 'T00:00:00');
+                }
+
+                // Refrescar UI
+                initCalendar();
+                updateStats();
+                renderPendingAssets();
+            } catch (err) {
+                console.error('Error refreshing data:', err);
+            }
+        }
+        function toggleConfig() {
+            const container = document.getElementById('configContainer');
+            const btnText = document.getElementById('toggleText');
+
+            const isHidden = container.classList.contains('hidden');
+            if (isHidden) {
+                container.classList.remove('hidden');
+                btnText.textContent = 'Cerrar';
+            } else {
+                container.classList.add('hidden');
+                btnText.textContent = 'Reconfigurar';
+            }
+        }
+
+        // --- UI HELPERS ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            const config = {
+                success: { icon: 'check-circle-2', style: 'background: var(--green-pastel); color: var(--green-text); border: 1px solid rgba(6, 95, 70, 0.2);' },
+                error: { icon: 'alert-circle', style: 'background: var(--red-pastel); color: var(--red-text); border: 1px solid rgba(153, 27, 27, 0.2);' },
+                info: { icon: 'info', style: 'background: var(--blue-pastel); color: var(--blue-text); border: 1px solid rgba(30, 64, 175, 0.2);' }
+            };
+
+            const cfg = config[type];
+            toast.className = `px-6 py-3 rounded-xl shadow-xl font-black text-[10px] uppercase tracking-widest transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto flex items-center gap-3`;
+            toast.style = cfg.style;
+            toast.innerHTML = `<i data-lucide="${cfg.icon}" class="w-4 h-4"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+            lucide.createIcons(); // Re-init for new toast
+
+            // Trigger animation
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+                toast.classList.add('translate-x-0', 'opacity-100');
+            });
+
+            // Auto-remove
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        async function guardarConfig() {
+            const formData = new FormData(document.getElementById('configForm'));
+            try {
+                const resp = await fetch('{% url "guardar_configuracion" %}', {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-CSRFToken': CSRF_TOKEN }
                 });
                 const data = await resp.json();
                 if (resp.ok) {
-                    showToast(data.message || 'Archivo cargado con éxito');
-                    await refreshAllData();
-                    // Abrir panel de configuración automáticamente para el flujo solicitado
-                    if (containerId = document.getElementById('configContainer').classList.contains('hidden')) {
-                        toggleConfig();
-                    }
+                    showToast(data.message || 'Configuración guardada');
+                    // Mantener el panel abierto para un mejor flujo de trabajo
                 } else {
-                    showToast(data.message || 'Error al cargar archivo', 'error');
+                    showToast('Error al guardar la configuración', 'error');
                 }
-            } catch (err) {
+            } catch (error) {
+                console.error('Error:', error);
                 showToast('Error de conexión', 'error');
-            } finally {
-                uploadText.textContent = "Arraste su Excel aquí o haga clic";
-                input.value = '';
             }
         }
-    }
 
-    async function refreshAllData() {
-        try {
-            const resp = await fetch('{% url "api_get_datos" %}');
-            const data = await resp.json();
-            
-            // Actualizar variables globales
-            turnos = data.turnos;
-            feriados = data.feriados;
-            config = data.config;
-            
-            if (config.inicio) {
-                currentMonth = new Date(config.inicio + 'T00:00:00');
-            }
+        // --- CONFIRMATION MODAL HELPER ---
+        function showConfirmModal(title, message, onConfirm) {
+            const modal = document.getElementById('confirmationModal');
+            const container = document.getElementById('confirmModalContent');
+            const titleEl = document.getElementById('confirmTitle');
+            const msgEl = document.getElementById('confirmMessage');
+            const confirmBtn = document.getElementById('confirmActionBtn');
 
-            // Refrescar UI
-            initCalendar();
-            updateStats();
-            renderPendingAssets();
-        } catch (err) {
-            console.error('Error refreshing data:', err);
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+
+            // Remove old listeners to prevent multiple firings
+            const newBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+            newBtn.onclick = () => {
+                closeConfirmModal();
+                onConfirm();
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                container.classList.remove('scale-95');
+                container.classList.add('scale-100');
+            }, 10);
         }
-    }
-    function toggleConfig() {
-        const container = document.getElementById('configContainer');
-        const btnText = document.getElementById('toggleText');
-        
-        const isHidden = container.classList.contains('hidden');
-        if (isHidden) {
-            container.classList.remove('hidden');
-            btnText.textContent = 'Cerrar';
-        } else {
-            container.classList.add('hidden');
-            btnText.textContent = 'Reconfigurar';
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirmationModal');
+            const container = document.getElementById('confirmModalContent');
+
+            modal.classList.add('opacity-0');
+            container.classList.remove('scale-100');
+            container.classList.add('scale-95');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
         }
-    }
 
-    // --- UI HELPERS ---
-    function showToast(message, type = 'success') {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        const config = {
-            success: { icon: 'check-circle-2', style: 'background: var(--green-pastel); color: var(--green-text); border: 1px solid rgba(6, 95, 70, 0.2);' },
-            error: { icon: 'alert-circle', style: 'background: var(--red-pastel); color: var(--red-text); border: 1px solid rgba(153, 27, 27, 0.2);' },
-            info: { icon: 'info', style: 'background: var(--blue-pastel); color: var(--blue-text); border: 1px solid rgba(30, 64, 175, 0.2);' }
-        };
-        
-        const cfg = config[type];
-        toast.className = `px-6 py-3 rounded-xl shadow-xl font-black text-[10px] uppercase tracking-widest transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto flex items-center gap-3`;
-        toast.style = cfg.style;
-        toast.innerHTML = `<i data-lucide="${cfg.icon}" class="w-4 h-4"></i> <span>${message}</span>`;
-        
-        container.appendChild(toast);
-        lucide.createIcons(); // Re-init for new toast
-        
-        // Trigger animation
-        requestAnimationFrame(() => {
-            toast.classList.remove('translate-x-full', 'opacity-0');
-            toast.classList.add('translate-x-0', 'opacity-100');
-        });
-        
-        // Auto-remove
-        setTimeout(() => {
-            toast.classList.add('translate-x-full', 'opacity-0');
-            setTimeout(() => toast.remove(), 400);
-        }, 3000);
-    }
+        async function generarCronograma() {
+            showConfirmModal(
+                'Confirmar Generación',
+                'Esto redistribuirá todos los turnos pendientes basándose en la configuración actual. ¿Deseas continuar?',
+                async () => {
+                    try {
+                        const resp = await fetch('{% url "generar_cronograma" %}', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': CSRF_TOKEN }
+                        });
+                        const result = await resp.json();
 
-    async function guardarConfig() {
-        const formData = new FormData(document.getElementById('configForm'));
-        try {
-            const resp = await fetch('{% url "guardar_configuracion" %}', {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-CSRFToken': CSRF_TOKEN }
-            });
-            const data = await resp.json();
-            if (resp.ok) {
-                showToast(data.message || 'Configuración guardada');
-                // Mantener el panel abierto para un mejor flujo de trabajo
-            } else {
-                showToast('Error al guardar la configuración', 'error');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showToast('Error de conexión', 'error');
-        }
-    }
-
-    // --- CONFIRMATION MODAL HELPER ---
-    function showConfirmModal(title, message, onConfirm) {
-        const modal = document.getElementById('confirmationModal');
-        const container = document.getElementById('confirmModalContent');
-        const titleEl = document.getElementById('confirmTitle');
-        const msgEl = document.getElementById('confirmMessage');
-        const confirmBtn = document.getElementById('confirmActionBtn');
-        
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-        
-        // Remove old listeners to prevent multiple firings
-        const newBtn = confirmBtn.cloneNode(true);
-        confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
-        
-        newBtn.onclick = () => {
-            closeConfirmModal();
-            onConfirm();
-        };
-        
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            container.classList.remove('scale-95');
-            container.classList.add('scale-100');
-        }, 10);
-    }
-
-    function closeConfirmModal() {
-        const modal = document.getElementById('confirmationModal');
-        const container = document.getElementById('confirmModalContent');
-        
-        modal.classList.add('opacity-0');
-        container.classList.remove('scale-100');
-        container.classList.add('scale-95');
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }, 300);
-    }
-
-    async function generarCronograma() {
-        showConfirmModal(
-            'Confirmar Generación',
-            'Esto redistribuirá todos los turnos pendientes basándose en la configuración actual. ¿Deseas continuar?',
-            async () => {
-                try {
-                    const resp = await fetch('{% url "generar_cronograma" %}', {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': CSRF_TOKEN }
-                    });
-                    const result = await resp.json();
-                    
-                    if (resp.ok) {
-                        showToast(result.message || 'Cronograma generado correctamente');
-                        await refreshAllData();
-                        if (!document.getElementById('configContainer').classList.contains('hidden')) {
-                            toggleConfig();
-                        }
-                    } else {
-                        if (result.data && result.data.error_type === 'insufficient_slots') {
-                            showErrorModal(result.data);
+                        if (resp.ok) {
+                            showToast(result.message || 'Cronograma generado correctamente');
+                            await refreshAllData();
+                            if (!document.getElementById('configContainer').classList.contains('hidden')) {
+                                toggleConfig();
+                            }
                         } else {
-                            showToast(result.data ? result.data.message : 'Error desconocido', 'error');
+                            if (result.data && result.data.error_type === 'insufficient_slots') {
+                                showErrorModal(result.data);
+                            } else {
+                                showToast(result.data ? result.data.message : 'Error desconocido', 'error');
+                            }
                         }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showToast('Error de conexión', 'error');
                     }
-                } catch (error) {
-                    console.error('Error:', error);
-                    showToast('Error de conexión', 'error');
                 }
-            }
-        );
-    }
+            );
+        }
 
-    function showErrorModal(data) {
-        const modal = document.getElementById('errorModal');
-        const container = document.getElementById('errorModalContainer');
-        
-        document.getElementById('errorSlotsGen').textContent = data.slots_generados;
-        document.getElementById('errorDaysLab').textContent = `${data.dias_laborables} días laborales`;
-        document.getElementById('errorSlotsMiss').textContent = data.faltantes;
-        
-        const percent = Math.round((data.slots_generados / data.usuarios_pendientes) * 100);
-        document.getElementById('errorPercentText').textContent = `${percent}%`;
-        
-        const suggestionsList = document.getElementById('errorSuggestions');
-        suggestionsList.innerHTML = data.sugerencias.map(s => `
+        function showErrorModal(data) {
+            const modal = document.getElementById('errorModal');
+            const container = document.getElementById('errorModalContainer');
+
+            document.getElementById('errorSlotsGen').textContent = data.slots_generados;
+            document.getElementById('errorDaysLab').textContent = `${data.dias_laborables} días laborales`;
+            document.getElementById('errorSlotsMiss').textContent = data.faltantes;
+
+            const percent = Math.round((data.slots_generados / data.usuarios_pendientes) * 100);
+            document.getElementById('errorPercentText').textContent = `${percent}%`;
+
+            const suggestionsList = document.getElementById('errorSuggestions');
+            suggestionsList.innerHTML = data.sugerencias.map(s => `
             <li class="flex items-start gap-2 text-xs text-gray-600 font-medium">
                 <span class="text-blue-500 mt-0.5">•</span>
                 ${s}
             </li>
         `).join('');
 
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        
-        // Animations
-        setTimeout(() => {
-            container.classList.remove('scale-95', 'opacity-0');
-            container.classList.add('scale-100', 'opacity-100');
-            document.getElementById('errorProgressBar').style.width = `${percent}%`;
-        }, 10);
-    }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
 
-    function closeErrorModal() {
-        const modal = document.getElementById('errorModal');
-        const container = document.getElementById('errorModalContainer');
-        
-        container.classList.add('scale-95', 'opacity-0');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }, 200);
-    }
+            // Animations
+            setTimeout(() => {
+                container.classList.remove('scale-95', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
+                document.getElementById('errorProgressBar').style.width = `${percent}%`;
+            }, 10);
+        }
 
-    function renderHolidays(dates) {
-        const list = document.getElementById('holidaysList');
-        if (!list) return;
-        list.innerHTML = dates.map(date => {
-            const [y, m, d] = date.split('-');
-            return `
+        function closeErrorModal() {
+            const modal = document.getElementById('errorModal');
+            const container = document.getElementById('errorModalContainer');
+
+            container.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function renderHolidays(dates) {
+            const list = document.getElementById('holidaysList');
+            if (!list) return;
+            list.innerHTML = dates.map(date => {
+                const [y, m, d] = date.split('-');
+                return `
                 <span class="bg-yellow-100 text-yellow-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                     ${d}/${m}
                     <button onclick="removeFeriado('${date}')" class="hover:text-red-600">×</button>
                 </span>
             `;
-        }).join('');
-    }
-
-    async function addFeriado() {
-        const input = document.getElementById('newHolidayDate');
-        const date = input.value;
-        if (!date) return;
-        
-        const resp = await fetch('{% url "add_feriado" %}', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fecha: date })
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            renderHolidays(data.feriados);
-            input.value = '';
-            showToast('Feriado añadido');
-        } else {
-            showToast(data.message || 'Error', 'error');
+            }).join('');
         }
-    }
 
-    async function removeFeriado(date) {
-        const resp = await fetch('{% url "remove_feriado" %}', {
-            method: 'POST',
-            headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fecha: date })
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            renderHolidays(data.feriados);
-            showToast('Feriado eliminado', 'info');
-        }
-    }
+        async function addFeriado() {
+            const input = document.getElementById('newHolidayDate');
+            const date = input.value;
+            if (!date) return;
 
-    async function resetSystem() {
-        showConfirmModal(
-            '⚠️ Reiniciar Sistema',
-            'ATENCIÓN: Esto borrará permanentemente todo el historial, configuraciones y usuarios. Esta acción no se puede deshacer.',
-            async () => {
-                try {
-                    const resp = await fetch('{% url "reset_database" %}', {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': CSRF_TOKEN }
-                    });
-                    if (resp.ok) {
-                        showToast('Sistema reiniciado. Recargando...', 'success');
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        showToast('Error al reiniciar', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    showToast('Error de conexión', 'error');
-                }
+            const resp = await fetch('{% url "add_feriado" %}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha: date })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                renderHolidays(data.feriados);
+                input.value = '';
+                showToast('Feriado añadido');
+            } else {
+                showToast(data.message || 'Error', 'error');
             }
-        );
-    }
-
-    function changeMonth(dir) {
-        currentMonth.setMonth(currentMonth.getMonth() + dir);
-        initCalendar();
-    }
-
-    function updateStats() {
-        const done = turnos.filter(t => t.estado === 'completado').length;
-        const pendingTotal = turnos.filter(t => t.estado !== 'completado').length;
-        
-        // Update all possible stat elements
-        const elements = {
-            'statDone': done,
-            'statDoneCount': done,
-            'statPendingCount': pendingTotal
-        };
-        
-        for (const [id, val] of Object.entries(elements)) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = val;
         }
-    }
 
-    window.onload = () => {
-        initCalendar();
-        updateStats();
-        renderPendingAssets();
-    };
-</script>
-{% endblock %}
+        async function removeFeriado(date) {
+            const resp = await fetch('{% url "remove_feriado" %}', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fecha: date })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                renderHolidays(data.feriados);
+                showToast('Feriado eliminado', 'info');
+            }
+        }
+
+        async function resetSystem() {
+            showConfirmModal(
+                '⚠️ Reiniciar Sistema',
+                'ATENCIÓN: Esto borrará permanentemente todo el historial, configuraciones y usuarios. Esta acción no se puede deshacer.',
+                async () => {
+                    try {
+                        const resp = await fetch('{% url "reset_database" %}', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': CSRF_TOKEN }
+                        });
+                        if (resp.ok) {
+                            showToast('Sistema reiniciado. Recargando...', 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showToast('Error al reiniciar', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showToast('Error de conexión', 'error');
+                    }
+                }
+            );
+        }
+
+        function changeMonth(dir) {
+            currentMonth.setMonth(currentMonth.getMonth() + dir);
+            initCalendar();
+        }
+
+        function updateStats() {
+            const done = turnos.filter(t => t.estado === 'completado').length;
+            const pendingTotal = turnos.filter(t => t.estado !== 'completado').length;
+
+            // Update all possible stat elements
+            const elements = {
+                'statDone': done,
+                'statDoneCount': done,
+                'statPendingCount': pendingTotal
+            };
+
+            for (const [id, val] of Object.entries(elements)) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            }
+        }
+
+        window.onload = () => {
+            initCalendar();
+            updateStats();
+            renderPendingAssets();
+        };
+    </script>
+    {% endblock %}

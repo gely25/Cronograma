@@ -64,6 +64,32 @@ def api_get_datos(request):
     }
     return JsonResponse(data)
 
+def get_day_shifts(request, date):
+    """
+    Endpoint para obtener todos los turnos de un día específico.
+    """
+    turnos = Turno.objects.filter(fecha=date).select_related('responsable').prefetch_related('responsable__equipos').all()
+    
+    turnos_data = []
+    for t in turnos:
+        turnos_data.append({
+            'id': t.id,
+            'responsable': t.responsable.nombre,
+            'fecha': t.fecha.strftime('%Y-%m-%d') if t.fecha else '',
+            'hora': t.hora.strftime('%H:%M') if t.hora else '',
+            'estado': t.estado,
+            'equipos': [{
+                'id': e.id,
+                'marca': e.marca,
+                'modelo': e.modelo,
+                'codigo': e.codigo,
+                'descripcion': e.descripcion,
+                'atendido': e.atendido
+            } for e in t.responsable.equipos.all()]
+        })
+    
+    return JsonResponse({'turnos': turnos_data, 'fecha': date})
+
 def ver_cronograma(request):
     config = ConfiguracionCronograma.objects.last()
     turnos = Turno.objects.select_related('responsable').prefetch_related('responsable__equipos').all()
@@ -116,12 +142,21 @@ def guardar_configuracion(request):
 
 @require_POST
 def generar_cronograma_view(request):
-    count, result = asignar_turnos_automatico()
-    if count > 0:
-        return JsonResponse({'status': 'ok', 'message': result})
-    else:
-        # result puede ser un string o un dict con detalles del error
-        return JsonResponse({'status': 'error', 'data': result if isinstance(result, dict) else {'message': result}}, status=400)
+    try:
+        count, result = asignar_turnos_automatico()
+        if count > 0:
+            return JsonResponse({'status': 'ok', 'message': result})
+        else:
+            # result puede ser un string o un dict con detalles del error
+            data = result if isinstance(result, dict) else {'message': result}
+            return JsonResponse({'status': 'error', 'data': data}, status=400)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error', 
+            'data': {'message': f'Error interno del servidor: {str(e)}'}
+        }, status=500)
 
 @require_POST
 def actualizar_turno(request, turno_id):
@@ -259,7 +294,6 @@ def exportar_excel(request):
     
     success_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid") # Verde claro
     success_font = Font(color="006100", bold=True)
-    
     process_fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid") # Amarillo claro
     process_font = Font(color="9C5700", bold=True)
     
