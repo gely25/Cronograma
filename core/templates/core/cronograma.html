@@ -449,7 +449,61 @@
             card.classList.add('dragging');
         };
         card.ondragend = () => card.classList.remove('dragging');
+        
+        // Soporte para intercambio (Swap)
+        card.ondragover = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            card.classList.add('bg-blue-100', 'border-blue-400', 'scale-105');
+        };
+        card.ondragleave = () => {
+            card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
+        };
+        card.ondrop = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
+            const draggedId = e.dataTransfer.getData('text/plain');
+            if (draggedId != t.id) {
+                handleSwap(draggedId, t.id);
+            }
+        };
+
         return card;
+    }
+
+    function handleSwap(idA, idB) {
+        const turnoA = turnos.find(t => t.id == idA);
+        const turnoB = turnos.find(t => t.id == idB);
+        
+        showConfirmModal(
+            'Intercambiar Turnos',
+            `¿Estás seguro de intercambiar los turnos de ${turnoA.responsable} y ${turnoB.responsable}?`,
+            () => realizarIntercambio(idA, idB)
+        );
+    }
+
+    async function realizarIntercambio(idA, idB) {
+        try {
+            const resp = await fetch('/turno/intercambiar/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ turno_a_id: idA, turno_b_id: idB })
+            });
+            
+            const data = await resp.json();
+            if (resp.ok) {
+                showToast(data.message);
+                await refreshAllData();
+            } else {
+                showToast(data.message || 'Error al intercambiar', 'error');
+            }
+        } catch (err) {
+            showToast('Error de conexión', 'error');
+        }
     }
 
     async function handleDrop(e) {

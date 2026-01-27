@@ -139,6 +139,36 @@ def actualizar_turno(request, turno_id):
     return JsonResponse({'status': 'ok'})
 
 @require_POST
+def intercambiar_turnos(request):
+    """
+    Intercambia la fecha y hora de dos turnos específicos.
+    """
+    try:
+        data = json.loads(request.body)
+        turno_a_id = data.get('turno_a_id')
+        turno_b_id = data.get('turno_b_id')
+        
+        if not turno_a_id or not turno_b_id:
+            return JsonResponse({'status': 'error', 'message': 'IDs de turno no proporcionados'}, status=400)
+            
+        from django.db import transaction
+        with transaction.atomic():
+            turno_a = get_object_or_404(Turno, id=turno_a_id)
+            turno_b = get_object_or_404(Turno, id=turno_b_id)
+            
+            # Intercambiar fecha y hora
+            fecha_temp, hora_temp = turno_a.fecha, turno_a.hora
+            turno_a.fecha, turno_a.hora = turno_b.fecha, turno_b.hora
+            turno_b.fecha, turno_b.hora = fecha_temp, hora_temp
+            
+            turno_a.save()
+            turno_b.save()
+            
+        return JsonResponse({'status': 'ok', 'message': 'Turnos intercambiados correctamente'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@require_POST
 def toggle_completado(request, turno_id):
     turno = get_object_or_404(Turno, id=turno_id)
     if turno.estado == 'completado':

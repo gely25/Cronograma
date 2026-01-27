@@ -8,6 +8,7 @@ urlpatterns = [
     path('config/guardar/', views.guardar_configuracion, name='guardar_configuracion'),
     path('cronograma/generar/', views.generar_cronograma_view, name='generar_cronograma'),
     path('turno/<int:turno_id>/actualizar/', views.actualizar_turno, name='actualizar_turno'),
+    path('turno/intercambiar/', views.intercambiar_turnos, name='intercambiar_turnos'),
     path('turno/<int:turno_id>/toggle/', views.toggle_completado, name='toggle_completado'),
     path('equipo/<int:equipo_id>/toggle-atendido/', views.toggle_equipo_atendido, name='toggle_equipo_atendido'),
     path('feriados/add/', views.add_feriado, name='add_feriado'),
