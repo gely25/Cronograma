@@ -76,43 +76,7 @@
         color: var(--yellow-text);
     }
 
-    /* Day detail panel */
-    .day-detail-panel {
-        position: fixed;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: 480px;
-        max-width: 90vw;
-        background: white;
-        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 60;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
 
-    .day-detail-panel.open {
-        transform: translateX(0);
-    }
-
-    .day-detail-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(2px);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: 59;
-        pointer-events: none;
-    }
-
-    .day-detail-overlay.visible {
-        opacity: 1;
-        pointer-events: all;
-    }
 
     /* Drag & Drop states */
     .calendar-day.drag-over {
@@ -166,195 +130,289 @@
 <!-- TOAST NOTIFICATIONS -->
 <div id="toastContainer" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
-<!-- SIDEBAR -->
-<div class="w-96 bg-gray-100 border-r border-gray-200 flex flex-col overflow-hidden">
-    <div class="p-6 bg-white border-b border-gray-200">
-        <h2 class="text-xl font-bold">TechScheduler</h2>
-        <p class="text-sm text-gray-500">Gestión de Cronogramas</p>
-    </div>
+<!-- MAIN LAYOUT CONTAINER -->
+<div class="flex h-screen overflow-hidden bg-gray-50/50">
 
-    <!-- Upload Section (Drag & Drop) -->
-    <div class="p-4 bg-white border-b border-gray-200">
-        <form action="{% url 'upload_excel' %}" method="POST" enctype="multipart/form-data" id="uploadForm"
-            class="relative border-2 border-dashed border-blue-200 rounded-xl p-4 transition-all hover:bg-blue-50/50 hover:border-blue-400 group"
-            ondragover="handleUploadDragOver(event)" ondragleave="handleUploadDragLeave(event)"
-            ondrop="handleUploadDrop(event)">
-            {% csrf_token %}
-            <input type="file" name="archivo" id="fileInput" class="hidden" onchange="submitUpload()">
-            <div class="text-center cursor-pointer" onclick="document.getElementById('fileInput').click()">
-                <div class="mb-2 group-hover:scale-110 transition-transform">
-                    <i data-lucide="file-up" class="w-8 h-8 mx-auto text-blue-400"></i>
-                </div>
-                <p id="uploadText" class="text-xs font-bold text-gray-600">Arraste su Excel aquí o haga clic</p>
-                <p id="fileName" class="text-[10px] text-blue-500 font-medium mt-1 truncate hidden"></p>
+    <!-- 1. LEFT SIDEBAR (Config & Tools) -->
+    <aside id="leftSidebar" class="w-80 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-30 relative">
+        <!-- Sidebar Header -->
+        <div class="p-6 border-b border-gray-100 flex justify-between items-start">
+            <div>
+                <h2 class="text-xl font-black tracking-tight text-gray-900">TechScheduler</h2>
+                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">Gestión de Cronogramas</p>
             </div>
-        </form>
-        <button onclick="resetSystem()"
-            class="w-full mt-3 py-1.5 border-2 border-red-50 text-red-400 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:border-red-100 transition-all flex items-center justify-center gap-2">
-            <i data-lucide="trash-2" class="w-3 h-3"></i> Reiniciar Todo
-        </button>
-    </div>
-
-
-
-    <!-- Config & Action Section -->
-    <div class="flex-1 overflow-y-auto bg-white flex flex-col min-h-0">
-        <!-- Header / Toggle -->
-        <div class="p-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                <i data-lucide="layout-panel-left" class="w-3 h-3"></i> Panel de Control
-            </h4>
-            <button id="toggleConfigBtn" onclick="toggleConfig()"
-                class="text-[9px] font-bold text-blue-600 hover:text-blue-800 uppercase flex items-center gap-1">
-                <i data-lucide="settings" class="w-3 h-3"></i> <span id="toggleText">
-                    {% if turnos.count > 0 %} Reconfigurar {% else %}Cerrar{% endif %}</span>
+            <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-gray-600">
+                <i data-lucide="chevrons-left" class="w-5 h-5"></i>
             </button>
         </div>
 
-        <!-- Setup Tools (Config + Holidays + Generate) -->
-        <div id="configContainer"
-            class="p-3 space-y-4 border-b border-gray-100 {% if turnos.count > 0 %}hidden{% endif %}">
-            <form id="configForm" class="space-y-2">
-                <div>
-                    <label class="text-[10px] font-bold text-gray-500 uppercase">Período</label>
-                    <div class="grid grid-cols-2 gap-2 mt-1">
-                        <input type="date" name="fecha_inicio"
-                            value="{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}"
-                            class="text-xs rounded border-gray-300 w-full p-1">
-                        <input type="date" name="fecha_fin"
-                            value="{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}"
-                            class="text-xs rounded border-gray-300 w-full p-1">
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar">
+            
+            <!-- Upload Section -->
+            <div class="p-4 border-b border-gray-100">
+                <form action="{% url 'upload_excel' %}" method="POST" enctype="multipart/form-data" id="uploadForm"
+                    class="relative border-2 border-dashed border-blue-100 rounded-xl p-6 transition-all hover:bg-blue-50/50 hover:border-blue-400 group text-center"
+                    ondragover="handleUploadDragOver(event)" ondragleave="handleUploadDragLeave(event)"
+                    ondrop="handleUploadDrop(event)">
+                    {% csrf_token %}
+                    <input type="file" name="archivo" id="fileInput" class="hidden" onchange="submitUpload()">
+                    <div class="cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                        <div class="mb-3 group-hover:scale-110 transition-transform inline-block p-3 rounded-full bg-blue-50 text-blue-500">
+                            <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                        </div>
+                        <p id="uploadText" class="text-xs font-bold text-gray-600">Subir archivo Excel</p>
+                        <p class="text-[10px] text-gray-400 mt-1">Arrastre o haga clic</p>
+                        <p id="fileName" class="text-[10px] text-blue-600 font-black mt-2 truncate hidden"></p>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-500 uppercase">Inicio</label>
-                        <input type="time" name="hora_inicio"
-                            value="{% if config %}{{ config.hora_inicio|time:'H:i' }}{% else %}08:00{% endif %}"
-                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-500 uppercase">Fin</label>
-                        <input type="time" name="hora_fin"
-                            value="{% if config %}{{ config.hora_fin|time:'H:i' }}{% else %}17:00{% endif %}"
-                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-500 uppercase">Turno (m)</label>
-                        <input type="number" name="duracion_turno"
-                            value="{% if config %}{{ config.duracion_turno }}{% else %}30{% endif %}"
-                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-500 uppercase">Almuerzo (m)</label>
-                        <input type="number" name="duracion_almuerzo"
-                            value="{% if config %}{{ config.duracion_almuerzo }}{% else %}60{% endif %}"
-                            class="text-xs rounded border-gray-300 w-full p-1 mt-1">
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <label class="text-[10px] font-bold text-gray-500 uppercase whitespace-nowrap">Ini.
-                        Almuerzo:</label>
-                    <input type="time" name="hora_almuerzo"
-                        value="{% if config %}{{ config.hora_almuerzo|time:'H:i' }}{% else %}12:00{% endif %}"
-                        class="text-xs rounded border-gray-300 p-1 flex-1">
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-gray-500 uppercase">Días no laborables</label>
-                    <select name="modo_exclusion" class="text-xs rounded border-gray-300 w-full p-1">
-                        <option value="none"
-                            {% if config and config.modo_exclusion == 'none' %}selected{% endif %}>
-                            No excluir fines de semana
-                        </option>
-
-                        <option value="sundays"
-                            {% if config and config.modo_exclusion == 'sundays' %}selected{% endif %}>
-                            Excluir solo Domingos
-                        </option>
-
-                        <option value="weekends"
-                            {% if not config or config.modo_exclusion == 'weekends' %}selected{% endif %}>
-                            Excluir Sábados y Domingos
-                        </option>
-                    </select>
-                </div>
-
-                <button type="button" onclick="guardarConfig()"
-                    class="w-full py-2 bg-gray-800 text-white rounded-lg font-bold text-[10px] hover:bg-black transition flex items-center justify-center gap-2">
-                    <i data-lucide="save" class="w-3 h-3"></i> GUARDAR CAMBIOS
-                </button>
-            </form>
-
-            <div class="pt-2 border-t border-gray-100">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">Feriados</label>
-                <div class="flex gap-1 mt-1">
-                    <input type="date" id="newHolidayDate" class="text-xs rounded border-gray-300 flex-1 p-1">
-                    <button onclick="addFeriado()"
-                        class="px-2 bg-gray-200 rounded font-bold hover:bg-gray-300 text-sm">+</button>
-                </div>
-                <div class="flex flex-wrap gap-1 mt-2" id="holidaysList">
-                    {% for f in feriados %}
-                    <span
-                        class="bg-yellow-100 text-yellow-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
-                        {{ f.fecha|date:"d/m" }}
-                        <button onclick="removeFeriado('{{ f.fecha|date:'Y-m-d' }}')"
-                            class="hover:text-red-600">×</button>
-                    </span>
-                    {% endfor %}
+                </form>
+                <div class="mt-3 flex justify-end">
+                    <button onclick="resetSystem()"
+                        class="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 flex items-center gap-1.5 py-2 px-3 hover:bg-red-50 rounded-lg transition-colors">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> Reiniciar
+                    </button>
                 </div>
             </div>
 
+            <!-- Configuration Section -->
+            <div class="p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="settings-2" class="w-3 h-3 text-gray-400"></i> Configuración
+                    </h3>
+                </div>
+                
+                <form id="configForm" class="space-y-4">
+                    <!-- Periodo -->
+                    <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase block mb-2">Período del Cronograma</span>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label for="fechaInicio" class="sr-only">Inicio</label>
+                                <input type="date" name="fecha_inicio" id="fechaInicio"
+                                    value="{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}"
+                                    class="w-full text-xs font-medium text-gray-700 bg-white border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0">
+                            </div>
+                            <div>
+                                <label for="fechaFin" class="sr-only">Fin</label>
+                                <input type="date" name="fecha_fin" id="fechaFin"
+                                    value="{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}"
+                                    class="w-full text-xs font-medium text-gray-700 bg-white border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Horario -->
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Inicio Jornada</label>
+                                <input type="time" name="hora_inicio" id="horaInicio"
+                                    value="{% if config %}{{ config.hora_inicio|time:'H:i' }}{% else %}08:00{% endif %}"
+                                    class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Fin Jornada</label>
+                                <input type="time" name="hora_fin" id="horaFin"
+                                    value="{% if config %}{{ config.hora_fin|time:'H:i' }}{% else %}17:00{% endif %}"
+                                    class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Duración Turno</label>
+                                <div class="relative">
+                                    <input type="number" name="duracion_turno" id="duracionTurno"
+                                        value="{% if config %}{{ config.duracion_turno }}{% else %}30{% endif %}"
+                                        class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg pr-8">
+                                    <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 font-bold">min</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Almuerzo</label>
+                                <div class="relative">
+                                    <input type="number" name="duracion_almuerzo" id="duracionAlmuerzo"
+                                        value="{% if config %}{{ config.duracion_almuerzo }}{% else %}60{% endif %}"
+                                        class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg pr-8">
+                                    <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 font-bold">min</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Inicio Almuerzo</label>
+                            <input type="time" name="hora_almuerzo" id="horaAlmuerzo"
+                                value="{% if config %}{{ config.hora_almuerzo|time:'H:i' }}{% else %}12:00{% endif %}"
+                                class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
+                        </div>
+                    </div>
+
+                    <!-- Exclusion -->
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Días Laborables</label>
+                        <select name="modo_exclusion" id="modoExclusion" class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
+                            <option value="none" {% if config and config.modo_exclusion == 'none' %}selected{% endif %}>Todos los días</option>
+                            <option value="sundays" {% if config and config.modo_exclusion == 'sundays' %}selected{% endif %}>Lun a Sáb (Excluir Dom)</option>
+                            <option value="weekends" {% if not config or config.modo_exclusion == 'weekends' %}selected{% endif %}>Lun a Vie (Excluir Fines)</option>
+                        </select>
+                    </div>
+
+                    <!-- Holidays -->
+                    <div class="bg-yellow-50/50 rounded-xl p-3 border border-yellow-100">
+                        <label class="text-[10px] font-bold text-yellow-600 uppercase block mb-2">Feriados</label>
+                        <div class="flex gap-2 mb-2">
+                            <input type="date" id="newHolidayDate" class="flex-1 text-xs rounded-lg border-gray-200" aria-label="Fecha feriado">
+                            <button type="button" onclick="addFeriado()" class="bg-yellow-400 text-yellow-900 rounded-lg px-3 font-bold hover:bg-yellow-500 transition">+</button>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5" id="holidaysList">
+                            {% for f in feriados %}
+                            <span class="bg-white border border-yellow-200 text-yellow-700 text-[10px] px-2 py-1 rounded-md font-bold flex items-center gap-1.5 shadow-sm">
+                                {{ f.fecha|date:"d/m" }}
+                                <button onclick="removeFeriado('{{ f.fecha|date:'Y-m-d' }}')" class="hover:text-red-500 transition">×</button>
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="guardarConfig()"
+                        class="w-full py-2 bg-gray-900 text-white rounded-lg font-bold text-xs hover:bg-black transition flex items-center justify-center gap-2 shadow-lg shadow-gray-200">
+                        <i data-lucide="save" class="w-3 h-3"></i> Guardar Configuración
+                    </button>
+                </form>
+            </div>
+
+            <!-- Pending Teams (Compact) -->
+            <div class="p-4 border-t border-gray-100">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-widest">Pendientes</h3>
+                    <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full" id="statPendingCountSidebar">0</span>
+                </div>
+                <div id="pendingAssetsPanelSidebar" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <!-- JS Rendered -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Regenerate Button (Stick to bottom) -->
+        <div class="p-4 border-t border-gray-100 bg-white">
             <button onclick="generarCronograma()"
-                class="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-xl font-black text-xs shadow-lg hover:shadow-xl hover:from-amber-500 hover:to-amber-600 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                <i data-lucide="zap" class="w-4 h-4 fill-current"></i> REGENERAR CRONOGRAMA
+                class="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-xl font-black text-xs shadow-lg shadow-amber-200 hover:shadow-xl hover:from-amber-500 hover:to-amber-600 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
+                <i data-lucide="zap" class="w-4 h-4 fill-current"></i> REGENERAR TODO
             </button>
         </div>
+    </aside>
 
-        <!-- Pending Items Section (Main Focus) -->
-        <div class="flex-1 flex flex-col min-h-0 bg-white">
-            <div class="p-3 border-b border-gray-50 flex justify-between items-center">
-                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Equipos Pendientes</label>
-                <div id="statsMini" class="flex gap-2 text-[10px] font-bold">
-                    <span class="text-blue-600"><span id="statPendingCount">0</span> pendientes</span>
-                    <span class="text-green-600"><span id="statDoneCount">0</span> listos</span>
+    <!-- 2. MAIN CALENDAR AREA -->
+    <main class="flex-1 flex flex-col min-w-0 bg-gray-50/50 relative">
+        <!-- Main Header -->
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shadow-sm z-20">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition" title="Toggle Sidebar">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <div>
+                    <h1 class="text-2xl font-black text-gray-900 tracking-tight">Calendario de Mantenimiento</h1>
+                    <div class="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                        <span>Planificación Dinámica</span>
+                        <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                        <span id="currentViewLabel">Vista Mensual</span>
+                    </div>
                 </div>
             </div>
-            <div id="pendingAssetsPanel" class="flex-1 overflow-y-auto px-2 py-2 space-y-2 bg-gray-50/30">
-                <!-- Rendered by JS -->
+
+            <div class="flex items-center gap-4">
+                <!-- View Selector -->
+                <div class="bg-gray-100 p-1 rounded-xl flex items-center">
+                    <button onclick="switchView('month')" id="btnViewMonth" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-gray-900 shadow-sm">
+                        Mensual
+                    </button>
+                    <button onclick="switchView('week')" id="btnViewWeek" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-900 transition-all">
+                        Semanal
+                    </button>
+                    <button onclick="switchView('day')" id="btnViewDay" class="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-900 transition-all">
+                        Diaria
+                    </button>
+                </div>
+
+                <!-- Navigation -->
+                <div class="flex items-center bg-white border border-gray-200 rounded-xl shadow-sm">
+                    <button onclick="navigateCalendar(-1)" class="p-2 hover:bg-gray-50 text-gray-600 border-r border-gray-100">
+                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    </button>
+                    <span id="calendarDateDisplay" class="px-4 py-2 text-sm font-black text-gray-900 min-w-[140px] text-center uppercase">
+                        -
+                    </span>
+                    <button onclick="navigateCalendar(1)" class="p-2 hover:bg-gray-50 text-gray-600 border-l border-gray-100">
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <a href="{% url 'exportar_excel' %}"
+                    class="ml-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl transition-all flex items-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i> Exportar
+                </a>
+            </div>
+        </header>
+
+        <!-- Views Container -->
+        <div class="flex-1 overflow-auto p-6 relative" id="mainViewsContainer">
+            <!-- Monthly View -->
+            <div id="monthView" class="h-full flex flex-col">
+                <div class="grid grid-cols-7 gap-4 mb-4">
+                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Dom</div>
+                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Lun</div>
+                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Mar</div>
+                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Mié</div>
+                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Jue</div>
+                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Vie</div>
+                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Sáb</div>
+                </div>
+                <div id="calendarContainer" class="flex-1">
+                    <!-- JS Rendered Month Grid -->
+                </div>
+            </div>
+
+            <!-- Weekly View (Hidden by default) -->
+            <div id="weekView" class="hidden h-full">
+                <div class="flex h-full flex-col">
+                    <!-- Week Header -->
+                    <div class="grid grid-cols-8 gap-0 border-b border-gray-200 bg-white sticky top-0 z-10" id="weekHeader">
+                        <!-- Time Column Header -->
+                        <div class="p-3 border-r border-gray-100"></div>
+                        <!-- Days Headers JS Rendered -->
+                    </div>
+                    <!-- Week Grid -->
+                    <div class="flex-1 overflow-y-auto relative bg-white" id="weekGrid">
+                        <!-- JS Rendered -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily View (Hidden by default) -->
+            <div id="dayView" class="hidden h-full max-w-4xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                        <div>
+                            <h3 class="text-lg font-black text-gray-900" id="dayViewTitle">-</h3>
+                            <p class="text-xs text-gray-500 font-bold">Detalle de turnos</p>
+                        </div>
+                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black" id="dayViewCount">0 Turnos</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-6 space-y-3" id="dayListContainer">
+                        <!-- JS Rendered -->
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 
-<!-- MAIN PANEL -->
-<div class="flex-1 flex flex-col min-w-0">
-    <div class="px-8 py-6 bg-white border-b border-gray-200 flex justify-between items-center">
-        <div>
-            <h1 class="text-2xl font-bold">Calendario de Mantenimiento</h1>
-            <p class="text-sm text-gray-500">Planificación Mensual Dinámica</p>
-        </div>
-        <div class="flex gap-3">
-            <a href="{% url 'exportar_excel' %}"
-                class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-bold shadow hover:bg-black transition flex items-center gap-2">
-                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Exportar Excel
-            </a>
-        </div>
-    </div>
 
-    <div class="flex-1 overflow-auto p-8" id="calendarContainer">
-        <!-- Rendered by JS -->
-    </div>
-</div>
+
 
 <!-- CONFIRMATION MODAL -->
 <div id="confirmationModal"
-    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[10010] backdrop-blur-sm transition-opacity duration-300 opacity-0">
     <div id="confirmModalContent"
         class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-all duration-300 p-6">
         <div class="text-center">
@@ -374,10 +432,11 @@
                 Confirmar
             </button>
         </div>
+        </div>
     </div>
 
     <!-- DETAIL MODAL -->
-    <div id="detailModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div id="detailModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[10000]">
         <div class="bg-white rounded-xl max-w-lg w-full p-8 relative max-h-[80vh] overflow-y-auto">
             <button onclick="document.getElementById('detailModal').classList.add('hidden')"
                 class="absolute top-4 right-4 text-2xl text-gray-400">×</button>
@@ -385,28 +444,32 @@
         </div>
     </div>
 
-    <!-- DAY DETAIL PANEL -->
-    <div id="dayDetailOverlay" class="day-detail-overlay" onclick="closeDayDetailPanel()"></div>
-    <div id="dayDetailPanel" class="day-detail-panel">
-        <!-- Panel Header -->
+    <!-- DAY DETAIL MODAL -->
+    <div id="dayDetailOverlay" 
+         style="display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 9998; backdrop-filter: blur(2px);"
+         onclick="closeDayDetailPanel()"></div>
+    
+    <div id="dayDetailPanel"
+         style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; max-width: 95vw; max-height: 90vh; background-color: white; z-index: 9999; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border-radius: 16px; flex-direction: column; overflow: hidden;">
+        <!-- Modal Header -->
         <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 flex justify-between items-center">
             <div>
                 <h3 class="text-2xl font-black" id="dayDetailDate">-</h3>
                 <p class="text-sm opacity-90 font-medium" id="dayDetailSubtitle">Turnos del día</p>
             </div>
-            <button onclick="closeDayDetailPanel()" class="hover:bg-white/20 rounded-lg p-2 transition-colors">
+            <button onclick="event.stopPropagation(); closeDayDetailPanel()" class="hover:bg-white/20 rounded-lg p-2 transition-colors">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
 
-        <!-- Panel Content -->
+        <!-- Modal Content -->
         <div class="flex-1 overflow-y-auto p-6 bg-gray-50" id="dayDetailContent">
             <p class="text-center text-gray-400 italic text-sm py-8">Cargando...</p>
         </div>
     </div>
 
     <!-- ERROR MODAL (Insufficient Slots) -->
-    <div id="errorModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[60] backdrop-blur-sm">
+    <div id="errorModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[10020] backdrop-blur-sm">
         <div class="bg-white rounded-2xl max-w-lg w-full p-0 overflow-hidden shadow-2xl transform transition-all scale-95 opacity-0"
             id="errorModalContainer">
             <div class="bg-red-50 p-6 flex items-center gap-4 border-b border-red-100">
@@ -467,6 +530,7 @@
         </div>
     </div>
 
+    </div>
     {% endblock %}
 
     {% block extra_js %}
@@ -505,11 +569,32 @@
     let config = {
         inicio: "{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}",
         fin: "{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}",
+        modo_exclusion: "{{ config.modo_exclusion|default:'weekends' }}",
     };
 
         let currentMonth = new Date();
+        const togglingIds = new Set(); // Multi-click prevention
         if (config.inicio) {
             currentMonth = new Date(config.inicio + 'T00:00:00');
+        }
+
+        // --- GLOBAL HELPERS ---
+        function getStatusBadgeHTML(estado) {
+            let classes = "px-2 py-0.5 rounded-full text-[10px] font-black uppercase ";
+            let label = estado;
+
+            if (estado === 'completado') {
+                classes += "bg-green-100 text-green-700";
+                label = "Completado";
+            } else if (estado === 'en_proceso') {
+                classes += "bg-yellow-100 text-yellow-700";
+                label = "En Proceso";
+            } else {
+                classes += "bg-blue-100 text-blue-700";
+                label = "Pendiente";
+            }
+
+            return `<span class="${classes}">${label}</span>`;
         }
 
         function initCalendar() {
@@ -567,21 +652,25 @@
 
                 // Click handler to open day detail panel
                 if (!isWeekend && !isHoliday) {
-                    cell.onclick = () => {
+                    cell.onclick = (e) => {
+                        e.stopPropagation();
                         console.log('Click on day:', dateStr);
                         openDayDetailPanel(dateStr);
                     };
                     cell.style.cursor = 'pointer';
                 }
 
-                // Determine badge status
+                // Determine badge status based on overall day progress
                 let badgeClass = 'shift-count-badge';
                 if (turnosCount > 0) {
-                    const hasCompleted = dayTurnos.some(t => t.estado === 'completado');
-                    const hasInProgress = dayTurnos.some(t => t.estado === 'en_proceso');
+                    const allCompleted = dayTurnos.every(t => t.estado === 'completado');
+                    const anyStarted = dayTurnos.some(t => t.estado !== 'asignado');
 
-                    if (hasCompleted) badgeClass += ' has-completed';
-                    else if (hasInProgress) badgeClass += ' has-in-progress';
+                    if (allCompleted) {
+                        badgeClass += ' has-completed';
+                    } else if (anyStarted) {
+                        badgeClass += ' has-in-progress';
+                    }
                 }
 
                 cell.innerHTML = `
@@ -617,6 +706,7 @@
             }
 
             container.appendChild(grid);
+            lucide.createIcons();
         }
 
         function getDeviceIcon(equipos) {
@@ -691,9 +781,27 @@
             return card;
         }
 
+        function isDayExcluded(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            const day = date.getDay(); // 0 Sun, 6 Sat
+            
+            if (config.modo_exclusion === 'weekends' && (day === 0 || day === 6)) return true;
+            if (config.modo_exclusion === 'sundays' && day === 0) return true;
+            return false;
+        }
+
         function handleSwap(idA, idB) {
             const turnoA = turnos.find(t => t.id == idA);
             const turnoB = turnos.find(t => t.id == idB);
+
+            // Validation for excluded days
+            if (isDayExcluded(turnoB.fecha)) {
+                showToast(`No puedes mover un turno al ${new Date(turnoB.fecha + 'T00:00:00').toLocaleDateString('es-ES', {weekday: 'long'})} (Día excluido)`, 'error');
+                return;
+            }
+
+            // Allow moving FROM excluded day (to fix mistakes), but check Target.
+            // If swapping, both swap positions might matter, but usually dragging A to B means we want A to be on B's slot.
 
             showConfirmModal(
                 'Intercambiar Turnos',
@@ -749,77 +857,102 @@
             }
         }
 
-        // Day Detail Panel Functions
+        // --- DAY DETAIL PANEL LOGIC ---
         async function openDayDetailPanel(dateStr) {
+            console.trace('openDayDetailPanel called for:', dateStr);
             try {
-                console.log('Opening details for:', dateStr);
                 const panel = document.getElementById('dayDetailPanel');
                 const overlay = document.getElementById('dayDetailOverlay');
                 const content = document.getElementById('dayDetailContent');
-                const dateTitle = document.getElementById('dayDetailDate');
+                const titleEl = document.getElementById('dayDetailDate'); // Corrected ID
 
-                if (!panel || !overlay || !content || !dateTitle) {
-                    console.error('Missing panel elements', { panel, overlay, content, dateTitle });
-                    return;
-                }
-
-                // Format date for display
-                // Use explicit splitting to avoid timezone issues with Date constructor
+                if (!panel || !overlay || !content) return;
+                content.dataset.currentDate = dateStr; // Store for refreshes
                 const [y, m, d] = dateStr.split('-').map(Number);
-                const date = new Date(y, m - 1, d); // Month is 0-indexed
+                const date = new Date(y, m - 1, d);
+                const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+                
+                if (titleEl) titleEl.textContent = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
-                const formattedDate = date.toLocaleDateString('es-ES', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                dateTitle.textContent = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+                // Show panel
+                overlay.style.display = 'block';
+                panel.style.display = 'flex';
 
-                // Show loading state
-                content.innerHTML = '<p class="text-center text-gray-400 italic text-sm py-8">Cargando turnos...</p>';
-
-                // Open panel
-                overlay.classList.add('visible');
-                panel.classList.add('open');
-
-                // Get shifts for this day
+                // Prevent instant close if overlay pops up under cursor
+                overlay.style.pointerEvents = 'none';
+                setTimeout(() => { overlay.style.pointerEvents = 'auto'; }, 300);
+                
+                // Render content
                 const dayTurnos = turnos.filter(t => t.fecha === dateStr);
-                console.log(`Found ${dayTurnos.length} turns for ${dateStr}`);
-
+                
                 if (dayTurnos.length === 0) {
                     content.innerHTML = `
-                <div class="text-center py-12">
-                    <i data-lucide="calendar-x" class="w-16 h-16 mx-auto text-gray-300 mb-4"></i>
-                    <p class="text-gray-500 font-medium">No hay turnos asignados para este día</p>
-                </div>
-            `;
-                    lucide.createIcons();
-                    return;
+                        <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                            <i data-lucide="calendar-x" class="w-16 h-16 mb-4 opacity-20"></i>
+                            <p class="font-bold">No hay turnos asignados</p>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = '<div class="space-y-3"></div>';
+                    const list = content.querySelector('div');
+                    
+                    dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
+
+                    dayTurnos.forEach(t => {
+                        const card = document.createElement('div');
+                        card.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-all";
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="font-black text-gray-900">${t.hora}</span>
+                                ${getStatusBadgeHTML(t.estado)}
+                            </div>
+                            <h4 class="font-bold text-gray-800 mb-1">${t.responsable}</h4>
+                            <div class="text-xs text-gray-500 mb-3 flex items-center gap-2">
+                                <i data-lucide="monitor" class="w-3 h-3"></i> ${t.equipos.length} Equipos
+                            </div>
+                            <div class="flex gap-2">
+                                ${t.equipos.length > 1 ? `
+                                <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="flex-1 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition">
+                                    <i data-lucide="list-checks" class="w-3 h-3 inline"></i> Ver Equipos
+                                </button>
+                                ` : `
+                                <button onclick="event.stopPropagation(); event.preventDefault(); toggleCompletado(${t.id}, event)" class="flex-1 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-bold transition">
+                                    ${t.estado === 'completado' ? 'Reabrir' : 'Completar'}
+                                </button>
+                                <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition" title="Ver detalles">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                </button>
+                                `}
+                            </div>
+                        `;
+                        list.appendChild(card);
+                    });
                 }
-
-                // Render shifts
-                content.innerHTML = '<div class="space-y-3"></div>';
-                const container = content.querySelector('div');
-
-                dayTurnos.forEach(t => {
-                    const card = createShiftCardForPanel(t);
-                    container.appendChild(card);
-                });
-
                 lucide.createIcons();
+
             } catch (err) {
-                console.error('Error opening day detail panel:', err);
-                showToast('Error al abrir detalles del día', 'error');
+                console.error('Error opening panel:', err);
+                showToast('Error al abrir panel', 'error');
             }
         }
 
         function closeDayDetailPanel() {
+            console.trace('closeDayDetailPanel called');
             const panel = document.getElementById('dayDetailPanel');
             const overlay = document.getElementById('dayDetailOverlay');
 
-            panel.classList.remove('open');
-            overlay.classList.remove('visible');
+            if (panel) {
+                panel.style.display = 'none';
+                console.log('Panel hidden');
+            } else {
+                console.error('Panel element not found!');
+            }
+            if (overlay) {
+                overlay.style.display = 'none';
+                console.log('Overlay hidden');
+            } else {
+                console.error('Overlay element not found!');
+            }
         }
 
         function createShiftCardForPanel(t) {
@@ -920,7 +1053,7 @@
 
                 // If panel is open, refresh it with the new date's shifts
                 const panel = document.getElementById('dayDetailPanel');
-                if (panel.classList.contains('open')) {
+                if (panel.style.display !== 'none' && panel.style.display !== '') {
                     openDayDetailPanel(newDate);
                 }
             } else {
@@ -929,54 +1062,159 @@
         }
 
         async function toggleCompletado(id, e) {
-            e.stopPropagation();
-            const t = turnos.find(x => x.id == id);
-
-            // Si tiene más de un equipo y se intenta marcar como listo (estado no es completado aún)
-            // abrimos los detalles para asegurar el marcado individual correcto.
-            if (t.equipos.length > 1 && t.estado !== 'completado') {
-                showDetails(id);
-                showToast('Múltiples equipos detectados: verifique individualmente', 'info');
+            if (e) e.stopPropagation();
+            id = Number(id);
+            
+            if (togglingIds.has(id)) {
+                console.log('Debounce: Ignoring click for ID', id);
                 return;
             }
 
-            const resp = await fetch(`/turno/${id}/toggle/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN }
-            });
-            if (resp.ok) {
-                const data = await resp.json();
+            console.log('toggleCompletado (Optimistic) for ID:', id);
+            
+            // Find ALL instances of this ID (to handle potential duplicates from Django)
+            const targetTurnos = turnos.filter(x => x.id === id);
+            if (targetTurnos.length === 0) return;
 
-                // Sincronizar estado del turno
-                t.estado = data.nuevo_estado;
+            // Save old state for rollback
+            const oldEstado = targetTurnos[0].estado;
+            const nuevoEstado = (oldEstado === 'completado') ? 'asignado' : 'completado';
 
-                // Sincronizar estado de los equipos locales si el backend los envió
-                if (data.equipos) {
-                    data.equipos.forEach(eqResp => {
-                        const eqLocal = t.equipos.find(e => e.id == eqResp.id);
-                        if (eqLocal) eqLocal.atendido = eqResp.atendido;
+            // Optimistic update locally
+            targetTurnos.forEach(t => t.estado = nuevoEstado);
+            
+            // Immediate UI Refresh
+            console.log('Optimistic UI Refresh');
+            updateUIOnly(); 
+
+            try {
+                togglingIds.add(id);
+                const resp = await fetch(`/turno/${id}/toggle/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN }
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    // Final sync with backend reality
+                    targetTurnos.forEach(t => {
+                        t.estado = data.nuevo_estado;
+                        if (data.equipos) {
+                            data.equipos.forEach(eqResp => {
+                                const eqLocal = t.equipos.find(e => e.id == eqResp.id);
+                                if (eqLocal) eqLocal.atendido = eqResp.atendido;
+                            });
+                        }
                     });
+                    updateUIOnly();
+                } else {
+                    // Rollback
+                    targetTurnos.forEach(t => t.estado = oldEstado);
+                    updateUIOnly();
+                    showToast('Error en servidor', 'error');
                 }
-
-                // Actualizar TODO para que el panel de pendientes también se refresque
-                initCalendar();
-                renderPendingAssets();
-                updateStats();
-
-                // Si el modal está abierto para este turno, refrescarlo
-                const modal = document.getElementById('detailModal');
-                if (modal && !modal.classList.contains('hidden')) {
-                    showDetails(id);
-                }
+            } catch (err) {
+                // Rollback
+                targetTurnos.forEach(t => t.estado = oldEstado);
+                updateUIOnly();
+                showToast('Error de conexión', 'error');
+            } finally {
+                setTimeout(() => togglingIds.delete(id), 1000);
             }
         }
 
+        // Helper to refresh all UI components without full data reload
+        function updateUIOnly() {
+            initCalendar();
+            renderPendingAssets();
+            updateStats();
+            if (currentView === 'week') renderWeekView();
+            if (currentView === 'day') renderDayView();
+            
+            // Update day detail panel if open for the date of the changed turno
+            const content = document.getElementById('dayDetailContent');
+            const panel = document.getElementById('dayDetailPanel');
+            if (panel && panel.style.display !== 'none' && content.dataset.currentDate) {
+                // Refresh content from local data
+                const dateStr = content.dataset.currentDate;
+                const dayTurnos = turnos.filter(t => t.fecha === dateStr);
+                
+                // We reuse the rendering logic from openDayDetailPanel but localized here
+                // To keep it simple, we could re-call openDayDetailPanel(dateStr)
+                // but let's avoid a recursive loop if openDayDetailPanel ever calls updateUIOnly
+                renderDayDetailContentDirect(dateStr);
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Extracted rendering logic to allow refreshes without re-triggering open/close logic
+        function renderDayDetailContentDirect(dateStr) {
+            const content = document.getElementById('dayDetailContent');
+            const dayTurnos = turnos.filter(t => t.fecha === dateStr);
+            
+            if (dayTurnos.length === 0) {
+                content.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                        <i data-lucide="calendar-x" class="w-16 h-16 mb-4 opacity-20"></i>
+                        <p class="font-bold">No hay turnos asignados</p>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = '<div class="space-y-3"></div>';
+                const list = content.querySelector('div');
+                dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
+
+                dayTurnos.forEach(t => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-all";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="font-black text-gray-900">${t.hora}</span>
+                            ${getStatusBadgeHTML(t.estado)}
+                        </div>
+                        <h4 class="font-bold text-gray-800 mb-1">${t.responsable}</h4>
+                        <div class="text-xs text-gray-500 mb-3 flex items-center gap-2">
+                            <i data-lucide="monitor" class="w-3 h-3"></i> ${t.equipos.length} Equipos
+                        </div>
+                        <div class="flex gap-2">
+                            ${t.equipos.length > 1 ? `
+                            <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="flex-1 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition">
+                                <i data-lucide="list-checks" class="w-3 h-3 inline"></i> Ver Equipos
+                            </button>
+                            ` : `
+                            <button onclick="event.stopPropagation(); event.preventDefault(); toggleCompletado(${t.id}, event)" class="flex-1 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-bold transition">
+                                ${t.estado === 'completado' ? 'Reabrir' : 'Completar'}
+                            </button>
+                            <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition" title="Ver detalles">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                            `}
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+            }
+            lucide.createIcons();
+        }
+
         function showDetails(id, e) {
+            console.log('showDetails called for ID:', id);
             if (e) e.stopPropagation();
             const t = turnos.find(x => x.id == id);
+            if (!t) {
+                console.error('Turno not found for details:', id);
+                return;
+            }
             const modal = document.getElementById('detailModal');
             const content = document.getElementById('modalContent');
 
+            if (!modal || !content) {
+                console.error('Detail modal elements not found');
+                return;
+            }
+
+            console.log('Opening modal with content for:', t.responsable);
             content.innerHTML = `
             <h3 class="text-2xl font-bold mb-4">${t.responsable}</h3>
             <div class="grid grid-cols-2 gap-4 mb-6">
@@ -995,50 +1233,65 @@
                     <div class="p-3 border-l-4 ${eq.atendido ? 'border-green-500 bg-green-50/30' : 'border-blue-500 bg-blue-50/30'} flex justify-between items-center transition-all">
                         <div class="flex-1">
                             <p class="font-bold text-sm">${eq.marca} ${eq.modelo}</p>
-                            <p class="text-[10px] text-gray-500">ID: ${eq.codigo || 'S/N'}</p>
-                            <p class="text-[10px] italic text-gray-400">${eq.descripcion || ''}</p>
+                            <p class="text-[10px] text-gray-400 font-medium">ID: ${eq.codigo || 'S/N'}</p>
+                            <p class="text-[10px] italic text-gray-500 mt-0.5">${eq.descripcion || ''}</p>
                         </div>
-                        <button onclick="toggleEquipo(${eq.id}, ${t.id})" class="p-2 rounded-lg hover:bg-white transition shadow-sm active:scale-95 flex items-center gap-1.5 border border-transparent hover:border-gray-100">
+                        <button onclick="event.stopPropagation(); event.preventDefault(); toggleEquipo(${eq.id}, ${t.id}, event)" class="p-2 rounded-lg hover:bg-white transition shadow-sm active:scale-95 flex items-center gap-1.5 border border-transparent hover:border-gray-100">
                             <i data-lucide="${eq.atendido ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${eq.atendido ? 'text-green-600' : 'text-blue-600'}"></i>
                             <span class="text-[10px] font-black uppercase ${eq.atendido ? 'text-green-700' : 'text-blue-700'}">${eq.atendido ? 'LISTO' : 'PENDIENTE'}</span>
                         </button>
                     </div>
                 `).join('')}
             </div>
-        `;
+            `;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
-        async function toggleEquipo(equipoId, turnoId) {
-            const resp = await fetch(`/equipo/${equipoId}/toggle-atendido/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN }
-            });
+        async function toggleEquipo(equipoId, turnoId, e) {
+            if (e) e.stopPropagation();
+            equipoId = Number(equipoId);
+            turnoId = Number(turnoId);
 
-            if (resp.ok) {
-                const data = await resp.json();
-                // Update local data
-                const turno = turnos.find(t => t.id == turnoId);
-                const equipo = turno.equipos.find(e => e.id == equipoId);
+            const turno = turnos.find(t => t.id === turnoId);
+            if (!turno) return;
+            const equipo = turno.equipos.find(e => e.id === equipoId);
+            if (!equipo) return;
 
-                equipo.atendido = data.atendido;
+            // Optimistic update
+            const oldAtendido = equipo.atendido;
+            equipo.atendido = !oldAtendido;
+            updateUIOnly();
+            
+            // Update the modal content immediately with optimistic state
+            showDetails(turnoId);
 
-                // Sincronizar estado del turno si el backend lo envió
-                if (data.turno_estado) {
-                    turno.estado = data.turno_estado;
-                }
+            try {
+                const resp = await fetch(`/equipo/${equipoId}/toggle-atendido/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': CSRF_TOKEN }
+                });
 
-                // Re-render UI components
-                initCalendar();
-                renderPendingAssets();
-                updateStats();
-
-                // Only update modal if it's currently showing THIS turno
-                const modal = document.getElementById('detailModal');
-                if (modal && !modal.classList.contains('hidden')) {
+                if (resp.ok) {
+                    const data = await resp.json();
+                    equipo.atendido = data.atendido;
+                    if (data.turno_estado) {
+                        turno.estado = data.turno_estado;
+                    }
+                    updateUIOnly();
+                    // Refresh modal with server-confirmed state
                     showDetails(turnoId);
+                } else {
+                    equipo.atendido = oldAtendido;
+                    updateUIOnly();
+                    showDetails(turnoId);
+                    showToast('Error en servidor', 'error');
                 }
+            } catch (err) {
+                equipo.atendido = oldAtendido;
+                updateUIOnly();
+                showDetails(turnoId);
+                showToast('Error de conexión', 'error');
             }
         }
 
@@ -1173,9 +1426,9 @@
                     if (resp.ok) {
                         showToast(data.message || 'Archivo cargado con éxito');
                         await refreshAllData();
-                        // Abrir panel de configuración automáticamente para el flujo solicitado
-                        if (containerId = document.getElementById('configContainer').classList.contains('hidden')) {
-                            toggleConfig();
+                        // Sidebar is always visible now, no need to toggle
+                        if (data.message) {
+                           console.log('Upload success');
                         }
                     } else {
                         showToast(data.message || 'Error al cargar archivo', 'error');
@@ -1204,7 +1457,7 @@
                 }
 
                 // Refrescar UI
-                initCalendar();
+                updateCalendarView();
                 updateStats();
                 renderPendingAssets();
             } catch (err) {
@@ -1258,7 +1511,7 @@
             }, 3000);
         }
 
-        async function guardarConfig() {
+        async function guardarConfig(silent = false) {
             const formData = new FormData(document.getElementById('configForm'));
             try {
                 const resp = await fetch('{% url "guardar_configuracion" %}', {
@@ -1268,18 +1521,19 @@
                 });
                 const data = await resp.json();
                 if (resp.ok) {
-                    showToast(data.message || 'Configuración guardada');
-                    // Mantener el panel abierto para un mejor flujo de trabajo
+                    if (!silent) showToast(data.message || 'Configuración guardada');
+                    return true;
                 } else {
                     showToast('Error al guardar la configuración', 'error');
+                    return false;
                 }
             } catch (error) {
                 console.error('Error:', error);
                 showToast('Error de conexión', 'error');
+                return false;
             }
         }
 
-        // --- CONFIRMATION MODAL HELPER ---
         function showConfirmModal(title, message, onConfirm) {
             const modal = document.getElementById('confirmationModal');
             const container = document.getElementById('confirmModalContent');
@@ -1290,7 +1544,7 @@
             titleEl.textContent = title;
             msgEl.textContent = message;
 
-            // Remove old listeners to prevent multiple firings
+            // Remove old listeners to prevent multiple firings by cloning
             const newBtn = confirmBtn.cloneNode(true);
             confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
 
@@ -1326,9 +1580,14 @@
         async function generarCronograma() {
             showConfirmModal(
                 'Confirmar Generación',
-                'Esto redistribuirá todos los turnos pendientes basándose en la configuración actual. ¿Deseas continuar?',
+                'Esto guardará la configuración actual y redistribuirá todos los turnos. ¿Deseas continuar?',
                 async () => {
                     try {
+                        // 1. Save Config First
+                        const saved = await guardarConfig(true); // silent save
+                        if (!saved) return;
+
+                        // 2. Generate
                         const resp = await fetch('{% url "generar_cronograma" %}', {
                             method: 'POST',
                             headers: { 'X-CSRFToken': CSRF_TOKEN }
@@ -1338,9 +1597,6 @@
                         if (resp.ok) {
                             showToast(result.message || 'Cronograma generado correctamente');
                             await refreshAllData();
-                            if (!document.getElementById('configContainer').classList.contains('hidden')) {
-                                toggleConfig();
-                            }
                         } else {
                             if (result.data && result.data.error_type === 'insufficient_slots') {
                                 showErrorModal(result.data);
@@ -1488,6 +1744,251 @@
                 const el = document.getElementById(id);
                 if (el) el.textContent = val;
             }
+        }
+
+        // --- LAYOUT & VIEWS LOGIC ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('leftSidebar');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full', 'absolute', 'h-full', 'shadow-2xl');
+                sidebar.classList.add('relative');
+            } else {
+                sidebar.classList.add('-translate-x-full', 'absolute', 'h-full', 'shadow-2xl');
+                sidebar.classList.remove('relative');
+            }
+        }
+
+        let currentView = 'month'; // 'month', 'week', 'day'
+
+        function switchView(view) {
+            currentView = view;
+            
+            // Buttons state
+            ['month', 'week', 'day'].forEach(v => {
+                const btn = document.getElementById(`btnView${v.charAt(0).toUpperCase() + v.slice(1)}`);
+                if (v === view) {
+                    btn.classList.remove('text-gray-500', 'bg-transparent');
+                    btn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+                } else {
+                    btn.classList.add('text-gray-500', 'bg-transparent');
+                    btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+                }
+            });
+
+            // Containers visibility
+            document.getElementById('monthView').classList.add('hidden');
+            document.getElementById('weekView').classList.add('hidden');
+            document.getElementById('dayView').classList.add('hidden');
+            
+            document.getElementById(`${view}View`).classList.remove('hidden');
+
+            // Header text
+            const labels = { 'month': 'Vista Mensual', 'week': 'Vista Semanal', 'day': 'Vista Diaria' };
+            document.getElementById('currentViewLabel').textContent = labels[view];
+
+            // Render
+            updateCalendarView();
+        }
+
+        function updateCalendarView() {
+            // Update Date Display
+            const dateDisplay = document.getElementById('calendarDateDisplay');
+            
+            if (currentView === 'month') {
+                const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                dateDisplay.textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+                initCalendar(); // Existing render logic
+            } else if (currentView === 'week') {
+                renderWeekView();
+            } else if (currentView === 'day') {
+                renderDayView();
+            }
+        }
+
+        function navigateCalendar(dir) {
+            if (currentView === 'month') {
+                currentMonth.setMonth(currentMonth.getMonth() + dir);
+            } else if (currentView === 'week') {
+                currentMonth.setDate(currentMonth.getDate() + (dir * 7));
+            } else if (currentView === 'day') {
+                currentMonth.setDate(currentMonth.getDate() + dir);
+            }
+            updateCalendarView();
+        }
+
+        // --- WEEK VIEW IMPLEMENTATION ---
+        function renderWeekView() {
+            const container = document.getElementById('weekGrid');
+            const header = document.getElementById('weekHeader');
+            const dateDisplay = document.getElementById('calendarDateDisplay');
+
+            // Find start of week (Sunday)
+            const startOfWeek = new Date(currentMonth);
+            startOfWeek.setDate(currentMonth.getDate() - currentMonth.getDay());
+            
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            
+            dateDisplay.textContent = `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('es-ES', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleString('es-ES', { month: 'short' })}`;
+
+            // Render Header
+            let headerHTML = '<div class="p-3 border-r border-gray-100 text-[10px] text-gray-400 font-bold text-center">HORA</div>';
+            const weekDays = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                weekDays.push(d);
+                const isToday = new Date().toDateString() === d.toDateString();
+                headerHTML += `
+                    <div class="p-2 text-center border-r border-gray-100 cursor-pointer hover:bg-gray-100 transition ${isToday ? 'bg-blue-50' : ''}"
+                         onclick="event.stopPropagation(); openDayDetailPanel('${d.toISOString().split('T')[0]}')">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase">${d.toLocaleString('es-ES', { weekday: 'short' })}</div>
+                        <div class="text-lg font-black ${isToday ? 'text-blue-600' : 'text-gray-900'}">${d.getDate()}</div>
+                    </div>
+                `;
+            }
+            header.innerHTML = headerHTML;
+
+            // Render Grid (Time slots 8am - 6pm)
+            let gridHTML = '';
+            for (let hour = 8; hour <= 18; hour++) {
+                const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+                gridHTML += `<div class="grid grid-cols-8 border-b border-gray-100 min-h-[80px]">`;
+                gridHTML += `<div class="p-2 text-center text-xs text-gray-400 font-bold border-r border-gray-100 sticky left-0 bg-white">${timeStr}</div>`;
+                
+                for (let i = 0; i < 7; i++) {
+                    const d = weekDays[i];
+                    const dStr = d.toISOString().split('T')[0];
+                    const slotTurnos = turnos.filter(t => t.fecha === dStr && t.hora.startsWith(hour.toString().padStart(2, '0')));
+                    
+                    const isExcluded = isDayExcluded(dStr);
+                    const cellClass = isExcluded ? "bg-gray-100/50" : "hover:bg-gray-50 cursor-pointer";
+                    // Remove handleDayDrop to enforce Swap-Only in Weekly View
+                    // Only keep onclick for opening day panel if user clicks the cell background
+                    const interactionHandlers = isExcluded ? "" : `onclick="if(event.target === this) openDayDetailPanel('${dStr}')"`;
+
+                    gridHTML += `<div class="p-1 border-r border-gray-100 relative group transition-colors ${cellClass}"
+                                     ${interactionHandlers}>`;
+                    
+                    slotTurnos.forEach(t => {
+                        const icon = getDeviceIcon(t.equipos);
+                        
+                        // Calculate status dynamically for immediate feedback
+                        const total = t.equipos.length;
+                        const atendidos = t.equipos.filter(e => e.atendido).length;
+                        let statusColor = 'blue';
+                        let isDone = false;
+
+                        if (total > 0 && atendidos === total) {
+                            statusColor = 'green';
+                            isDone = true;
+                        } else if (atendidos > 0) {
+                            statusColor = 'yellow';
+                        }
+
+                        const bgClass = {
+                            'green': 'bg-green-100 border-green-200 hover:border-green-400',
+                            'yellow': 'bg-yellow-100 border-yellow-200 hover:border-yellow-400',
+                            'blue': 'bg-blue-100 border-blue-200 hover:border-blue-400'
+                        }[statusColor];
+
+                        const textClass = {
+                            'green': 'text-green-800',
+                            'yellow': 'text-yellow-800',
+                            'blue': 'text-blue-800'
+                        }[statusColor];
+
+                        const iconClass = {
+                            'green': 'text-green-600',
+                            'yellow': 'text-yellow-600',
+                            'blue': 'text-blue-600'
+                        }[statusColor];
+
+                        gridHTML += `
+                            <div class="${bgClass} border p-1.5 rounded-lg mb-1 cursor-grab active:cursor-grabbing shadow-sm text-[10px] hover:shadow-md transition-all group relative pr-6" 
+                                 draggable="true" 
+                                 ondragstart="event.dataTransfer.setData('text/plain', '${t.id}')"
+                                 ondragover="event.preventDefault()"
+                                 ondrop="event.stopPropagation(); event.preventDefault(); handleSwap(event.dataTransfer.getData('text/plain'), ${t.id})"
+                                 onclick="event.stopPropagation(); showDetails(${t.id}, event)">
+                                <div class="font-bold ${textClass} truncate">${t.responsable}</div>
+                                <div class="flex items-center gap-1 ${iconClass} mt-0.5">
+                                    <i data-lucide="${icon}" class="w-3 h-3"></i> ${t.hora}
+                                    <span class="font-bold opacity-80 text-[9px] ml-1">· ${t.equipos.length} eq.</span>
+                                </div>
+                                <button onclick="event.stopPropagation(); ${t.equipos.length > 1 ? `showDetails(${t.id}, event)` : `toggleCompletado(${t.id}, event)`}" 
+                                        class="absolute top-1.5 right-1.5 p-0.5 rounded-full hover:bg-white/50 transition-colors ${isDone ? 'text-green-600' : 'text-gray-400 hover:text-blue-600'}">
+                                    <i data-lucide="${isDone ? 'check-circle-2' : (t.equipos.length > 1 ? 'list-checks' : 'circle')}" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    
+                    gridHTML += `</div>`;
+                }
+                gridHTML += `</div>`;
+            }
+            container.innerHTML = gridHTML;
+            lucide.createIcons();
+        }
+
+        // --- DAY VIEW IMPLEMENTATION ---
+        function renderDayView() {
+            const container = document.getElementById('dayListContainer');
+            const title = document.getElementById('dayViewTitle');
+            const countBadge = document.getElementById('dayViewCount');
+            const dateDisplay = document.getElementById('calendarDateDisplay');
+
+            const dStr = currentMonth.toISOString().split('T')[0];
+            dateDisplay.textContent = currentMonth.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            
+            title.textContent = dateDisplay.textContent.toUpperCase();
+
+            const dayTurnos = turnos.filter(t => t.fecha === dStr);
+            dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora)); // Sort by time
+
+            countBadge.textContent = `${dayTurnos.length} Turnos`;
+
+            if (dayTurnos.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-64 text-gray-400">
+                        <i data-lucide="sun" class="w-16 h-16 mb-4 opacity-20"></i>
+                        <p class="font-bold">No hay turnos para este día</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = dayTurnos.map(t => `
+                    <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-300 transition-all group">
+                        <div class="text-center min-w-[60px]">
+                            <span class="block text-lg font-black text-gray-900">${t.hora}</span>
+                            <span class="text-[10px] uppercase font-bold text-gray-400">Hora</span>
+                        </div>
+                        <div class="w-px h-12 bg-gray-200"></div>
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-gray-900 text-lg">${t.responsable}</h4>
+                                ${getStatusBadgeHTML(t.estado)}
+                            </div>
+                            <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                <span class="flex items-center gap-1.5 font-medium"><i data-lucide="${getDeviceIcon(t.equipos)}" class="w-4 h-4"></i> ${t.equipos.length} Equipos</span>
+                            </div>
+                            <div class="mt-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="showDetails(${t.id}, event)" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold hover:bg-gray-50 text-gray-700">Ver Detalles</button>
+                                ${t.equipos.length > 1 ? `
+                                <button onclick="showDetails(${t.id}, event)" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center gap-1.5">
+                                    <i data-lucide="list-checks" class="w-3 h-3"></i> Ver Equipos
+                                </button>
+                                ` : `
+                                <button onclick="toggleCompletado(${t.id}, event)" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700">
+                                    ${t.estado === 'completado' ? 'Reabrir' : 'Marcar Listo'}
+                                </button>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
         }
 
         window.onload = () => {
