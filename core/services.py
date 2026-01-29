@@ -26,18 +26,31 @@ def procesar_archivo_activos(archivo):
         
         for index, row in df.iterrows():
             nombre_responsable = str(row.get('RESPONSABLE', '')).strip()
+            email_responsable = str(row.get('EMAIL', '')).strip()
+            if email_responsable.lower() in ['nan', 'nat', '']:
+                email_responsable = None
+            
             if not nombre_responsable or nombre_responsable.lower() in ['nan', 'nat', '']:
                 continue
 
-            responsable, created = Responsable.objects.get_or_create(nombre=nombre_responsable)
+            # Actualizar o crear responsable con email
+            responsable, created = Responsable.objects.update_or_create(
+                nombre=nombre_responsable,
+                defaults={'email': email_responsable}
+            )
             
             # Crear equipo asociado
+            # Prioridad: CODIGO INTERNO > CPDOGP GOBIERNO
+            codigo = row.get('CODIGO_INTERNO')
+            if not codigo or str(codigo).lower() == 'nan':
+                codigo = row.get('CPDOGP_GOBIERNO')
+
             Equipo.objects.create(
                 responsable=responsable,
-                codigo=row.get('CPDOGP_GOBIERNO'),
+                codigo=codigo,
                 marca=row.get('MARCA'),
                 modelo=row.get('MODELO'),
-                descripcion=row.get('DESCRIPCION')
+                descripcion=row.get('DESCRIPCIÓN') or row.get('DESCRIPCION')
             )
             
             # Asegurar que el responsable tenga un turno (estado pendiente por defecto)
@@ -143,8 +156,14 @@ def asignar_turnos_automatico():
                 turno.fecha = slots[i]['fecha']
                 turno.hora = slots[i]['hora']
                 turno.estado = 'asignado'
+                
+                # Calcular fecha de notificación (1 día antes)
+                fecha_hora_turno = datetime.combine(turno.fecha, turno.hora)
+                turno.notificar_el = fecha_hora_turno - timedelta(days=1)
+                turno.notificacion_enviada = False # Resetear por si acaso
+                
                 turnos_actualizados.append(turno)
         
-        Turno.objects.bulk_update(turnos_actualizados, ['fecha', 'hora', 'estado'])
+        Turno.objects.bulk_update(turnos_actualizados, ['fecha', 'hora', 'estado', 'notificar_el', 'notificacion_enviada'])
     
     return len(turnos_actualizados), f"Cronograma generado: {len(turnos_actualizados)} turnos asignados correctamente."
