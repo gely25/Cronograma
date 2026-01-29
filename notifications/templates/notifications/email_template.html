@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <style>
@@ -9,6 +10,7 @@
             padding: 20px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         .email-container {
             max-width: 600px;
             margin: 0 auto;
@@ -18,6 +20,7 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             border: 1px solid #f3f4f6;
         }
+
         .header-accent {
             width: 4px;
             height: 32px;
@@ -26,6 +29,7 @@
             vertical-align: middle;
             border-radius: 4px;
         }
+
         .header-text {
             display: inline-block;
             vertical-align: middle;
@@ -34,15 +38,18 @@
             color: #1e1b4b;
             margin-left: 12px;
         }
+
         .body-content {
             padding: 40px;
         }
+
         .main-image {
             width: 100%;
             max-width: 320px;
             display: block;
             margin: 30px auto;
         }
+
         .greeting {
             text-align: center;
             font-size: 16px;
@@ -50,6 +57,7 @@
             color: #374151;
             margin-bottom: 25px;
         }
+
         .custom-message {
             background-color: #f9fafb;
             padding: 25px;
@@ -61,23 +69,28 @@
             margin-bottom: 35px;
             text-align: center;
         }
+
         .details-box {
             border-top: 1px solid #f3f4f6;
             padding-top: 25px;
         }
+
         .detail-row {
             font-size: 12px;
             margin-bottom: 8px;
             color: #4b5563;
         }
+
         .detail-label {
             font-weight: 500;
             color: #6b7280;
         }
+
         .detail-value {
             font-weight: bold;
             color: #111827;
         }
+
         .detail-auto {
             color: #d1d5db;
             font-weight: 500;
@@ -85,6 +98,7 @@
             margin-left: 6px;
             text-transform: uppercase;
         }
+
         .footer {
             text-align: center;
             padding: 25px;
@@ -98,13 +112,14 @@
         }
     </style>
 </head>
+
 <body>
     <div class="email-container">
         <div class="body-content">
             <!-- Title with Orange Accent -->
             <div style="margin-bottom: 10px;">
                 <div class="header-accent"></div>
-                <div class="header-text">Constatación de activos tecnológicos</div>
+                <div class="header-text">Mantenimiento de equipos tecnológicos</div>
             </div>
 
             <!-- Illustration -->
@@ -112,7 +127,7 @@
 
             <!-- Content -->
             <div class="greeting">
-                Estimado: <span style="color: #4f46e5;">{{ responsable.nombre }}</span>
+                Estimado/a <span style="color: #4f46e5;">{{ responsable.nombre }}</span>
             </div>
 
             <div class="custom-message">
@@ -149,4 +164,5 @@
         </div>
     </div>
 </body>
+
 </html>

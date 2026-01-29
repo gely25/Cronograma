@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.core.mail import EmailMultiAlternatives
 from email.mime.image import MIMEImage
+import os
 from .models import ConfiguracionNotificacion, HistorialEnvio
 from core.models import Turno
 
@@ -247,73 +248,114 @@ class NotificationService:
     def enviar_broadcast_inicio():
         """
         Envía un correo masivo de inicio a todos los funcionarios con turnos.
+        Se envía UNO POR UNO para personalizar el nombre en el saludo.
         """
         config = ConfiguracionNotificacion.get_solo()
-        fuincionarios_con_turnos = Turno.objects.exclude(
+        
+        # Obtener responsables únicos con turnos activos
+        # Asumimos que responsable es una FK a un modelo que tiene 'email' y 'nombre'
+        turnos_activos = Turno.objects.exclude(
             estado__in=['cancelado', 'completado']
-        ).values_list('responsable__email', flat=True).distinct()
+        ).select_related('responsable')
         
-        emails = [e for e in fuincionarios_con_turnos if e]
+        # Usamos un diccionario para unificar por email y evitar duplicados
+        destinatarios = {}
+        for t in turnos_activos:
+            if t.responsable and t.responsable.email:
+                destinatarios[t.responsable.email] = t.responsable
         
-        if not emails:
+        if not destinatarios:
             return 0
             
         subject = config.asunto_inicio
         body_text = config.cuerpo_inicio
         
-        # Opcional: Podríamos usar la plantilla HTML simple
-        html_message = f"""
-        <div style='font-family: sans-serif; padding: 20px; color: #374151;'>
-            <h2 style='color: #2563eb;'>{subject}</h2>
-            <div style='white-space: pre-wrap;'>{body_text}</div>
-            <hr style='border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;'>
-            <p style='font-size: 11px; color: #9ca3af;'>Este es una notificación automática de inicio de cronograma.</p>
-        </div>
-        """
+        count = 0
+        connection = get_connection()
+        connection.open()
         
-        # Render HTML template (The template will now use 'cuerpo_personalizado')
-        context = {
-            'responsable': {'nombre': 'Funcionario'},
-            'cuerpo_personalizado': body_text,
-            'tipo_nombre': 'Notificación de Inicio',
-            'turno': {'fecha': timezone.now(), 'hora': timezone.now(), 'get_estado_display': 'Activo'}
-        }
-        
-        # Opcional: Podríamos usar la plantilla HTML simple o la nueva estructurada
-        # Para el broadcast de inicio, usaremos la nueva estructurada para que sea coherente
-        html_message = render_to_string('notifications/email_template.html', context)
-        
-        msg = EmailMultiAlternatives(
-            subject,
-            strip_tags(html_message),
-            settings.DEFAULT_FROM_EMAIL,
-            emails,
-        )
-        msg.attach_alternative(html_message, "text/html")
-
-        # Adjuntar imagen CID
+        # Preparamos la imagen una sola vez si es posible, pero para attacharla
+        # a cada mensaje necesitamos re-leerla o usar el mismo objeto si la lib lo permite.
+        # Por seguridad en el loop, verificamos ruta.
         img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
-        if os.path.exists(img_path):
-            with open(img_path, 'rb') as f:
-                img = MIMEImage(f.read())
-                img.add_header('Content-ID', '<header_image>')
-                msg.attach(img)
         
-        msg.send()
+        for email, responsable in destinatarios.items():
+            try:
+                # Personalizar el cuerpo también si usa {funcionario}
+                fmt_data = {
+                    'funcionario': responsable.nombre,
+                    'evento': 'Inicio de Cronograma',
+                    'fecha': timezone.now().strftime("%d/%m/%Y"),
+                    'hora': timezone.now().strftime("%H:%M")
+                }
+                
+                # Intentamos formatear el cuerpo si tiene placeholders
+                try:
+                    current_body = body_text.format(**fmt_data)
+                except:
+                    current_body = body_text
 
-        if config.cc_email:
-            bcc_msg = EmailMultiAlternatives(
-                f"[BCC-INICIO] {subject}",
-                strip_tags(html_message),
-                settings.DEFAULT_FROM_EMAIL,
-                [config.cc_email],
-            )
-            bcc_msg.attach_alternative(html_message, "text/html")
-            if os.path.exists(img_path):
-                with open(img_path, 'rb') as f:
-                    img = MIMEImage(f.read())
-                    img.add_header('Content-ID', '<header_image>')
-                    bcc_msg.attach(img)
-            bcc_msg.send()
-        
-        return len(emails)
+                # Contexto para el template
+                context = {
+                    'responsable': responsable, # Objeto real con .nombre
+                    'cuerpo_personalizado': current_body,
+                    'tipo_nombre': 'Notificación de Inicio',
+                    'turno': {'fecha': timezone.now(), 'hora': timezone.now(), 'get_estado_display': 'Activo'}
+                }
+                
+                html_message = render_to_string('notifications/email_template.html', context)
+                plain_message = strip_tags(html_message)
+                
+                msg = EmailMultiAlternatives(
+                    subject,
+                    plain_message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    connection=connection
+                )
+                msg.attach_alternative(html_message, "text/html")
+
+                if os.path.exists(img_path):
+                    with open(img_path, 'rb') as f:
+                        img = MIMEImage(f.read())
+                        img.add_header('Content-ID', '<header_image>')
+                        msg.attach(img)
+                
+                msg.send()
+                count += 1
+                
+            except Exception as e:
+                print(f"Error enviando broadcast a {email}: {e}")
+
+        # Enviar copia oculta única si está configurado (resumen o testigo)
+        if config.cc_email and count > 0:
+            try:
+                context_bcc = {
+                    'responsable': {'nombre': 'FUNCIONARIOS (BCC)'},
+                    'cuerpo_personalizado': f"Este es un correo de control. Se inició el envío masivo a {count} funcionarios.",
+                    'tipo_nombre': 'Resumen de Inicio',
+                    'turno': {'fecha': timezone.now(), 'hora': timezone.now(), 'get_estado_display': 'Log'}
+                }
+                html_bcc = render_to_string('notifications/email_template.html', context_bcc)
+                
+                bcc_msg = EmailMultiAlternatives(
+                    f"[BCC-INICIO] {subject}",
+                    strip_tags(html_bcc),
+                    settings.DEFAULT_FROM_EMAIL,
+                    [config.cc_email],
+                    connection=connection
+                )
+                bcc_msg.attach_alternative(html_bcc, "text/html")
+                # Imagen
+                if os.path.exists(img_path):
+                    with open(img_path, 'rb') as f:
+                        img = MIMEImage(f.read())
+                        img.add_header('Content-ID', '<header_image>')
+                        bcc_msg.attach(img)
+                        
+                bcc_msg.send()
+            except Exception as e:
+                print(f"Error enviando BCC broadcast: {e}")
+
+        connection.close()
+        return count

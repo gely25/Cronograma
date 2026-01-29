@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Count
 from django.utils import timezone
+import json
 from .models import ConfiguracionNotificacion, HistorialEnvio
 from .services import NotificationService
 from core.models import Turno
@@ -65,6 +66,11 @@ def dashboard(request):
             'proyeccion': total_proyeccion
         },
         'proyeccion': proyeccion, # Para vista de Radar
+        'proyeccion_json': json.dumps([{
+            'responsable': {'nombre': p['responsable'].nombre if p.get('responsable') else ''},
+            'tipo': p.get('tipo', ''),
+            'fecha_programada': p['fecha_programada'].isoformat() if p.get('fecha_programada') else ''
+        } for p in proyeccion]),
         'historial': historial,   # Para vista de Log
         'estados_choices': Turno.ESTADO_CHOICES
     }
