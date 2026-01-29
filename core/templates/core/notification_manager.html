@@ -1,0 +1,203 @@
+{% extends "core/base.html" %}
+
+{% block title %}Notificar a funcionarios{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/50 w-full flex flex-col">
+    
+    <!-- Top Bar -->
+    <div class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shadow-sm sticky top-0 z-20">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'ver_cronograma' %}" class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition" title="Volver al Cronograma">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <i data-lucide="mail" class="w-6 h-6 text-blue-600"></i> Notificar a funcionarios
+                </h1>
+                <p class="text-xs text-gray-500 font-medium">Gestión de comunicaciones masivas</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-8 max-w-7xl mx-auto w-full">
+        
+        <!-- Filters -->
+        <form method="get" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8" id="filterForm">
+            <div class="flex flex-wrap items-end gap-6">
+                 <!-- Filtros de Estado -->
+                 <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-3">Estados</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="estado_planificado" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if request.GET.estado_planificado %}checked{% endif %}>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-black uppercase bg-gray-100 text-gray-700">Planificado</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="estado_en_curso" class="rounded border-gray-300 text-yellow-500 focus:ring-yellow-500" {% if request.GET.estado_en_curso %}checked{% endif %}>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-black uppercase bg-yellow-100 text-yellow-700">En curso</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="estado_finalizado" class="rounded border-gray-300 text-green-600 focus:ring-green-500" {% if request.GET.estado_finalizado %}checked{% endif %}>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-black uppercase bg-green-100 text-green-700">Finalizado</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="estado_cerrado" class="rounded border-gray-300 text-gray-800 focus:ring-gray-800" {% if request.GET.estado_cerrado %}checked{% endif %}>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-black uppercase bg-gray-800 text-white">Cerrado</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Filtros de Fecha -->
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Fecha inicio</label>
+                    <input type="date" name="fecha_inicio" value="{{ fecha_inicio|default:'' }}" class="text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Fecha fin</label>
+                    <input type="date" name="fecha_fin" value="{{ fecha_fin|default:'' }}" class="text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0">
+                </div>
+                <div>
+                    <button type="submit" class="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-100 transition-colors flex items-center gap-2">
+                        <i data-lucide="filter" class="w-4 h-4"></i> Filtrar
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Columna Izquierda: Previsualización -->
+            <div class="lg:col-span-5">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden h-full flex flex-col">
+                    <div class="p-6 border-b border-gray-100 text-center bg-gray-50/30">
+                        <h5 class="text-sm font-black text-gray-900 uppercase tracking-tight relative inline-block">
+                            Preview
+                            <span class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-transparent"></span>
+                        </h5>
+                    </div>
+                    <div class="p-8 flex-1 flex flex-col items-center justify-center text-center">
+                        {% if preview_turno %}
+                        <div class="w-full">
+                            <div class="mb-6 flex justify-center">
+                                <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-blue-200">
+                                    <i data-lucide="user" class="w-10 h-10"></i>
+                                </div>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">{{ preview_turno.responsable.nombre }}</h3>
+                            <p class="text-xs text-gray-400 font-medium mb-6">{{ preview_turno.responsable.email|default:"Sin correo registrado" }}</p>
+
+                            <div class="bg-yellow-50 border border-dashed border-yellow-200 rounded-xl p-4 mb-6 text-sm text-gray-600 italic relative">
+                                <i data-lucide="quote" class="w-4 h-4 text-yellow-400 absolute top-2 left-2 opacity-50"></i>
+                                [Mensaje a transmitir]
+                            </div>
+                            
+                            <div class="space-y-2 text-xs text-left bg-gray-50 p-4 rounded-xl">
+                                <div class="flex justify-between">
+                                    <span class="font-bold text-gray-500">Fecha a Constatar:</span>
+                                    <span class="font-medium text-gray-900">{{ preview_turno.fecha|date:"d/m/Y" }} | {{ preview_turno.hora|date:"h:i a" }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-bold text-gray-500">Equipo:</span>
+                                    <span class="font-medium text-gray-900">{{ preview_turno.responsable.equipos.first.descripcion|default:"Mantenimiento" }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-bold text-gray-500">Estado Actual:</span>
+                                    <span class="font-medium uppercase">{{ preview_turno.estado }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 pt-6 border-t border-gray-100">
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                    Enviado: {% now "d/m/Y | h:i a" %}
+                                </span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-gray-400">
+                            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                            <p class="text-sm font-medium">No hay turnos seleccionados para previsualizar.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Configuración Mensaje -->
+            <div class="lg:col-span-7">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 h-full flex flex-col">
+                    <div class="p-6 border-b border-gray-100 font-bold flex items-center gap-2">
+                        <i data-lucide="edit-3" class="w-4 h-4 text-blue-500"></i>
+                        Configurar Notificación
+                    </div>
+                    <div class="p-6 flex-1">
+                        <form method="post" class="h-full flex flex-col">
+                            {% csrf_token %}
+                            <!-- Hidden inputs -->
+                            <input type="hidden" name="estado_planificado" value="{{ request.GET.estado_planificado }}">
+                            <input type="hidden" name="estado_en_curso" value="{{ request.GET.estado_en_curso }}">
+                            <input type="hidden" name="estado_finalizado" value="{{ request.GET.estado_finalizado }}">
+                            <input type="hidden" name="estado_cerrado" value="{{ request.GET.estado_cerrado }}">
+                            <input type="hidden" name="fecha_inicio" value="{{ fecha_inicio|default:'' }}">
+                            <input type="hidden" name="fecha_fin" value="{{ fecha_fin|default:'' }}">
+
+                            <div class="mb-4 flex-1 flex flex-col">
+                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-2">Mensaje a trasmitir *</label>
+                                <div class="flex-1 border border-gray-200 rounded-xl overflow-hidden flex flex-col focus-within:ring-2 focus-within:ring-blue-500 transition-shadow">
+                                    <!-- Toolbar -->
+                                    <div class="bg-gray-50 border-b border-gray-200 p-2 flex gap-1">
+                                        <button type="button" class="p-1.5 hover:bg-white rounded text-gray-500 hover:text-gray-700 transition"><i data-lucide="bold" class="w-4 h-4"></i></button>
+                                        <button type="button" class="p-1.5 hover:bg-white rounded text-gray-500 hover:text-gray-700 transition"><i data-lucide="italic" class="w-4 h-4"></i></button>
+                                        <button type="button" class="p-1.5 hover:bg-white rounded text-gray-500 hover:text-gray-700 transition"><i data-lucide="underline" class="w-4 h-4"></i></button>
+                                        <div class="w-px h-6 bg-gray-300 mx-1"></div>
+                                        <button type="button" class="p-1.5 hover:bg-white rounded text-gray-500 hover:text-gray-700 transition"><i data-lucide="list" class="w-4 h-4"></i></button>
+                                    </div>
+                                    <textarea name="mensaje" class="flex-1 w-full p-4 border-0 focus:ring-0 text-sm text-gray-700 resize-none" placeholder="Escriba su mensaje aquí..." required></textarea>
+                                </div>
+                                <div class="mt-2 text-[10px] text-gray-400 font-medium">
+                                    <i data-lucide="info" class="w-3 h-3 inline me-1"></i>
+                                    Este mensaje se enviará a <strong class="text-gray-900">{{ count }}</strong> funcionarios seleccionados.
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
+                                <button type="submit" name="accion" value="cancelar" class="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors">
+                                    Cancelar
+                                </button>
+                                <button type="button" onclick="document.getElementById('confirmModal').classList.remove('hidden')" class="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center gap-2" {% if count == 0 %}disabled{% endif %}>
+                                    <i data-lucide="send" class="w-4 h-4"></i> Enviar Notificaciones
+                                </button>
+                            </div>
+                            
+                            <!-- Modal Confirmacion (Tailwind) -->
+                            <div id="confirmModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50 backdrop-blur-sm">
+                                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all">
+                                    <div class="text-center">
+                                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                                            <i data-lucide="mail-question" class="w-6 h-6 text-blue-600"></i>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-gray-900">Confirmar Envío</h3>
+                                        <p class="text-xs text-gray-500 mt-2">
+                                            ¿Está seguro de enviar notificaciones a <strong>{{ count }}</strong> funcionarios?
+                                        </p>
+                                    </div>
+                                    <div class="mt-6 flex gap-3">
+                                        <button type="button" onclick="document.getElementById('confirmModal').classList.add('hidden')" class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" name="accion" value="enviar" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-blue-500/30">
+                                            Si, enviar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

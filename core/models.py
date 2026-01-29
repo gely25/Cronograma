@@ -1,7 +1,9 @@
 from django.db import models
+from datetime import datetime, timedelta
 
 class Responsable(models.Model):
     nombre = models.CharField(max_length=255, unique=True, verbose_name="Responsable")
+    email = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Correo Electrónico")
 
     def __str__(self):
         return self.nombre
@@ -56,6 +58,15 @@ class Turno(models.Model):
     fecha = models.DateField(null=True, blank=True)
     hora = models.TimeField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    notificar_el = models.DateTimeField(null=True, blank=True)
+    notificacion_enviada = models.BooleanField(default=False)
+    ultimo_envio = models.DateTimeField(null=True, blank=True, verbose_name="Último Envío")
+
+    def save(self, *args, **kwargs):
+        if self.fecha and self.hora and not self.notificar_el:
+            fecha_hora_turno = datetime.combine(self.fecha, self.hora)
+            self.notificar_el = fecha_hora_turno - timedelta(days=1)
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['fecha', 'hora']

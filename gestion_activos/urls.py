@@ -19,5 +19,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('notifications/', include('notifications.urls')), # New Smart Module
     path('', include('core.urls')),
 ]
