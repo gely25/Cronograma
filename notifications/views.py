@@ -69,7 +69,9 @@ def dashboard(request):
         'proyeccion_json': json.dumps([{
             'responsable': {'nombre': p['responsable'].nombre if p.get('responsable') else ''},
             'tipo': p.get('tipo', ''),
-            'fecha_programada': p['fecha_programada'].isoformat() if p.get('fecha_programada') else ''
+            'fecha_programada': p['fecha_programada'].isoformat() if p.get('fecha_programada') else '',
+            'fecha_turno': p['turno'].fecha.strftime("%d/%m/%Y") if p.get('turno') and p['turno'].fecha else '',
+            'hora_turno': p['turno'].hora.strftime("%H:%M") if p.get('turno') and p['turno'].hora else ''
         } for p in proyeccion]),
         'historial': historial,   # Para vista de Log
         'estados_choices': Turno.ESTADO_CHOICES

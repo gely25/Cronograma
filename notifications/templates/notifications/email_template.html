@@ -138,7 +138,7 @@
             <div class="details-box">
                 <div class="detail-row">
                     <span class="detail-label">Fecha a Constatar:</span>
-                    <span class="detail-value">{{ turno.fecha|date:"d/m/Y" }} | {{ turno.hora|time:"H:i" }} a.m.</span>
+                    <span class="detail-value">{% now "d/m/Y" %} | {% now "h:i" %} a.m.</span>
                     <span class="detail-auto">[ Automático ]</span>
                 </div>
                 <div class="detail-row">

@@ -384,7 +384,7 @@
                                         <div class="flex items-center gap-2 text-[10px]">
                                             <span class="text-gray-500 font-medium">Descripción:</span>
                                             <span class="text-gray-900 font-bold" id="preview_evento_tag">Mantenimiento
-                                                Preventivo</span>
+                                            Preventivo</span>
                                             <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático
                                                 ]</span>
                                         </div>
@@ -397,7 +397,8 @@
                                     </div>
 
                                     <div class="pt-4 text-center">
-                                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Enviado
+                                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider"
+                                            id="preview_enviado_fecha">Enviado
                                             Fecha / Hora: 28/01/2026 | 09:01 a.m.</p>
                                     </div>
                                 </div>
@@ -423,8 +424,9 @@
 </div>
 
 <!-- Manual Send Modal -->
-<div id="manualSendModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center">
-    <div >
+<div id="manualSendModal"
+    class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center">
+    <div>
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-in zoom-in-95 balance">
             <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 mb-6 text-blue-600">
                 <i data-lucide="zap" class="w-10 h-10"></i>
@@ -452,8 +454,9 @@
 </div>
 
 <!-- Broadcast Modal -->
-<div id="broadcastModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center" style="display: none;">
-    <div >
+<div id="broadcastModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center"
+    style="display: none;">
+    <div>
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-in zoom-in-95 balance">
             <div
                 class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-indigo-100 mb-6 text-indigo-600">
@@ -486,12 +489,20 @@
     const proyeccionData = {{ proyeccion_json| safe }};
     let exampleFuncionario = 'Juan Enrique Perez';
     let exampleEvento = 'Mantenimiento Preventivo';
+    let exampleFecha = '28/01/2026';
+    let exampleHora = '09:01';
 
     // Try to get real data from proyeccion
     if (proyeccionData && proyeccionData.length > 0) {
         const firstItem = proyeccionData[0];
         if (firstItem.responsable && firstItem.responsable.nombre) {
             exampleFuncionario = firstItem.responsable.nombre;
+        }
+        if (firstItem.fecha_turno) {
+            exampleFecha = firstItem.fecha_turno;
+        }
+        if (firstItem.hora_turno) {
+            exampleHora = firstItem.hora_turno;
         }
     }
 
@@ -524,6 +535,11 @@
     const preview_body = document.getElementById('preview_body_text');
     const preview_evento_tag = document.getElementById('preview_evento_tag');
 
+    // Static fields in preview card
+    const preview_fecha_constatar = document.getElementById('preview_fecha_constatar');
+    const preview_fecha_inicio = document.getElementById('preview_fecha_inicio');
+    const preview_enviado_fecha = document.getElementById('preview_enviado_fecha');
+
     function updatePreview() {
         const isInicio = document.getElementById('section-inicio').classList.contains('hidden') === false;
 
@@ -532,12 +548,12 @@
 
         body = body || "[ Mensaje a trasmitir ]";
 
-        // Use real example data - no raw variables should be visible
+        // Use real example data - now including real date/time
         const mockData = {
             '{funcionario}': exampleFuncionario,
             '{evento}': exampleEvento,
-            '{fecha}': '28/01/2026',
-            '{hora}': '09:01 AM'
+            '{fecha}': exampleFecha,
+            '{hora}': exampleHora
         };
 
         for (const [key, val] of Object.entries(mockData)) {
@@ -551,6 +567,27 @@
         // Update funcionario name in preview
         const preview_funcionario = document.getElementById('preview_funcionario_name');
         if (preview_funcionario) preview_funcionario.textContent = exampleFuncionario;
+
+        if (preview_funcionario) preview_funcionario.textContent = exampleFuncionario;
+
+        // Update static date/time fields in preview card
+        const dateTimeStr = `${exampleFecha} | ${exampleHora}`;
+
+        // Generate current date/time for "Fecha a Constatar" and "Enviado"
+        const now = new Date();
+        const day = now.getDate().toString().padStart(2, '0');
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const year = now.getFullYear();
+        let hours = now.getHours();
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'p.m.' : 'a.m.';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        const currentDataTimeStr = `${day}/${month}/${year} | ${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+
+        if (preview_fecha_constatar) preview_fecha_constatar.textContent = currentDataTimeStr;
+        if (preview_fecha_inicio) preview_fecha_inicio.textContent = dateTimeStr;
+        if (preview_enviado_fecha) preview_enviado_fecha.textContent = `Enviado Fecha / Hora: ${currentDataTimeStr}`;
     }
 
     asunto_input.addEventListener('input', updatePreview);
@@ -650,3 +687,4 @@
     }
 </style>
 {% endblock %}
+

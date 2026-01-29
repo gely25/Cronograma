@@ -254,17 +254,21 @@ class NotificationService:
         
         # Obtener responsables únicos con turnos activos
         # Asumimos que responsable es una FK a un modelo que tiene 'email' y 'nombre'
+        # Ordenamos por fecha/hora para asegurar que tomamos el turno más próximo
         turnos_activos = Turno.objects.exclude(
             estado__in=['cancelado', 'completado']
-        ).select_related('responsable')
+        ).select_related('responsable').order_by('fecha', 'hora')
         
         # Usamos un diccionario para unificar por email y evitar duplicados
-        destinatarios = {}
+        # Guardaremos el OBJETO TURNO completo, no solo el responsable
+        turnos_por_email = {}
         for t in turnos_activos:
             if t.responsable and t.responsable.email:
-                destinatarios[t.responsable.email] = t.responsable
+                # Como vienen ordenados ascendente, el primero que entra es el más próximo.
+                if t.responsable.email not in turnos_por_email:
+                    turnos_por_email[t.responsable.email] = t
         
-        if not destinatarios:
+        if not turnos_por_email:
             return 0
             
         subject = config.asunto_inicio
@@ -279,14 +283,16 @@ class NotificationService:
         # Por seguridad en el loop, verificamos ruta.
         img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
         
-        for email, responsable in destinatarios.items():
+        for email, turno_real in turnos_por_email.items():
+            responsable = turno_real.responsable
             try:
                 # Personalizar el cuerpo también si usa {funcionario}
+                # AHORA USAMOS LA FECHA REAL DEL TURNO
                 fmt_data = {
                     'funcionario': responsable.nombre,
                     'evento': 'Inicio de Cronograma',
-                    'fecha': timezone.now().strftime("%d/%m/%Y"),
-                    'hora': timezone.now().strftime("%H:%M")
+                    'fecha': turno_real.fecha.strftime("%d/%m/%Y") if turno_real.fecha else "-",
+                    'hora': turno_real.hora.strftime("%H:%M") if turno_real.hora else "-"
                 }
                 
                 # Intentamos formatear el cuerpo si tiene placeholders
@@ -296,11 +302,12 @@ class NotificationService:
                     current_body = body_text
 
                 # Contexto para el template
+                # PASAMOS EL TURNO REAL AL CONTEXTO
                 context = {
                     'responsable': responsable, # Objeto real con .nombre
                     'cuerpo_personalizado': current_body,
                     'tipo_nombre': 'Notificación de Inicio',
-                    'turno': {'fecha': timezone.now(), 'hora': timezone.now(), 'get_estado_display': 'Activo'}
+                    'turno': turno_real 
                 }
                 
                 html_message = render_to_string('notifications/email_template.html', context)
