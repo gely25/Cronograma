@@ -2,9 +2,11 @@ from datetime import datetime, timedelta, time
 from django.utils import timezone
 from django.db.models import Q
 from django.conf import settings
-from django.core.mail import send_mail, get_connection
+from django.core.mail import send_mail, get_connection, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.core.mail import EmailMultiAlternatives
+from email.mime.image import MIMEImage
 from .models import ConfiguracionNotificacion, HistorialEnvio
 from core.models import Turno
 
@@ -182,29 +184,48 @@ class NotificationService:
                     html_message = render_to_string('notifications/email_template.html', context)
                     plain_message = strip_tags(html_message)
                     
-                    send_mail(
+                    # Render HTML template
+                    html_message = render_to_string('notifications/email_template.html', context)
+                    plain_message = strip_tags(html_message)
+                    
+                    # Preparar Email con CID
+                    msg = EmailMultiAlternatives(
                         subject,
                         plain_message,
                         settings.DEFAULT_FROM_EMAIL,
                         [turno.responsable.email],
-                        html_message=html_message,
-                        connection=connection,
-                        fail_silently=False
+                        connection=connection
                     )
+                    msg.attach_alternative(html_message, "text/html")
+
+                    # Adjuntar imagen CID
+                    img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+                    if os.path.exists(img_path):
+                        with open(img_path, 'rb') as f:
+                            img = MIMEImage(f.read())
+                            img.add_header('Content-ID', '<header_image>')
+                            msg.attach(img)
+                    
+                    msg.send()
                     
                     # Para soportar BCC en send_mail de Django (que no tiene bcc param directo en esta firma rápida)
                     # Usaremos EmailMultiAlternatives para mayor control si es necesario, 
                     # pero por ahora, si hay CC, lo añadimos a la lista si es BCC real
                     if config.cc_email:
-                        send_mail(
+                        bcc_msg = EmailMultiAlternatives(
                             f"[BCC] {subject}",
                             plain_message,
                             settings.DEFAULT_FROM_EMAIL,
                             [config.cc_email],
-                            html_message=html_message,
-                            connection=connection,
-                            fail_silently=True
+                            connection=connection
                         )
+                        bcc_msg.attach_alternative(html_message, "text/html")
+                        if os.path.exists(img_path):
+                            with open(img_path, 'rb') as f:
+                                img = MIMEImage(f.read())
+                                img.add_header('Content-ID', '<header_image>')
+                                bcc_msg.attach(img)
+                        bcc_msg.send()
                     
                     historial.save()
                     enviados += 1
@@ -250,23 +271,49 @@ class NotificationService:
         </div>
         """
         
-        send_mail(
+        # Render HTML template (The template will now use 'cuerpo_personalizado')
+        context = {
+            'responsable': {'nombre': 'Funcionario'},
+            'cuerpo_personalizado': body_text,
+            'tipo_nombre': 'Notificación de Inicio',
+            'turno': {'fecha': timezone.now(), 'hora': timezone.now(), 'get_estado_display': 'Activo'}
+        }
+        
+        # Opcional: Podríamos usar la plantilla HTML simple o la nueva estructurada
+        # Para el broadcast de inicio, usaremos la nueva estructurada para que sea coherente
+        html_message = render_to_string('notifications/email_template.html', context)
+        
+        msg = EmailMultiAlternatives(
             subject,
             strip_tags(html_message),
             settings.DEFAULT_FROM_EMAIL,
             emails,
-            html_message=html_message,
-            fail_silently=False
         )
+        msg.attach_alternative(html_message, "text/html")
+
+        # Adjuntar imagen CID
+        img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+        if os.path.exists(img_path):
+            with open(img_path, 'rb') as f:
+                img = MIMEImage(f.read())
+                img.add_header('Content-ID', '<header_image>')
+                msg.attach(img)
+        
+        msg.send()
 
         if config.cc_email:
-            send_mail(
+            bcc_msg = EmailMultiAlternatives(
                 f"[BCC-INICIO] {subject}",
                 strip_tags(html_message),
                 settings.DEFAULT_FROM_EMAIL,
                 [config.cc_email],
-                html_message=html_message,
-                fail_silently=True
             )
+            bcc_msg.attach_alternative(html_message, "text/html")
+            if os.path.exists(img_path):
+                with open(img_path, 'rb') as f:
+                    img = MIMEImage(f.read())
+                    img.add_header('Content-ID', '<header_image>')
+                    bcc_msg.attach(img)
+            bcc_msg.send()
         
         return len(emails)

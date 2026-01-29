@@ -8,11 +8,16 @@
     <div class="bg-white border-b border-gray-200 px-8 py-6 shadow-sm">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div>
-                <h1 class="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                    <span class="bg-blue-100 text-blue-600 p-2 rounded-xl"><i data-lucide="bell-ring" class="w-8 h-8"></i></span>
-                    Gestor de Notificaciones
-                </h1>
-                <p class="text-gray-500 font-medium mt-1 ml-16">Supervisión automática y reglas de aviso</p>
+                <div class="flex items-center gap-4">
+                    <a href="{% url 'ver_cronograma' %}" class="p-2 hover:bg-gray-100 rounded-full transition text-gray-400" title="Volver al Cronograma">
+                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                    </a>
+                    <h1 class="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                        <span class="bg-blue-100 text-blue-600 p-2 rounded-xl"><i data-lucide="bell-ring" class="w-8 h-8"></i></span>
+                        Gestor de Notificaciones
+                    </h1>
+                </div>
+                <p class="text-gray-500 font-medium mt-1 ml-28">Supervisión automática y reglas de aviso</p>
             </div>
             <div class="flex gap-3">
                 <button onclick="document.getElementById('broadcastModal').classList.remove('hidden')" class="px-5 py-3 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl font-bold shadow-sm hover:bg-indigo-100 transition flex items-center gap-2">
@@ -276,18 +281,54 @@
                         <span class="text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono">{hora}</span>
                     </div>
 
-                    <!-- Enhanced Preview Card -->
+                    <!-- Enhanced Preview Card (Based on image reference) -->
                     <div class="mt-4">
                         <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Previsualización en Tiempo Real</h4>
                         <div class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-lg mx-auto w-full border border-gray-100 transform scale-95 origin-top">
-                            <div class="bg-blue-600 p-5 text-white text-center">
-                                <h2 class="text-sm font-black tracking-tight" id="preview_subject_header">Cargando...</h2>
-                            </div>
-                            <div class="p-6">
-                                <div class="text-gray-800 text-xs whitespace-pre-wrap leading-relaxed mb-6" id="preview_body_text">Cargando cuerpo...</div>
-                                <div class="bg-gray-50 rounded-xl border border-gray-100 p-4 space-y-2">
-                                    <div class="flex justify-between items-center text-[10px]"><span class="text-gray-400 font-bold uppercase">Fecha</span><span class="text-gray-900 font-bold">15/02/2026</span></div>
-                                    <div class="flex justify-between items-center text-[10px]"><span class="text-gray-400 font-bold uppercase">Hora</span><span class="text-gray-900 font-bold">10:00 AM</span></div>
+                            <!-- Preview Content -->
+                            <div class="p-8 space-y-6">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-1 h-8 bg-orange-400 rounded-full"></div>
+                                    <h2 class="text-lg font-black text-indigo-900 tracking-tight">Constatación de activos tecnológicos</h2>
+                                </div>
+
+                                <div class="flex justify-center">
+                                    <img src="/static/img/mujeru.jpg" alt="Ilustración" class="h-40 object-contain">
+                                </div>
+
+                                <div class="text-center space-y-4">
+                                    <p class="text-gray-700 text-sm font-bold">Estimado: <span class="text-indigo-600">Juan Enrique Perez</span></p>
+                                    
+                                    <div id="preview_body_text" class="text-gray-600 text-xs italic bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">
+                                        [ Mensaje a trasmitir ]
+                                    </div>
+                                </div>
+
+                                <div class="space-y-1.5 pt-4 border-t border-gray-100">
+                                    <div class="flex items-center gap-2 text-[10px]">
+                                        <span class="text-gray-500 font-medium">Fecha a Constatar:</span>
+                                        <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
+                                        <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático ]</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[10px]">
+                                        <span class="text-gray-500 font-medium">Fecha Inicio:</span>
+                                        <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
+                                        <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático ]</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[10px]">
+                                        <span class="text-gray-500 font-medium">Descripción:</span>
+                                        <span class="text-gray-900 font-bold" id="preview_evento_tag">Mantenimiento Preventivo</span>
+                                        <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático ]</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[10px]">
+                                        <span class="text-gray-500 font-medium">Estado:</span>
+                                        <span class="text-gray-900 font-bold">Planificado</span>
+                                        <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático ]</span>
+                                    </div>
+                                </div>
+
+                                <div class="pt-4 text-center">
+                                    <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">Enviado Fecha / Hora: 28/01/2026 | 09:01 a.m.</p>
                                 </div>
                             </div>
                         </div>
@@ -383,32 +424,31 @@
     const asunto_inicio_input = document.getElementById('asunto_inicio_input');
     const cuerpo_inicio_input = document.getElementById('cuerpo_inicio_input');
 
-    const preview_subject = document.getElementById('preview_subject_header');
     const preview_body = document.getElementById('preview_body_text');
+    const preview_evento_tag = document.getElementById('preview_evento_tag');
 
     function updatePreview() {
         const isInicio = document.getElementById('section-inicio').classList.contains('hidden') === false;
         
-        let subject = isInicio ? asunto_inicio_input.value : asunto_input.value;
         let body = isInicio ? cuerpo_inicio_input.value : cuerpo_input.value;
+        let eventName = "{evento}"; 
 
-        subject = subject || "Asunto...";
-        body = body || "Cuerpo...";
+        body = body || "[ Mensaje a trasmitir ]";
 
         const mockData = {
-            '{funcionario}': 'Juan Perez',
+            '{funcionario}': 'Juan Enrique Perez',
             '{evento}': 'Mantenimiento Preventivo',
-            '{fecha}': '15/02/2026',
-            '{hora}': '10:00 AM'
+            '{fecha}': '28/01/2026',
+            '{hora}': '09:01 AM'
         };
 
         for (const [key, val] of Object.entries(mockData)) {
-            subject = subject.replace(new RegExp(key, 'g'), val);
             body = body.replace(new RegExp(key, 'g'), val);
+            if (key === '{evento}') eventName = val;
         }
 
-        preview_subject.textContent = subject;
         preview_body.textContent = body;
+        if (preview_evento_tag) preview_evento_tag.textContent = eventName;
     }
 
     asunto_input.addEventListener('input', updatePreview);

@@ -3,49 +3,149 @@
 <head>
     <meta charset="utf-8">
     <style>
-        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f3f4f6; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; margin-top: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .header { background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%); padding: 32px; text-align: center; color: white; }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
-        .content { padding: 40px; color: #374151; }
-        .message-box { background-color: #ffffff; line-height: 1.6; font-size: 16px; white-space: pre-wrap; margin-bottom: 32px; }
-        .details-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
-        .label { font-weight: 600; color: #64748b; }
-        .value { font-weight: 500; color: #1e293b; }
-        .footer { background-color: #f8fafc; padding: 24px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+        body {
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #f3f4f6;
+        }
+        .header-accent {
+            width: 4px;
+            height: 32px;
+            background-color: #fb923c;
+            display: inline-block;
+            vertical-align: middle;
+            border-radius: 4px;
+        }
+        .header-text {
+            display: inline-block;
+            vertical-align: middle;
+            font-size: 20px;
+            font-weight: 900;
+            color: #1e1b4b;
+            margin-left: 12px;
+        }
+        .body-content {
+            padding: 40px;
+        }
+        .main-image {
+            width: 100%;
+            max-width: 320px;
+            display: block;
+            margin: 30px auto;
+        }
+        .greeting {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 25px;
+        }
+        .custom-message {
+            background-color: #f9fafb;
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px dashed #e5e7eb;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #4b5563;
+            margin-bottom: 35px;
+            text-align: center;
+        }
+        .details-box {
+            border-top: 1px solid #f3f4f6;
+            padding-top: 25px;
+        }
+        .detail-row {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #4b5563;
+        }
+        .detail-label {
+            font-weight: 500;
+            color: #6b7280;
+        }
+        .detail-value {
+            font-weight: bold;
+            color: #111827;
+        }
+        .detail-auto {
+            color: #d1d5db;
+            font-weight: 500;
+            font-size: 10px;
+            margin-left: 6px;
+            text-transform: uppercase;
+        }
+        .footer {
+            text-align: center;
+            padding: 25px;
+            border-top: 1px solid #f3f4f6;
+            color: #9ca3af;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background-color: #fafafa;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Notificación de Actividad</h1>
-        </div>
-        <div class="content">
-            <div class="message-box">{{ cuerpo_personalizado }}</div>
+    <div class="email-container">
+        <div class="body-content">
+            <!-- Title with Orange Accent -->
+            <div style="margin-bottom: 10px;">
+                <div class="header-accent"></div>
+                <div class="header-text">Constatación de activos tecnológicos</div>
+            </div>
 
-            <div class="details-card">
-                <div class="row">
-                    <span class="label">Fecha:</span>
-                    <span class="value">{{ turno.fecha|date:"d/m/Y" }}</span>
+            <!-- Illustration -->
+            <img src="cid:header_image" alt="Notificación Ilustración" class="main-image">
+
+            <!-- Content -->
+            <div class="greeting">
+                Estimado: <span style="color: #4f46e5;">{{ responsable.nombre }}</span>
+            </div>
+
+            <div class="custom-message">
+                {{ cuerpo_personalizado|linebreaksbr }}
+            </div>
+
+            <!-- Automatic Detail Block -->
+            <div class="details-box">
+                <div class="detail-row">
+                    <span class="detail-label">Fecha a Constatar:</span>
+                    <span class="detail-value">{{ turno.fecha|date:"d/m/Y" }} | {{ turno.hora|time:"H:i" }} a.m.</span>
+                    <span class="detail-auto">[ Automático ]</span>
                 </div>
-                <div class="row">
-                    <span class="label">Hora:</span>
-                    <span class="value">{{ turno.hora|time:"H:i" }}</span>
+                <div class="detail-row">
+                    <span class="detail-label">Fecha Inicio:</span>
+                    <span class="detail-value">{{ turno.fecha|date:"d/m/Y" }} | {{ turno.hora|time:"H:i" }} a.m.</span>
+                    <span class="detail-auto">[ Automático ]</span>
                 </div>
-                <div class="row">
-                    <span class="label">Tipo de Aviso:</span>
-                    <span class="value">{{ tipo_nombre }}</span>
+                <div class="detail-row">
+                    <span class="detail-label">Descripción:</span>
+                    <span class="detail-value">{{ tipo_nombre }}</span>
+                    <span class="detail-auto">[ Automático ]</span>
                 </div>
-                <div class="row" style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
-                    <span class="label">Responsable:</span>
-                    <span class="value">{{ responsable.nombre }}</span>
+                <div class="detail-row">
+                    <span class="detail-label">Estado:</span>
+                    <span class="detail-value">{{ turno.get_estado_display }}</span>
+                    <span class="detail-auto">[ Automático ]</span>
                 </div>
             </div>
         </div>
+
         <div class="footer">
-            <p>Este es un aviso automático generado por TechScheduler.</p>
-            <p>&copy; {% now "Y" %} TechScheduler.</p>
+            Enviado Fecha / Hora: {% now "d/m/Y | H:i" %} a.m..
         </div>
     </div>
 </body>
