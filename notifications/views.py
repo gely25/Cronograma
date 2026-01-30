@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import HttpResponse
+from django.core.paginator import Paginator
 from django.db.models import Count
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -86,11 +87,15 @@ def dashboard(request):
             'modelo': modelo,
             'duracion': duracion
         })
-    # --- HISTORIAL (AUDITORÍA) ---
-    historial = HistorialEnvio.objects.select_related(
+    # --- HISTORIAL (AUDITORÍA) CON PAGINACIÓN ---
+    historial_list = HistorialEnvio.objects.select_related(
         'turno', 
         'turno__responsable'
-    ).order_by('-fecha_envio')[:50]
+    ).order_by('-fecha_envio')
+    
+    paginator = Paginator(historial_list, 20) # 20 por página
+    page_number = request.GET.get('page')
+    historial = paginator.get_page(page_number)
 
     # --- PROYECCIÓN (RADAR SEMANAL) ---
     proyeccion = NotificationService.calcular_proyeccion(7)
