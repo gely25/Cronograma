@@ -132,6 +132,13 @@ def guardar_configuracion(request):
         if data.get('modo_exclusion'):
             config.modo_exclusion = data.get('modo_exclusion')
         
+        if data.get('fecha_inicio') and data.get('fecha_fin'):
+            if data.get('fecha_inicio') > data.get('fecha_fin'):
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'La fecha de inicio no puede ser posterior a la fecha de fin.'
+                }, status=400)
+
         config.save()
         return JsonResponse({'status': 'ok', 'message': 'Configuración guardada correctamente'})
     except Exception as e:

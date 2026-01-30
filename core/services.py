@@ -123,6 +123,12 @@ def asignar_turnos_automatico():
     # Ordenar por ID del responsable para mantener el orden del Excel
     turnos_pendientes = Turno.objects.filter(estado='pendiente').order_by('responsable__id')
     
+    if turnos_pendientes.count() == 0:
+        return 0, {
+            'error_type': 'no_pending_turns',
+            'message': 'No hay turnos pendientes para asignar. Asegúrate de subir un archivo Excel primero o reiniciar (Reiniciar Sistema) si ya habías generado uno.'
+        }
+
     total_responsables = Responsable.objects.count()
     total_turnos = Turno.objects.count()
     

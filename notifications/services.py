@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, time
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
 from django.conf import settings
@@ -8,101 +9,34 @@ from django.utils.html import strip_tags
 from django.core.mail import EmailMultiAlternatives
 from email.mime.image import MIMEImage
 import os
-from .models import ConfiguracionNotificacion, HistorialEnvio
+from .models import ConfiguracionNotificacion, HistorialEnvio, NotificacionEncolada, AuditLogNotificaciones
 from core.models import Turno
 
 class NotificationService:
-    
+
     @staticmethod
-    def calcular_proyeccion(dias=7):
+    def sincronizar_cola():
         """
-        Calcula qué notificaciones se enviarían en los próximos 'dias' según las reglas actuales.
-        No guarda nada en BD. Retorna una lista de diccionarios (objetos virtuales).
+        Escanea los turnos próximos y genera los registros en NotificacionEncolada 
+        que aún no existan.
         """
         config = ConfiguracionNotificacion.get_solo()
         now = timezone.now()
-        end_date = now + timedelta(days=dias)
+        # Escaneamos con un margen razonable (7 días)
+        ventana_dias = 7
+        # Fix: Use localdate
+        local_today = timezone.localdate(now)
+        end_date = local_today + timedelta(days=ventana_dias)
         
-        # 1. Obtener turnos relevantes (Excluyendo Cancelados y Completados)
         turnos = Turno.objects.filter(
-            fecha__gte=now.date(), 
-            fecha__lte=(end_date.date() + timedelta(days=config.dias_antes + 1))
+            fecha__gte=local_today - timedelta(days=1),
+            fecha__lte=end_date + timedelta(days=config.dias_antes + 1)
         ).exclude(
             estado__in=['cancelado', 'completado']
         ).select_related('responsable')
 
-        proyeccion = []
-        
+        creadas = 0
         for turno in turnos:
-            if not turno.fecha or not turno.hora or not turno.responsable.email:
-                continue
-                
-            # Make aware to allow comparison with timezone.now()
-            try:
-                turno_dt = timezone.make_aware(datetime.combine(turno.fecha, turno.hora))
-            except Exception:
-                turno_dt = datetime.combine(turno.fecha, turno.hora)
-            
-            # Regla 1: Anticipado
-            if config.activar_anticipado:
-                fecha_notif = turno_dt - timedelta(days=config.dias_antes)
-                if now <= fecha_notif <= end_date:
-                    proyeccion.append({
-                        'turno': turno,
-                        'tipo': 'anticipado',
-                        'tipo_display': 'Recordatorio Anticipado',
-                        'fecha_programada': fecha_notif,
-                        'responsable': turno.responsable,
-                        'estado_simulado': 'pendiente'
-                    })
-            
-            # Regla 2: Día del Turno (X minutos antes)
-            if config.activar_jornada:
-                fecha_notif = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
-                if now <= fecha_notif <= end_date:
-                    proyeccion.append({
-                        'turno': turno,
-                        'tipo': 'jornada',
-                        'tipo_display': 'Aviso Próximo (Hoy)',
-                        'fecha_programada': fecha_notif,
-                        'responsable': turno.responsable,
-                        'estado_simulado': 'pendiente'
-                    })
-                    
-        # Ordenar por fecha
-        proyeccion.sort(key=lambda x: x['fecha_programada'])
-        return proyeccion
-
-    @staticmethod
-    def ejecutar_vigilancia():
-        """
-        EL OBSERVADOR.
-        Busca turnos que deben ser notificados AHORA (ventana de +- 1 hora o intervalo de cron).
-        Verifica si ya se envió para no duplicar.
-        Envía y registra en Historial.
-        """
-        config = ConfiguracionNotificacion.get_solo()
-        now = timezone.now()
-        # Ventana de disparo: Notificaciones programadas para "hace poco" que no se hayan enviado.
-        # Digamos, desde hace 1 hora hasta ahora. (Asumiendo cron cada hora).
-        ventana_inicio = now - timedelta(hours=1, minutes=30)
-        ventana_fin = now + timedelta(minutes=5) # Un poco de margen futuro
-        
-        enviados = 0
-        errores = 0
-        
-        # Obtenemos candidatos
-        turnos_candidatos = Turno.objects.filter(
-            fecha__gte=now.date() - timedelta(days=config.dias_antes + 1),
-            fecha__lte=now.date() + timedelta(days=2)
-        ).exclude(
-            estado__in=['cancelado', 'completado']
-        ).select_related('responsable', 'responsable__equipos')
-
-        connection = get_connection()
-        connection.open()
-        
-        for turno in turnos_candidatos:
             if not turno.fecha or not turno.hora or not turno.responsable.email:
                 continue
             
@@ -110,204 +44,190 @@ class NotificationService:
                 turno_dt = timezone.make_aware(datetime.combine(turno.fecha, turno.hora))
             except:
                 turno_dt = datetime.combine(turno.fecha, turno.hora)
-                
-            triggers = []
 
-            # Evaluar Regla 1: Anticipado
+            # Regla 1: Anticipado
             if config.activar_anticipado:
-                fecha_target = turno_dt - timedelta(days=config.dias_antes)
-                if ventana_inicio <= fecha_target <= ventana_fin:
-                    triggers.append(('anticipado', 'Recordatorio Anticipado'))
-
-            # Evaluar Regla 2: Día del Turno (X minutos antes)
-            if config.activar_jornada:
-                fecha_target = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
-                if ventana_inicio <= fecha_target <= ventana_fin:
-                    triggers.append(('jornada', 'Aviso Próximo (Hoy)'))
-            
-            for tipo_cod, tipo_nombre in triggers:
-                # VERIFICAR DUPLICADOS EN HISTORIAL
-                ya_enviado = HistorialEnvio.objects.filter(
-                    turno=turno,
-                    tipo=tipo_cod,
-                    estado='enviado'
-                ).exists()
-                
-                if ya_enviado:
-                    continue
-                    
-                # PROCEDER AL ENVÍO
-                try:
-                    # Lógica mejorada para {evento}
-                    evento_desc = ""
-                    # 1. Descripción del turno (si existe en el modelo, aunque Turno actual no la tiene, preparamos)
-                    if hasattr(turno, 'descripcion') and turno.descripcion:
-                        evento_desc = turno.descripcion
-                    # 2. Descripción del equipo del funcionario
-                    elif turno.responsable.equipos.exists():
-                        evento_desc = turno.responsable.equipos.first().descripcion
-                    
-                    # 3. Fallback a Actividad General de la configuración
-                    if not evento_desc or str(evento_desc).lower() == 'nan':
-                        evento_desc = config.actividad_general
-
-                    fmt_data = {
-                        'evento': evento_desc,
-                        'fecha': turno.fecha.strftime("%d/%m/%Y") if turno.fecha else "-",
-                        'hora': turno.hora.strftime("%H:%M") if turno.hora else "-",
-                        'funcionario': turno.responsable.nombre
-                    }
-
-                    # Render Subject
-                    subject = config.asunto_template.format(**fmt_data)
-                    
-                    # Render Body (Plain text first for formatting, then wrap in HTML if needed)
-                    body_text = config.cuerpo_template.format(**fmt_data)
-
-                    context = {
-                        'turno': turno,
-                        'responsable': turno.responsable,
-                        'tipo_nombre': tipo_nombre,
-                        'cuerpo_personalizado': body_text
-                    }
-                    
-                    # Creamos el objeto Historial
-                    historial = HistorialEnvio(
+                prog = turno_dt - timedelta(days=config.dias_antes)
+                # Solo planificar si es futuro o muy reciente para ejecutar_vigilancia
+                if prog > (now - timedelta(hours=1)):
+                    obj, created = NotificacionEncolada.objects.get_or_create(
                         turno=turno,
-                        tipo=tipo_cod,
-                        destinatario=turno.responsable.email,
-                        asunto=subject,
-                        cuerpo=body_text,
-                        estado='enviado'
+                        tipo='anticipado',
+                        defaults={'fecha_programada': prog}
                     )
-                    
-                    # Render HTML template (The template will now use 'cuerpo_personalizado')
-                    html_message = render_to_string('notifications/email_template.html', context)
-                    plain_message = strip_tags(html_message)
-                    
-                    # Render HTML template
-                    html_message = render_to_string('notifications/email_template.html', context)
-                    plain_message = strip_tags(html_message)
-                    
-                    # Preparar Email con CID
-                    msg = EmailMultiAlternatives(
-                        subject,
-                        plain_message,
-                        settings.DEFAULT_FROM_EMAIL,
-                        [turno.responsable.email],
-                        connection=connection
+                    if created: creadas += 1
+
+            # Regla 2: Día del Turno
+            if config.activar_jornada:
+                prog = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
+                if prog > (now - timedelta(minutes=30)):
+                    obj, created = NotificacionEncolada.objects.get_or_create(
+                        turno=turno,
+                        tipo='jornada',
+                        defaults={'fecha_programada': prog}
                     )
-                    msg.attach_alternative(html_message, "text/html")
-
-                    # Adjuntar imagen CID
-                    img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
-                    if os.path.exists(img_path):
-                        with open(img_path, 'rb') as f:
-                            img = MIMEImage(f.read())
-                            img.add_header('Content-ID', '<header_image>')
-                            msg.attach(img)
-                    
-                    msg.send()
-                    
-                    # Para soportar BCC en send_mail de Django (que no tiene bcc param directo en esta firma rápida)
-                    # Usaremos EmailMultiAlternatives para mayor control si es necesario, 
-                    # pero por ahora, si hay CC, lo añadimos a la lista si es BCC real
-                    if config.cc_email:
-                        bcc_msg = EmailMultiAlternatives(
-                            f"[BCC] {subject}",
-                            plain_message,
-                            settings.DEFAULT_FROM_EMAIL,
-                            [config.cc_email],
-                            connection=connection
-                        )
-                        bcc_msg.attach_alternative(html_message, "text/html")
-                        if os.path.exists(img_path):
-                            with open(img_path, 'rb') as f:
-                                img = MIMEImage(f.read())
-                                img.add_header('Content-ID', '<header_image>')
-                                bcc_msg.attach(img)
-                        bcc_msg.send()
-                    
-                    historial.save()
-                    enviados += 1
-                    
-                except Exception as e:
-                    print(f"Error enviando {turno}: {e}")
-                    # Si falló antes de guardar historial, no pasa nada (se reintentará prox ciclo)
-                    # Si falló después (en send_mail), actualizamos historial a fallido
-                    if 'historial' in locals() and historial.pk:
-                        historial.estado = 'fallido'
-                        historial.error_log = str(e)
-                        historial.save()
-                    errores += 1
-
-        connection.close()
-        return enviados, errores
-
+                    if created: creadas += 1
+        
+        return creadas
     @staticmethod
-    def enviar_broadcast_inicio():
+    def calcular_proyeccion(dias=7):
         """
-        Envía un correo masivo de inicio a todos los funcionarios con turnos.
-        Se envía UNO POR UNO para personalizar el nombre en el saludo.
+        Calcula qué notificaciones corresponden a los turnos en los próximos 'dias'.
+        Enfoque centrado en TURNOS para que el usuario vea todo su plan.
         """
         config = ConfiguracionNotificacion.get_solo()
+        now = timezone.now()
+        # Rango basado en fechas de TURNOS
+        # CRITICAL FIX: Use localdate() because in UTC it might be tomorrow, 
+        # causing today's evening shifts to be skipped in the projection.
+        start_date = timezone.localdate(now)
+        end_date = start_date + timedelta(days=dias)
         
-        # Obtener responsables únicos con turnos activos
-        # Asumimos que responsable es una FK a un modelo que tiene 'email' y 'nombre'
-        # Ordenamos por fecha/hora para asegurar que tomamos el turno más próximo
-        turnos_activos = Turno.objects.exclude(
-            estado__in=['cancelado', 'completado']
+        # 1. Obtener todos los turnos del rango (incluyendo completados si el usuario los quiere ver, 
+        # pero para notificar solemos omitir completados/cancelados)
+        turnos = Turno.objects.filter(
+            fecha__gte=start_date, 
+            fecha__lte=end_date
+        ).exclude(
+            estado='cancelado' # Quitamos solo los cancelados explícitos
         ).select_related('responsable').order_by('fecha', 'hora')
+
+        proyeccion = []
         
-        # Usamos un diccionario para unificar por email y evitar duplicados
-        # Guardaremos el OBJETO TURNO completo, no solo el responsable
-        turnos_por_email = {}
-        for t in turnos_activos:
-            if t.responsable and t.responsable.email:
-                # Como vienen ordenados ascendente, el primero que entra es el más próximo.
-                if t.responsable.email not in turnos_por_email:
-                    turnos_por_email[t.responsable.email] = t
-        
-        if not turnos_por_email:
-            return 0
+        for turno in turnos:
+            if not turno.fecha or not turno.hora or not turno.responsable.email:
+                continue
+                
+            try:
+                turno_dt = timezone.make_aware(datetime.combine(turno.fecha, turno.hora))
+            except:
+                turno_dt = datetime.combine(turno.fecha, turno.hora)
             
-        subject = config.asunto_inicio
-        body_text = config.cuerpo_inicio
+            # Solo generamos proyección si el turno aún no ha ocurrido O si es hoy
+            if turno_dt < (now - timedelta(hours=2)): # Margen de 2 horas tras el turno
+                continue
+
+            # Regla 1: Anticipado
+            if config.activar_anticipado:
+                fecha_notif = turno_dt - timedelta(days=config.dias_antes)
+                proyeccion.append({
+                    'turno': turno,
+                    'tipo': 'anticipado',
+                    'tipo_display': 'Recordatorio Anticipado',
+                    'fecha_programada': fecha_notif,
+                    'responsable': turno.responsable,
+                    'estado_simulado': 'pendiente'
+                })
+            
+            # Regla 2: Día del Turno (X minutos antes)
+            if config.activar_jornada:
+                fecha_notif = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
+                proyeccion.append({
+                    'turno': turno,
+                    'tipo': 'jornada',
+                    'tipo_display': 'Aviso Próximo (Hoy)',
+                    'fecha_programada': fecha_notif,
+                    'responsable': turno.responsable,
+                    'estado_simulado': 'pendiente'
+                })
+                    
+        # Ordenar por fecha de notificación
+        proyeccion.sort(key=lambda x: x['fecha_programada'])
+        return proyeccion
+
+    @staticmethod
+    def ejecutar_vigilancia():
+        """
+        EL PROCESADOR DE COLA.
+        Busca notificaciones en 'pendiente' o 'error_temporal' con fecha_programada <= ahora.
+        Realiza el envío, gestiona reintentos y actualiza estados.
+        """
+        now = timezone.now()
+        cola = NotificacionEncolada.objects.filter(
+            estado__in=['pendiente', 'error_temporal'],
+            fecha_programada__lte=now
+        ).select_related('turno', 'turno__responsable')
         
-        count = 0
+        enviados = 0
+        errores = 0
+        
+        if not cola.exists():
+            return 0, 0
+
+        config = ConfiguracionNotificacion.get_solo()
         connection = get_connection()
         connection.open()
         
-        # Preparamos la imagen una sola vez si es posible, pero para attacharla
-        # a cada mensaje necesitamos re-leerla o usar el mismo objeto si la lib lo permite.
-        # Por seguridad en el loop, verificamos ruta.
+        # Imagen para adjuntar (Leída una sola vez para optimizar velocidad)
         img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+        img_data = None
+        if os.path.exists(img_path):
+            with open(img_path, 'rb') as f:
+                img_data = f.read()
         
-        for email, turno_real in turnos_por_email.items():
-            responsable = turno_real.responsable
+        for item in cola:
+            item.estado = 'procesando'
+            item.save()
+            
             try:
-                # Personalizar el cuerpo también si usa {funcionario}
-                # AHORA USAMOS LA FECHA REAL DEL TURNO
-                fmt_data = {
-                    'funcionario': responsable.nombre,
-                    'evento': 'Inicio de Cronograma',
-                    'fecha': turno_real.fecha.strftime("%d/%m/%Y") if turno_real.fecha else "-",
-                    'hora': turno_real.hora.strftime("%H:%M") if turno_real.hora else "-"
-                }
+                turno = item.turno
+                # Lógica de {evento}
+                evento_desc = ""
+                if hasattr(turno, 'descripcion') and turno.descripcion:
+                    evento_desc = turno.descripcion
+                elif turno.responsable.equipos.exists():
+                    evento_desc = turno.responsable.equipos.first().descripcion
                 
-                # Intentamos formatear el cuerpo si tiene placeholders
-                try:
-                    current_body = body_text.format(**fmt_data)
-                except:
-                    current_body = body_text
+                if not evento_desc or str(evento_desc).lower() == 'nan':
+                    evento_desc = config.actividad_general
 
-                # Contexto para el template
-                # PASAMOS EL TURNO REAL AL CONTEXTO
+                # Lógica dinámica avanzada (Multidispositivo y Tiempos reales)
+                equipos = turno.responsable.equipos.all()
+                if equipos.count() > 1:
+                    lista_equipos = "\n".join([f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})" for e in equipos])
+                    marca_str = "varios modelos"
+                    modelo_str = "ver detalle en lista"
+                elif equipos.count() == 1:
+                    e = equipos.first()
+                    lista_equipos = f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})"
+                    marca_str = e.marca
+                    modelo_str = e.modelo
+                else:
+                    lista_equipos = "Equipo informático general"
+                    marca_str = "Hardware"
+                    modelo_str = "General"
+                
+                # Para evitar 'nan' de pandas/excel
+                marca_str = str(marca_str) if str(marca_str).lower() != 'nan' else "Hardware"
+                modelo_str = str(modelo_str) if str(modelo_str).lower() != 'nan' else "General"
+                
+                # Fechas dinámicas del cronograma
+                config_crono = getattr(settings, 'CONFIG_CRONOGRAMA', None) # Intento obtener de settings o fallback
+                # Pero mejor lo sacamos de la DB si es posible
+                from core.models import ConfiguracionCronograma
+                crono = ConfiguracionCronograma.objects.first()
+                duracion = crono.duracion_turno if crono else 30
+                
+                fmt_data = {
+                    'evento': evento_desc,
+                    'fecha': turno.fecha.strftime("%d/%m/%Y"),
+                    'hora': turno.hora.strftime("%H:%M %p"),
+                    'funcionario': turno.responsable.nombre,
+                    'marca': marca_str,
+                    'modelo': modelo_str,
+                    'equipos_lista': lista_equipos,
+                    'duracion': duracion,
+                    'fecha_turno': turno.fecha.strftime("%d de %B del %Y") # Formato más formal
+                }
+
+                subject = config.asunto_template.format(**fmt_data)
+                body_text = config.cuerpo_template.format(**fmt_data)
+
                 context = {
-                    'responsable': responsable, # Objeto real con .nombre
-                    'cuerpo_personalizado': current_body,
-                    'tipo_nombre': 'Notificación de Inicio',
-                    'turno': turno_real 
+                    'turno': turno,
+                    'responsable': turno.responsable,
+                    'tipo_nombre': item.get_tipo_display(),
+                    'cuerpo_personalizado': body_text
                 }
                 
                 html_message = render_to_string('notifications/email_template.html', context)
@@ -317,52 +237,233 @@ class NotificationService:
                     subject,
                     plain_message,
                     settings.DEFAULT_FROM_EMAIL,
-                    [email],
+                    [turno.responsable.email],
                     connection=connection
                 )
                 msg.attach_alternative(html_message, "text/html")
 
-                if os.path.exists(img_path):
-                    with open(img_path, 'rb') as f:
-                        img = MIMEImage(f.read())
-                        img.add_header('Content-ID', '<header_image>')
-                        msg.attach(img)
+                if img_data:
+                    img = MIMEImage(img_data)
+                    img.add_header('Content-ID', '<header_image>')
+                    msg.attach(img)
                 
                 msg.send()
-                count += 1
-                
-            except Exception as e:
-                print(f"Error enviando broadcast a {email}: {e}")
 
-        # Enviar copia oculta única si está configurado (resumen o testigo)
-        if config.cc_email and count > 0:
-            try:
-                context_bcc = {
-                    'responsable': {'nombre': 'FUNCIONARIOS (BCC)'},
-                    'cuerpo_personalizado': f"Este es un correo de control. Se inició el envío masivo a {count} funcionarios.",
-                    'tipo_nombre': 'Resumen de Inicio',
-                    'turno': {'fecha': timezone.now(), 'hora': timezone.now(), 'get_estado_display': 'Log'}
-                }
-                html_bcc = render_to_string('notifications/email_template.html', context_bcc)
+                # BCC de supervisión
+                if config.cc_email:
+                    try:
+                        bcc_msg = EmailMultiAlternatives(
+                            f"[BCC] {subject}",
+                            plain_message,
+                            settings.DEFAULT_FROM_EMAIL,
+                            [config.cc_email],
+                            connection=connection
+                        )
+                        bcc_msg.attach_alternative(html_message, "text/html")
+                        if img_data:
+                            img_copy = MIMEImage(img_data)
+                            img_copy.add_header('Content-ID', '<header_image>')
+                            bcc_msg.attach(img_copy)
+                        bcc_msg.send()
+                    except:
+                        pass # No bloquear si el BCC falla
+
+                # ÉXITO
+                item.estado = 'enviado'
+                item.intentos += 1
+                item.ultimo_error = ""
+                item.save()
                 
-                bcc_msg = EmailMultiAlternatives(
-                    f"[BCC-INICIO] {subject}",
-                    strip_tags(html_bcc),
-                    settings.DEFAULT_FROM_EMAIL,
-                    [config.cc_email],
-                    connection=connection
+                HistorialEnvio.objects.create(
+                    notificacion=item,
+                    turno=turno,
+                    tipo=item.tipo,
+                    intento_n=item.intentos,
+                    estado='enviado',
+                    destinatario=turno.responsable.email,
+                    asunto=subject,
+                    cuerpo=body_text
                 )
-                bcc_msg.attach_alternative(html_bcc, "text/html")
-                # Imagen
-                if os.path.exists(img_path):
-                    with open(img_path, 'rb') as f:
-                        img = MIMEImage(f.read())
-                        img.add_header('Content-ID', '<header_image>')
-                        bcc_msg.attach(img)
-                        
-                bcc_msg.send()
+                enviados += 1
+                
             except Exception as e:
-                print(f"Error enviando BCC broadcast: {e}")
+                item.intentos += 1
+                item.ultimo_error = str(e)
+                # Decidir si agotamos intentos o reintentamos luego
+                if item.intentos >= item.max_intentos:
+                    item.estado = 'fallido'
+                else:
+                    item.estado = 'error_temporal'
+                item.save()
+                
+                HistorialEnvio.objects.create(
+                    notificacion=item,
+                    turno=item.turno,
+                    tipo=item.tipo,
+                    intento_n=item.intentos,
+                    estado='fallido',
+                    destinatario=item.turno.responsable.email if item.turno else "??",
+                    asunto="Error en envío automático",
+                    error_log=str(e)
+                )
+                errores += 1
 
         connection.close()
-        return count
+        return enviados, errores
+
+
+    @staticmethod
+    def reenviar_individual(cola_id):
+        """
+        Reintenta enviar una notificación específica de la cola.
+        """
+        item = get_object_or_404(NotificacionEncolada, id=cola_id)
+        # Forzar estado a pendiente para que ejecutar_vigilancia lo tome,
+        # o procesarlo inmediatamente. Vamos a procesarlo inmediatamente.
+        
+        connection = get_connection()
+        connection.open()
+        
+        # Imagen para adjuntar
+        img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+        
+        try:
+            turno = item.turno
+            config = ConfiguracionNotificacion.get_solo()
+            
+            # Datos para el template
+            # (Usamos la misma lógica que ejecutar_vigilancia)
+            evento_desc = ""
+            if hasattr(turno, 'descripcion') and turno.descripcion:
+                evento_desc = turno.descripcion
+            elif turno.responsable.equipos.exists():
+                evento_desc = turno.responsable.equipos.first().descripcion
+            
+            if not evento_desc or str(evento_desc).lower() == 'nan':
+                evento_desc = config.actividad_general
+
+            # Lógica dinámica en reenvío (Multidispositivo y Tiempos reales)
+            equipos = turno.responsable.equipos.all()
+            if equipos.count() > 1:
+                lista_equipos = "\n".join([f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})" for e in equipos])
+                marca_str = "varios modelos"
+                modelo_str = "ver detalle en lista"
+            elif equipos.count() == 1:
+                e = equipos.first()
+                lista_equipos = f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})"
+                marca_str = e.marca
+                modelo_str = e.modelo
+            else:
+                lista_equipos = "Equipo informático general"
+                marca_str = "Hardware"
+                modelo_str = "General"
+            
+            marca_str = str(marca_str) if str(marca_str).lower() != 'nan' else "Hardware"
+            modelo_str = str(modelo_str) if str(modelo_str).lower() != 'nan' else "General"
+            
+            from core.models import ConfiguracionCronograma
+            crono = ConfiguracionCronograma.objects.first()
+            duracion = crono.duracion_turno if crono else 30
+
+            fmt_data = {
+                'evento': evento_desc,
+                'fecha': turno.fecha.strftime("%d/%m/%Y"),
+                'hora': turno.hora.strftime("%H:%M %p"),
+                'funcionario': turno.responsable.nombre,
+                'marca': marca_str,
+                'modelo': modelo_str,
+                'equipos_lista': lista_equipos,
+                'duracion': duracion,
+                'fecha_turno': turno.fecha.strftime("%d de %B del %Y")
+            }
+
+            subject = config.asunto_template.format(**fmt_data)
+            body_text = config.cuerpo_template.format(**fmt_data)
+
+            context = {
+                'turno': turno,
+                'responsable': turno.responsable,
+                'tipo_nombre': item.get_tipo_display(),
+                'cuerpo_personalizado': body_text
+            }
+            
+            html_message = render_to_string('notifications/email_template.html', context)
+            plain_message = strip_tags(html_message)
+            
+            msg = EmailMultiAlternatives(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [turno.responsable.email],
+                connection=connection
+            )
+            msg.attach_alternative(html_message, "text/html")
+
+            if os.path.exists(img_path):
+                with open(img_path, 'rb') as f:
+                    img = MIMEImage(f.read())
+                    img.add_header('Content-ID', '<header_image>')
+                    msg.attach(img)
+            
+            msg.send()
+            
+            # ÉXITO
+            item.estado = 'enviado'
+            item.ultimo_error = ""
+            item.intentos += 1
+            item.save()
+            
+            HistorialEnvio.objects.create(
+                notificacion=item,
+                turno=turno,
+                tipo=item.tipo,
+                intento_n=item.intentos,
+                estado='enviado',
+                destinatario=turno.responsable.email,
+                asunto=subject,
+                cuerpo=body_text
+            )
+            
+            # Auditoría humana
+            AuditLogNotificaciones.objects.create(
+                notificacion=item,
+                accion="Reenvío Individual Manual",
+                detalles=f"Reenviado con éxito a {turno.responsable.email}"
+            )
+            
+            connection.close()
+            return True, "Enviado con éxito"
+            
+        except Exception as e:
+            item.intentos += 1
+            item.ultimo_error = str(e)
+            item.save()
+            
+            HistorialEnvio.objects.create(
+                notificacion=item,
+                turno=item.turno,
+                tipo=item.tipo,
+                intento_n=item.intentos,
+                estado='fallido',
+                destinatario=item.turno.responsable.email if item.turno else "??",
+                asunto="Reenvío Manual",
+                error_log=str(e)
+            )
+            
+            connection.close()
+            return False, str(e)
+
+    @staticmethod
+    def reenviar_masivo(id_list):
+        """
+        Reintenta el envío de múltiples notificaciones de la cola.
+        """
+        exitos = 0
+        errores = 0
+        for cola_id in id_list:
+            success, _ = NotificationService.reenviar_individual(cola_id)
+            if success:
+                exitos += 1
+            else:
+                errores += 1
+        return exitos, errores

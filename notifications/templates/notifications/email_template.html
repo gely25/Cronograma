@@ -59,20 +59,85 @@
         }
 
         .custom-message {
-            background-color: #f9fafb;
-            padding: 25px;
-            border-radius: 16px;
-            border: 1px dashed #e5e7eb;
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            border: none;
             font-size: 14px;
             line-height: 1.6;
-            color: #4b5563;
+            color: #374151;
             margin-bottom: 35px;
-            text-align: center;
+            text-align: justify;
         }
 
         .details-box {
             border-top: 1px solid #f3f4f6;
             padding-top: 25px;
+            margin-bottom: 40px;
+        }
+
+        /* Signature Styles */
+        .signature-container {
+            margin-top: 40px;
+            border-top: 1px solid #fb923c;
+            padding-top: 30px;
+            font-family: Arial, sans-serif;
+        }
+
+        .sig-logo {
+            width: 140px;
+            vertical-align: top;
+        }
+
+        .sig-content {
+            padding-left: 20px;
+            border-left: 1px solid #fb923c;
+            margin-left: 20px;
+            display: inline-block;
+        }
+
+        .sig-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: #003366;
+            margin: 0;
+        }
+
+        .sig-title {
+            font-size: 13px;
+            color: #4b5563;
+            margin: 2px 0 0 0;
+        }
+
+        .sig-dept {
+            font-size: 11px;
+            font-weight: bold;
+            color: #003366;
+            margin: 4px 0 0 0;
+            text-transform: uppercase;
+        }
+
+        .sig-info-row {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sig-social {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .social-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #003366;
+            border-radius: 50%;
+            display: inline-block;
         }
 
         .detail-row {
@@ -151,12 +216,36 @@
                     <span class="detail-value">{{ tipo_nombre }}</span>
                     <span class="detail-auto">[ Automático ]</span>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Estado:</span>
-                    <span class="detail-value">{{ turno.get_estado_display }}</span>
-                    <span class="detail-auto">[ Automático ]</span>
-                </div>
             </div>
+
+            <div style="font-size: 14px; color: #374151; margin-bottom: 30px;">
+                Saludos Cordiales,
+            </div>
+
+            <!-- Enhanced UNEMI Signature -->
+            <table class="signature-container" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                <tr>
+                    <td style="width: 140px; vertical-align: top;">
+                        <img src="https://www.unemi.edu.ec/wp-content/uploads/2021/04/LOGO-UNEMI-SOLO.png" alt="UNEMI" style="width: 130px;">
+                        <div style="margin-top: 10px; display: flex; gap: 5px;">
+                            <div style="width: 20px; height: 20px; background-color: #003366; border-radius: 50%;"></div>
+                            <div style="width: 20px; height: 20px; background-color: #003366; border-radius: 50%;"></div>
+                            <div style="width: 20px; height: 20px; background-color: #003366; border-radius: 50%;"></div>
+                        </div>
+                    </td>
+                    <td style="padding-left: 20px; border-left: 2px solid #fb923c; vertical-align: top;">
+                        <div style="font-size: 18px; font-weight: 900; color: #003366; font-family: sans-serif;">Luis Enrique Castillo Salvatierra</div>
+                        <div style="font-size: 13px; color: #4b5563; margin-top: 2px;">Experto de Operaciones y Soporte</div>
+                        <div style="font-size: 11px; font-weight: bold; color: #003366; margin-top: 4px; text-transform: uppercase;">DIRECCIÓN DE TECNOLOGÍA DE LA INFORMACIÓN Y COMUNICACIONES</div>
+                        <div style="margin-top: 15px; border-top: 1px solid #f3f4f6; padding-top: 10px;">
+                            <div style="font-size: 11px; color: #4b5563; margin-bottom: 4px;">📞 0000-0002-1111-2740</div>
+                            <div style="font-size: 11px; color: #4b5563; margin-bottom: 4px;">✉️ lcastillos1@unemi.edu.ec</div>
+                            <div style="font-size: 11px; color: #4b5563; margin-bottom: 4px;">🌐 www.unemi.edu.ec</div>
+                            <div style="font-size: 10px; color: #9ca3af; margin-top: 8px; font-style: italic;">Cdla. Universitaria Dr. Rómulo Minchala Murillo km 1,5 vía Milagro - Virgen de Fátima. Milagro, Ecuador.</div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <div class="footer">
