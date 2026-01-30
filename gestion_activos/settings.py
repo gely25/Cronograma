@@ -18,7 +18,13 @@ import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+
+# Intentar cargar .env desde el directorio actual o el superior
+env_path = os.path.join(BASE_DIR, '.env')
+if not os.path.exists(env_path):
+    env_path = os.path.join(BASE_DIR.parent, '.env')
+
+load_dotenv(env_path)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-563(@2@%-^ilw)t961nn+wyr6=oc9)g0qyo)3_7_ptupycwu5^')

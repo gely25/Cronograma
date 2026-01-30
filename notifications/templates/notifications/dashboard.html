@@ -3,40 +3,72 @@
 {% block title %}Gestor de Notificaciones{% endblock %}
 
 {% block content %}
+<!-- Quill.js CDN -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<style>
+    .ql-toolbar {
+        border-top-left-radius: 1rem !important;
+        border-top-right-radius: 1rem !important;
+        border-color: #e5e7eb !important;
+        background: #f9fafb;
+    }
+
+    .ql-container {
+        border-bottom-left-radius: 1rem !important;
+        border-bottom-right-radius: 1rem !important;
+        border-color: #e5e7eb !important;
+        font-family: inherit !important;
+        font-size: 0.875rem !important;
+    }
+
+    .ql-editor {
+        min-height: 150px;
+        font-family: inherit;
+    }
+</style>
 <div class="min-h-screen bg-gray-50/50 w-full flex flex-col relative">
-    
+
     <!-- Toast Notifications -->
-    <div id="toastContainer" class="fixed top-6 right-6 z-[100] flex flex-col gap-3 max-w-md w-full pointer-events-none">
+    <div id="toastContainer"
+        class="fixed top-6 right-6 z-[100] flex flex-col gap-3 max-w-md w-full pointer-events-none">
         {% if messages %}
-            {% for message in messages %}
-                <div class="toast-item pointer-events-auto bg-white border-l-4 {% if message.tags == 'success' %}border-l-green-500 text-green-800{% elif message.tags == 'warning' %}border-l-amber-500 text-amber-800{% elif message.tags == 'error' %}border-l-red-500 text-red-800{% else %}border-l-blue-500 text-blue-800{% endif %} p-4 rounded-xl shadow-2xl animate-in slide-in-from-right-full duration-500 flex items-start gap-4 ring-1 ring-black/5">
-                    <div class="p-2 rounded-lg {% if message.tags == 'success' %}bg-green-50 text-green-500{% elif message.tags == 'warning' %}bg-amber-50 text-amber-500{% elif message.tags == 'error' %}bg-red-50 text-red-500{% else %}bg-blue-50 text-blue-500{% endif %}">
-                        <i data-lucide="{% if message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}alert-triangle{% elif message.tags == 'error' %}x-circle{% else %}info{% endif %}" class="w-5 h-5"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-bold leading-tight">{{ message }}</p>
-                    </div>
-                    <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            {% endfor %}
+        {% for message in messages %}
+        <div
+            class="toast-item pointer-events-auto bg-white border-l-4 {% if message.tags == 'success' %}border-l-green-500 text-green-800{% elif message.tags == 'warning' %}border-l-amber-500 text-amber-800{% elif message.tags == 'error' %}border-l-red-500 text-red-800{% else %}border-l-blue-500 text-blue-800{% endif %} p-4 rounded-xl shadow-2xl animate-in slide-in-from-right-full duration-500 flex items-start gap-4 ring-1 ring-black/5">
+            <div
+                class="p-2 rounded-lg {% if message.tags == 'success' %}bg-green-50 text-green-500{% elif message.tags == 'warning' %}bg-amber-50 text-amber-500{% elif message.tags == 'error' %}bg-red-50 text-red-500{% else %}bg-blue-50 text-blue-500{% endif %}">
+                <i data-lucide="{% if message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}alert-triangle{% elif message.tags == 'error' %}x-circle{% else %}info{% endif %}"
+                    class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-bold leading-tight">{{ message }}</p>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        {% endfor %}
         {% endif %}
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="hidden fixed inset-0 z-[110] bg-gray-900/40 backdrop-blur-sm flex items-center justify-center transition-all duration-300">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95">
+    <div id="loadingOverlay"
+        class="hidden fixed inset-0 z-[110] bg-gray-900/40 backdrop-blur-sm flex items-center justify-center transition-all duration-300">
+        <div
+            class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95">
             <div class="relative w-20 h-20 mx-auto">
                 <div class="absolute inset-0 border-4 border-blue-50 rounded-full"></div>
-                <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin">
+                </div>
                 <div class="absolute inset-0 flex items-center justify-center">
                     <i data-lucide="send" class="w-8 h-8 text-blue-600 animate-pulse"></i>
                 </div>
             </div>
             <div class="space-y-2">
                 <h3 class="text-lg font-black text-gray-900 uppercase tracking-tight">Procesando Envío</h3>
-                <p class="text-sm text-gray-500 font-medium">Estamos conectando con el servidor SMTP. Esto puede tomar unos segundos...</p>
+                <p class="text-sm text-gray-500 font-medium">Estamos conectando con el servidor SMTP. Esto puede tomar
+                    unos segundos...</p>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                 <div class="bg-blue-600 h-full w-1/3 rounded-full animate-[loading_2s_infinite_ease-in-out]"></div>
@@ -47,9 +79,19 @@
 
     <style>
         @keyframes loading {
-            0% { transform: translateX(-100%); width: 30%; }
-            50% { width: 60%; }
-            100% { transform: translateX(400%); width: 30%; }
+            0% {
+                transform: translateX(-100%);
+                width: 30%;
+            }
+
+            50% {
+                width: 60%;
+            }
+
+            100% {
+                transform: translateX(400%);
+                width: 30%;
+            }
         }
     </style>
     <!-- Header -->
@@ -71,7 +113,9 @@
                 <p class="text-gray-500 font-medium mt-1 ml-28">Supervisión automática y reglas de aviso</p>
             </div>
             <div class="flex gap-3">
-                <button onclick="openBatchModal()" class="px-5 py-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center gap-2 shadow-sm" title="Programar turnos seleccionados">
+                <button onclick="openBatchModal()"
+                    class="px-5 py-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center gap-2 shadow-sm"
+                    title="Programar turnos seleccionados">
                     <i data-lucide="calendar-plus" class="w-5 h-5"></i> Generar Notificaciones
                 </button>
                 <button onclick="document.getElementById('configModal').classList.remove('hidden')"
@@ -136,22 +180,31 @@
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[600px]">
                 <div class="border-b border-gray-100 bg-gray-50/30 flex items-center justify-between pr-4">
                     <div class="flex">
-                        <button onclick="switchTab('radar')" id="tab-radar" 
+                        <button onclick="switchTab('radar')" id="tab-radar"
                             class="px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 border-blue-600 text-blue-600 transition-all flex items-center gap-2">
-                            <i data-lucide="cpu" class="w-4 h-4"></i> Radar Semanal
+                            <i data-lucide="cpu" class="w-4 h-4"></i> Radar de Proyección
                         </button>
-                        <button onclick="switchTab('queue')" id="tab-queue" 
+                        <button onclick="switchTab('queue')" id="tab-queue"
                             class="px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all flex items-center gap-2">
-                            <i data-lucide="list" class="w-4 h-4"></i> Monitoreo Inteligente
+                            <i data-lucide="layout-list" class="w-4 h-4"></i> Cola de Mensajes
                         </button>
                     </div>
+                    <form action="{% url 'ejecutar_envios' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm flex items-center gap-2 text-[10px] font-bold uppercase">
+                            <i data-lucide="play" class="w-3 h-3"></i> Procesar Cola
+                        </button>
+                    </form>
                 </div>
 
                 <!-- Tab content: Radar de Proyección -->
                 <div id="content-radar" class="flex-1 flex flex-col overflow-hidden">
                     <div class="p-4 bg-blue-50/50 border-b border-blue-100 flex justify-between items-center">
-                        <span class="text-[10px] font-bold text-blue-700 uppercase">Turnos proyectados para los próximos 7 días</span>
-                        <button onclick="document.getElementById('proyeccionForm').submit()" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-black text-[9px] uppercase hover:bg-blue-700 transition">
+                        <span class="text-[10px] font-bold text-blue-700 uppercase">Turnos proyectados para los próximos
+                            7 días</span>
+                        <button onclick="document.getElementById('proyeccionForm').submit()"
+                            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-black text-[9px] uppercase hover:bg-blue-700 transition">
                             Generar Selección
                         </button>
                     </div>
@@ -159,10 +212,12 @@
                         <form id="proyeccionForm" action="{% url 'generar_desde_proyeccion' %}" method="POST">
                             {% csrf_token %}
                             <table class="w-full text-left text-sm">
-                                <thead class="bg-gray-50 text-[10px] uppercase font-black text-gray-400 sticky top-0 z-10">
+                                <thead
+                                    class="bg-gray-50 text-[10px] uppercase font-black text-gray-400 sticky top-0 z-10">
                                     <tr>
                                         <th class="px-6 py-4 w-10">
-                                            <input type="checkbox" onchange="toggleAllProyeccion(this)" class="rounded border-gray-300 text-blue-600">
+                                            <input type="checkbox" onchange="toggleAllProyeccion(this)"
+                                                class="rounded border-gray-300 text-blue-600">
                                         </th>
                                         <th class="px-6 py-4">Ejecución</th>
                                         <th class="px-6 py-4">Funcionario</th>
@@ -170,22 +225,37 @@
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
                                     {% for item in proyeccion %}
-                                    <tr class="hover:bg-blue-50/30 transition">
+                                    <tr
+                                        class="hover:bg-blue-50/30 transition {% if item.ya_procesado %}bg-gray-50/50 opacity-75{% endif %}">
                                         <td class="px-6 py-4 text-center">
-                                            <input type="checkbox" name="proyeccion_items" value="{{ item.turno.id }}:{{ item.tipo }}" class="proyeccion-check rounded border-gray-300 text-blue-600">
+                                            <div class="flex flex-col items-center gap-1">
+                                                <input type="checkbox" name="proyeccion_items"
+                                                    value="{{ item.turno.id }}:{{ item.tipo }}"
+                                                    class="proyeccion-check rounded border-gray-300 text-blue-600">
+                                                {% if item.ya_procesado %}
+                                                <span
+                                                    class="text-[7px] font-black text-green-600 uppercase leading-none">{{
+                                                    item.estado_actual }}</span>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                         <td class="px-6 py-4">
-                                            <div class="text-[11px] font-black text-gray-900">{{ item.fecha_programada|date:"d M H:i" }}</div>
-                                            <div class="text-[9px] font-bold text-blue-500 uppercase">{{ item.tipo_display }}</div>
+                                            <div class="text-[11px] font-black text-gray-900">{{
+                                                item.fecha_programada|date:"d M H:i" }}</div>
+                                            <div class="text-[9px] font-bold text-blue-500 uppercase">{{
+                                                item.tipo_display }}</div>
                                         </td>
                                         <td class="px-6 py-4">
-                                            <div class="text-[11px] font-bold text-gray-800">{{ item.responsable.nombre }}</div>
-                                            <div class="text-[9px] text-gray-400">Turno: {{ item.turno.fecha|date:"d/m" }} {{ item.turno.hora|time:"H:i" }}</div>
+                                            <div class="text-[11px] font-bold text-gray-800">{{ item.responsable.nombre
+                                                }}</div>
+                                            <div class="text-[9px] text-gray-400">Turno: {{ item.turno.fecha|date:"d/m"
+                                                }} {{ item.turno.hora|time:"H:i" }}</div>
                                         </td>
                                     </tr>
                                     {% empty %}
                                     <tr>
-                                        <td colspan="3" class="px-6 py-20 text-center text-gray-400 italic text-xs">No hay turnos proyectados para esta semana.</td>
+                                        <td colspan="3" class="px-6 py-20 text-center text-gray-400 italic text-xs">No
+                                            hay turnos proyectados para esta semana.</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -196,468 +266,543 @@
 
                 <!-- Tab content: Cola Activa -->
                 <div id="content-queue" class="hidden flex-1 flex flex-col overflow-hidden">
-                <div class="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
-                    <table class="w-full text-left text-sm text-gray-500">
-                        <thead class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 sticky top-0 bg-gray-50 z-10">
-                            <tr>
-                                <th class="px-6 py-4 w-10">
-                                    <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                </th>
-                                <th class="px-6 py-4">Ejecución</th>
-                                <th class="px-6 py-4">Responsable</th>
-                                <th class="px-6 py-4 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            {% for item in cola_radar %}
-                            <tr class="hover:bg-indigo-50/5 transition {% if item.estado == 'error_temporal' %}bg-amber-50/20{% endif %}">
-                                <td class="px-6 py-4 text-center">
-                                    <input type="checkbox" name="notificaciones" value="{{ item.id }}" class="notif-check rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="p-2 rounded-lg 
+                    <div class="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm text-gray-500">
+                            <thead
+                                class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 sticky top-0 bg-gray-50 z-10">
+                                <tr>
+                                    <th class="px-6 py-4 w-10">
+                                        <input type="checkbox" id="selectAll"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    </th>
+                                    <th class="px-6 py-4">Ejecución</th>
+                                    <th class="px-6 py-4">Responsable</th>
+                                    <th class="px-6 py-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for item in cola_radar %}
+                                <tr
+                                    class="hover:bg-indigo-50/5 transition {% if item.estado == 'error_temporal' %}bg-amber-50/20{% endif %}">
+                                    <td class="px-6 py-4 text-center">
+                                        <input type="checkbox" name="notificaciones" value="{{ item.id }}"
+                                            class="notif-check rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="p-2 rounded-lg 
                                             {% if item.tipo == 'inicio' %}bg-indigo-100 text-indigo-600
                                             {% elif item.tipo == 'anticipado' %}bg-blue-100 text-blue-600
                                             {% else %}bg-amber-100 text-amber-600{% endif %}">
-                                            <i data-lucide="{% if item.tipo == 'inicio' %}megaphone{% elif item.tipo == 'anticipado' %}calendar{% else %}zap{% endif %}" class="w-4 h-4"></i>
-                                        </div>
-                                        <div>
-                                            <div class="text-[11px] font-black text-gray-900 leading-tight">{{ item.fecha_programada|date:"d/m H:i" }}</div>
-                                            <div class="text-[9px] font-bold uppercase tracking-wider 
+                                                <i data-lucide="{% if item.tipo == 'inicio' %}megaphone{% elif item.tipo == 'anticipado' %}calendar{% else %}zap{% endif %}"
+                                                    class="w-4 h-4"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-[11px] font-black text-gray-900 leading-tight">{{
+                                                    item.fecha_programada|date:"d/m H:i" }}</div>
+                                                <div class="text-[9px] font-bold uppercase tracking-wider 
                                                 {% if item.tipo == 'inicio' %}text-indigo-500
                                                 {% elif item.tipo == 'anticipado' %}text-blue-500
                                                 {% else %}text-amber-500{% endif %}">
-                                                {{ item.get_tipo_display }}
+                                                    {{ item.get_tipo_display }}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-xs font-bold text-gray-900">{{ item.turno.responsable.nombre }}</div>
-                                    <div class="text-[10px] text-gray-400">{{ item.turno.responsable.email }}</div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <div class="flex justify-end gap-2">
-                                        <form action="{% url 'reenviar_notificacion' item.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <button type="submit" class="p-1.5 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-lg transition" title="Enviar ahora">
-                                                <i data-lucide="zap" class="w-4 h-4"></i>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-xs font-bold text-gray-900">{{ item.turno.responsable.nombre }}
+                                        </div>
+                                        <div class="text-[10px] text-gray-400">{{ item.turno.responsable.email }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <form action="{% url 'reenviar_notificacion' item.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <button type="submit"
+                                                    class="p-1.5 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-lg transition"
+                                                    title="Enviar ahora">
+                                                    <i data-lucide="zap" class="w-4 h-4"></i>
+                                                </button>
+                                            </form>
+                                            <button
+                                                onclick="openEditEmailModal('{{ item.id }}', '{{ item.turno.responsable.email }}')"
+                                                class="p-1.5 bg-gray-50 text-gray-400 hover:text-amber-600 rounded-lg transition"
+                                                title="Corregir correo">
+                                                <i data-lucide="edit-3" class="w-4 h-4"></i>
                                             </button>
-                                        </form>
-                                        <button onclick="openEditEmailModal('{{ item.id }}', '{{ item.turno.responsable.email }}')" class="p-1.5 bg-gray-50 text-gray-400 hover:text-amber-600 rounded-lg transition" title="Corregir correo">
-                                            <i data-lucide="edit-3" class="w-4 h-4"></i>
-                                        </button>
-                                        <form action="{% url 'cancelar_notificacion' item.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <button type="submit" class="p-1.5 bg-gray-50 text-gray-400 hover:text-red-500 rounded-lg transition" title="Cancelar">
-                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="px-6 py-12 text-center text-gray-300 italic text-xs">No hay notificaciones pendientes.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                            <form action="{% url 'cancelar_notificacion' item.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <button type="submit"
+                                                    class="p-1.5 bg-gray-50 text-gray-400 hover:text-red-500 rounded-lg transition"
+                                                    title="Cancelar">
+                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="px-6 py-12 text-center text-gray-300 italic text-xs">No hay
+                                        notificaciones pendientes.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Barra de Acciones Masivas (Flotante) -->
+                    <div id="bulkActionsBar"
+                        class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-gray-700 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-30 animate-in slide-in-from-bottom-10">
+                        <div class="flex items-center gap-3 pr-6 border-r border-gray-700">
+                            <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm"
+                                id="selectedCount">0</div>
+                            <span class="text-white font-bold text-sm uppercase tracking-wider">Seleccionados</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <form id="bulkForm" action="{% url 'notificaciones_masivas' %}" method="POST"
+                                class="hidden">
+                                {% csrf_token %}
+                                <input type="hidden" name="accion" id="bulkAccion">
+                            </form>
+                            <button onclick="submitBulk('reenviar')"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition flex items-center gap-2">
+                                <i data-lucide="send" class="w-4 h-4"></i> Reenviar en Bloque
+                            </button>
+                            <button onclick="submitBulk('cancelar')"
+                                class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-500/30 rounded-xl font-black text-xs uppercase hover:bg-red-600/30 transition flex items-center gap-2">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Barra de Acciones Masivas (Flotante) -->
-                <div id="bulkActionsBar" class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-gray-700 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-30 animate-in slide-in-from-bottom-10">
-                    <div class="flex items-center gap-3 pr-6 border-r border-gray-700">
-                        <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm" id="selectedCount">0</div>
-                        <span class="text-white font-bold text-sm uppercase tracking-wider">Seleccionados</span>
+                <!-- Historial (Log) -->
+                <div
+                    class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[600px]">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/20">
+                        <h3 class="font-bold text-gray-900 flex items-center gap-2">
+                            <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Bitácora de Auditoría
+                        </h3>
+                        <span
+                            class="text-[10px] font-black bg-gray-100 text-gray-600 px-3 py-1 rounded-full uppercase">Últimos
+                            Intentos</span>
                     </div>
-                    <div class="flex gap-2">
-                        <form id="bulkForm" action="{% url 'notificaciones_masivas' %}" method="POST" class="hidden">
-                            {% csrf_token %}
-                            <input type="hidden" name="accion" id="bulkAccion">
-                        </form>
-                        <button onclick="submitBulk('reenviar')" class="px-4 py-2 bg-blue-600 text-white rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition flex items-center gap-2">
-                            <i data-lucide="send" class="w-4 h-4"></i> Reenviar en Bloque
-                        </button>
-                        <button onclick="submitBulk('cancelar')" class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-500/30 rounded-xl font-black text-xs uppercase hover:bg-red-600/30 transition flex items-center gap-2">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i> Cancelar
-                        </button>
-                    </div>
-                </div>
-            </div>
+                    <div class="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
+                        <table class="w-full text-left text-sm text-gray-500">
+                            <thead
+                                class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 sticky top-0 bg-gray-50 z-10">
+                                <tr>
+                                    <th class="px-6 py-4">Realizado</th>
+                                    <th class="px-6 py-4">Asunto / Destinatario</th>
+                                    <th class="px-6 py-4 text-right">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for h in historial %}
+                                <tr
+                                    class="hover:bg-gray-50 transition border-l-4 {% if h.estado == 'enviado' %}border-l-green-400{% elif h.estado == 'cancelado' %}border-l-gray-300{% else %}border-l-red-400{% endif %}">
+                                    <td class="px-6 py-4 font-mono text-[10px] text-gray-500">
+                                        {{ h.fecha_envio|date:"d/m H:i" }}
+                                    </td>
+                                    <td class="px-6 py-4 text-xs">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <i data-lucide="{% if h.tipo == 'inicio' %}megaphone{% elif h.tipo == 'anticipado' %}calendar{% else %}zap{% endif %}"
+                                                class="w-3.5 h-3.5 {% if h.tipo == 'inicio' %}text-indigo-400{% elif h.tipo == 'anticipado' %}text-blue-400{% else %}text-amber-400{% endif %}"></i>
+                                            <div class="text-gray-900 font-bold truncate max-w-[200px]"
+                                                title="{{ h.asunto }}">
+                                                {{ h.asunto }}</div>
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span
+                                                class="text-[9px] font-black px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded uppercase">N°
+                                                {{ h.intento_n }}</span>
+                                            <div class="text-gray-400 text-[10px]">{{ h.destinatario }}</div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex flex-col items-end gap-2">
+                                            {% if h.estado == 'enviado' %}
+                                            <span
+                                                class="px-2 py-0.5 bg-green-50 text-green-600 rounded-full font-black text-[9px] uppercase flex items-center gap-1 border border-green-100">
+                                                <i data-lucide="check-circle" class="w-3 h-3"></i> Entregado
+                                            </span>
+                                            {% elif h.estado == 'cancelado' %}
+                                            <span
+                                                class="px-2 py-0.5 bg-gray-50 text-gray-400 rounded-full font-black text-[9px] uppercase flex items-center gap-1 border border-gray-100">
+                                                <i data-lucide="slash" class="w-3 h-3"></i> Cancelado
+                                            </span>
+                                            {% else %}
+                                            <span
+                                                class="px-2 py-0.5 bg-red-50 text-red-500 rounded-full font-black text-[9px] uppercase flex items-center gap-1 border border-red-100"
+                                                title="{{ h.error_log }}">
+                                                <i data-lucide="alert-circle" class="w-3 h-3"></i> Fallido
+                                            </span>
+                                            {% endif %}
 
-            <!-- Historial (Log) -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[600px]">
-                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/20">
-                    <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                        <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Bitácora de Auditoría
-                    </h3>
-                    <span class="text-[10px] font-black bg-gray-100 text-gray-600 px-3 py-1 rounded-full uppercase">Últimos Intentos</span>
-                </div>
-                <div class="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
-                    <table class="w-full text-left text-sm text-gray-500">
-                        <thead class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 sticky top-0 bg-gray-50 z-10">
-                            <tr>
-                                <th class="px-6 py-4">Realizado</th>
-                                <th class="px-6 py-4">Asunto / Destinatario</th>
-                                <th class="px-6 py-4 text-right">Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            {% for h in historial %}
-                            <tr class="hover:bg-gray-50 transition border-l-4 {% if h.estado == 'enviado' %}border-l-green-400{% elif h.estado == 'cancelado' %}border-l-gray-300{% else %}border-l-red-400{% endif %}">
-                                <td class="px-6 py-4 font-mono text-[10px] text-gray-500">
-                                    {{ h.fecha_envio|date:"d/m H:i" }}
-                                </td>
-                                <td class="px-6 py-4 text-xs">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <i data-lucide="{% if h.tipo == 'inicio' %}megaphone{% elif h.tipo == 'anticipado' %}calendar{% else %}zap{% endif %}" 
-                                           class="w-3.5 h-3.5 {% if h.tipo == 'inicio' %}text-indigo-400{% elif h.tipo == 'anticipado' %}text-blue-400{% else %}text-amber-400{% endif %}"></i>
-                                        <div class="text-gray-900 font-bold truncate max-w-[200px]" title="{{ h.asunto }}">
-                                            {{ h.asunto }}</div>
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-0.5">
-                                        <span class="text-[9px] font-black px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded uppercase">N° {{ h.intento_n }}</span>
-                                        <div class="text-gray-400 text-[10px]">{{ h.destinatario }}</div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    {% if h.estado == 'enviado' %}
-                                    <span class="text-green-600 font-black text-[10px] uppercase flex items-center justify-end gap-1">
-                                        <i data-lucide="check" class="w-3 h-3"></i> OK
-                                    </span>
-                                    {% elif h.estado == 'cancelado' %}
-                                    <span class="text-gray-400 font-black text-[10px] uppercase flex items-center justify-end gap-1">
-                                        <i data-lucide="slash" class="w-3 h-3"></i> CANC
-                                    </span>
-                                    {% else %}
-                                    <div class="flex flex-col items-end">
-                                        <span class="text-red-500 font-black text-[10px] uppercase flex items-center justify-end gap-1" title="{{ h.error_log }}">
-                                            <i data-lucide="x" class="w-3 h-3"></i> ERROR
-                                        </span>
-                                        {% if h.notificacion %}
-                                        <div class="text-[8px] text-gray-400 italic font-medium">Reintento auto: {{ h.notificacion.intentos }}/{{ h.notificacion.max_intentos }}</div>
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="px-6 py-12 text-center text-gray-300 italic text-xs">Sin registros aún.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                            <div class="flex items-center gap-3">
+                                                {% if h.notificacion %}
+                                                <form action="{% url 'reenviar_notificacion' h.notificacion.id %}"
+                                                    method="POST" class="inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit"
+                                                        class="text-[10px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 uppercase tracking-tighter hover:underline">
+                                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reenviar
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="px-6 py-12 text-center text-gray-300 italic text-xs">Sin
+                                        registros aún.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Configuration Modal -->
-<div id="configModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center"
-    style="display: none;">
-    <div class="flex items-center justify-center min-h-screen">
-        <div
-            class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
-            <!-- Modal Header -->
-            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <div>
-                    <h3 class="text-xl font-black text-gray-900 tracking-tight">Reglas y Formato de Notificación</h3>
-                    <p class="text-xs text-gray-500 font-medium">Define cuándo y cómo se avisará a los técnicos.</p>
+    <!-- Configuration Modal -->
+    <div id="configModal"
+        class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center"
+        style="display: none;">
+        <div class="flex items-center justify-center min-h-screen">
+            <div
+                class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
+                <!-- Modal Header -->
+                <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <div>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight">Reglas y Formato de Notificación
+                        </h3>
+                        <p class="text-xs text-gray-500 font-medium">Define cuándo y cómo se avisará a los técnicos.</p>
+                    </div>
+                    <button onclick="document.getElementById('configModal').classList.add('hidden')"
+                        class="p-2 hover:bg-gray-200 rounded-full transition text-gray-400">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
                 </div>
-                <button onclick="document.getElementById('configModal').classList.add('hidden')"
-                    class="p-2 hover:bg-gray-200 rounded-full transition text-gray-400">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
+
+                <!-- Modal Body -->
+                <form method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-1 lg:grid-cols-12">
+                        <!-- Reglas -->
+                        <div class="lg:col-span-5 p-8 space-y-8 border-r border-gray-100">
+                            <div>
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Gatillos
+                                    de
+                                    Tiempo</h4>
+                                <div class="space-y-4">
+                                    <!-- Anticipado -->
+                                    <div
+                                        class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:border-blue-200 transition group">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="font-bold text-gray-900">Aviso Anticipado</span>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="activar_anticipado" class="sr-only peer" {% if config.activar_anticipado %} checked {% endif %}>
+                                                <div
+                                                    class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-4">
+                                            <input type="number" name="dias_antes" value="{{ config.dias_antes }}"
+                                                class="w-16 rounded-xl border-gray-200 text-sm font-black p-2 bg-gray-50 text-center">
+                                            <span class="text-xs text-gray-500 font-bold">días antes a la hora
+                                                programada.</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Mismo día (X mins antes) -->
+                                    <div
+                                        class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:border-indigo-200 transition group">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="font-bold text-gray-900">Aviso el Día del Turno</span>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="activar_jornada" class="sr-only peer" {% if config.activar_jornada %} checked {% endif %}>
+                                                <div
+                                                    class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                                                </div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-4">
+                                            <input type="number" name="minutos_antes_jornada"
+                                                value="{{ config.minutos_antes_jornada }}"
+                                                class="w-16 rounded-xl border-gray-200 text-sm font-black p-2 bg-gray-50 text-center">
+                                            <span class="text-xs text-gray-500 font-bold">minutos antes del
+                                                evento.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Copia
+                                    Oculta
+                                    (BCC) y Actividad</h4>
+                                <div class="space-y-4">
+                                    <div
+                                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <i data-lucide="mail" class="w-5 h-5 text-gray-400"></i>
+                                        <input type="email" name="cc_email" value="{{ config.cc_email|default:'' }}"
+                                            placeholder="Supervisión (BCC)"
+                                            class="bg-transparent border-none w-full text-xs font-bold focus:ring-0 text-gray-800">
+                                    </div>
+                                    <div
+                                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <i data-lucide="tag" class="w-5 h-5 text-gray-400"></i>
+                                        <input type="text" name="actividad_general"
+                                            value="{{ config.actividad_general }}"
+                                            placeholder="Actividad General (ej: Mantenimiento)"
+                                            class="bg-transparent border-none w-full text-xs font-bold focus:ring-0 text-gray-800">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formato y Preview -->
+                        <div class="lg:col-span-7 bg-gray-50/50 p-8 flex flex-col space-y-6">
+                            <div class="flex border-b border-gray-200">
+                                <h4
+                                    class="px-4 py-2 text-xs font-black border-b-2 border-blue-600 text-blue-600 uppercase tracking-widest">
+                                    Plantilla de Recordatorios</h4>
+                            </div>
+
+                            <div id="section-notif" class="space-y-4">
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plantilla de
+                                    Recordatorios</h4>
+                                <div>
+                                    <label
+                                        class="block text-[10px] font-black text-gray-400 mb-2 uppercase">Asunto</label>
+                                    <input type="text" name="asunto_template" id="asunto_input"
+                                        value="{{ config.asunto_template }}"
+                                        class="w-full rounded-2xl border-gray-200 font-bold text-gray-800 text-sm focus:ring-blue-500 shadow-sm">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-[10px] font-black text-gray-400 mb-2 uppercase flex justify-between items-center">
+                                        Contenido del Mensaje
+
+                                    </label>
+                                    <input type="hidden" name="cuerpo_template" id="hidden_cuerpo"
+                                        value="{{ config.cuerpo_template }}">
+                                    <div id="quill-editor" class="bg-white rounded-b-2xl"></div>
+                                </div>
+                            </div>
+
+
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                <span onclick="insertTextAtCursor('{funcionario}')"
+                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{funcionario}</span>
+                                <span onclick="insertTextAtCursor('{evento}')"
+                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{evento}</span>
+                                <span onclick="insertTextAtCursor('{marca}')"
+                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{marca}</span>
+                                <span onclick="insertTextAtCursor('{modelo}')"
+                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{modelo}</span>
+                                <span onclick="insertTextAtCursor('{fecha_turno}')"
+                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{fecha_turno}</span>
+                                <span onclick="insertTextAtCursor('{hora}')"
+                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{hora}</span>
+                                <span onclick="insertTextAtCursor('{equipos_lista}')"
+                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{equipos_lista}</span>
+                            </div>
+
+                            <!-- Enhanced Preview Card (Based on image reference) -->
+                            <div class="mt-4">
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
+                                    Previsualización en Tiempo Real</h4>
+                                <div
+                                    class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-lg mx-auto w-full border border-gray-100 transform scale-95 origin-top">
+                                    <!-- Preview Content -->
+                                    <div class="p-8 space-y-6">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-1 h-8 bg-orange-400 rounded-full"></div>
+                                            <h2 class="text-lg font-black text-indigo-900 tracking-tight">Mantenimiento
+                                                de
+                                                equipos tecnológicos</h2>
+                                        </div>
+
+                                        <div class="flex justify-center">
+                                            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+                                            <img src="/static/img/mujeru.jpg" alt="Ilustración"
+                                                class="h-40 object-contain">
+                                        </div>
+
+                                        <div class="text-center space-y-4">
+                                            <p class="text-gray-700 text-sm font-bold">Estimado/a <span
+                                                    class="text-indigo-600" id="preview_funcionario_name">Juan Enrique
+                                                    Perez</span></p>
+
+                                            <div id="preview_body_text"
+                                                class="text-gray-600 text-xs italic bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">
+                                                [ Mensaje a trasmitir ]
+                                            </div>
+                                        </div>
+
+                                        <div class="space-y-1.5 pt-4 border-t border-gray-100">
+                                            <div class="flex items-center gap-2 text-[10px]">
+                                                <span class="text-gray-500 font-medium">Fecha a Constatar:</span>
+                                                <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
+                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
+                                                    Automático
+                                                    ]</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-[10px]">
+                                                <span class="text-gray-500 font-medium">Fecha Inicio:</span>
+                                                <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
+                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
+                                                    Automático
+                                                    ]</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-[10px]">
+                                                <span class="text-gray-500 font-medium">Descripción:</span>
+                                                <span class="text-gray-900 font-bold"
+                                                    id="preview_evento_tag">Mantenimiento
+                                                    Preventivo</span>
+                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
+                                                    Automático
+                                                    ]</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-[10px]">
+                                                <span class="text-gray-500 font-medium">Estado:</span>
+                                                <span class="text-gray-900 font-bold">Planificado</span>
+                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
+                                                    Automático
+                                                    ]</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="pt-4 text-center">
+                                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider"
+                                                id="preview_enviado_fecha">Enviado
+                                                Fecha / Hora: 28/01/2026 | 09:01 a.m.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="px-8 py-6 bg-white border-t border-gray-100 flex justify-end gap-3">
+                        <button type="button" onclick="document.getElementById('configModal').classList.add('hidden')"
+                            class="px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-10 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 hover:-translate-y-0.5 transition flex items-center gap-2">
+                            <i data-lucide="save" class="w-5 h-5"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </form>
             </div>
+        </div>
+    </div>
 
-            <!-- Modal Body -->
-            <form method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
-                {% csrf_token %}
-                <div class="grid grid-cols-1 lg:grid-cols-12">
-                    <!-- Reglas -->
-                    <div class="lg:col-span-5 p-8 space-y-8 border-r border-gray-100">
-                        <div>
-                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Gatillos de
-                                Tiempo</h4>
-                            <div class="space-y-4">
-                                <!-- Anticipado -->
-                                <div
-                                    class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:border-blue-200 transition group">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="font-bold text-gray-900">Aviso Anticipado</span>
-                                        <label class="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" name="activar_anticipado" class="sr-only peer" {% if config.activar_anticipado %} checked {% endif %}>
-                                            <div
-                                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
-                                            </div>
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-4">
-                                        <input type="number" name="dias_antes" value="{{ config.dias_antes }}"
-                                            class="w-16 rounded-xl border-gray-200 text-sm font-black p-2 bg-gray-50 text-center">
-                                        <span class="text-xs text-gray-500 font-bold">días antes a la hora
-                                            programada.</span>
-                                    </div>
-                                </div>
-
-                                <!-- Mismo día (X mins antes) -->
-                                <div
-                                    class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:border-indigo-200 transition group">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="font-bold text-gray-900">Aviso el Día del Turno</span>
-                                        <label class="relative inline-flex items-center cursor-pointer">
-                                            <input type="checkbox" name="activar_jornada" class="sr-only peer" {% if config.activar_jornada %} checked {% endif %}>
-                                            <div
-                                                class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
-                                            </div>
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-4">
-                                        <input type="number" name="minutos_antes_jornada"
-                                            value="{{ config.minutos_antes_jornada }}"
-                                            class="w-16 rounded-xl border-gray-200 text-sm font-black p-2 bg-gray-50 text-center">
-                                        <span class="text-xs text-gray-500 font-bold">minutos antes del evento.</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Copia Oculta
-                                (BCC) y Actividad</h4>
-                            <div class="space-y-4">
-                                <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                    <i data-lucide="mail" class="w-5 h-5 text-gray-400"></i>
-                                    <input type="email" name="cc_email" value="{{ config.cc_email|default:'' }}"
-                                        placeholder="Supervisión (BCC)"
-                                        class="bg-transparent border-none w-full text-xs font-bold focus:ring-0 text-gray-800">
-                                </div>
-                                <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                    <i data-lucide="tag" class="w-5 h-5 text-gray-400"></i>
-                                    <input type="text" name="actividad_general" value="{{ config.actividad_general }}"
-                                        placeholder="Actividad General (ej: Mantenimiento)"
-                                        class="bg-transparent border-none w-full text-xs font-bold focus:ring-0 text-gray-800">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Formato y Preview -->
-                    <div class="lg:col-span-7 bg-gray-50/50 p-8 flex flex-col space-y-6">
-                        <div class="flex border-b border-gray-200">
-                            <h4 class="px-4 py-2 text-xs font-black border-b-2 border-blue-600 text-blue-600 uppercase tracking-widest">Plantilla de Recordatorios</h4>
-                        </div>
-
-                        <div id="section-notif" class="space-y-4">
-                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plantilla de
-                                Recordatorios</h4>
-                            <div>
-                                <label class="block text-[10px] font-black text-gray-400 mb-2 uppercase">Asunto</label>
-                                <input type="text" name="asunto_template" id="asunto_input"
-                                    value="{{ config.asunto_template }}"
-                                    class="w-full rounded-2xl border-gray-200 font-bold text-gray-800 text-sm focus:ring-blue-500 shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-black text-gray-400 mb-2 uppercase flex justify-between items-center">
-                                    Contenido del Mensaje
-                                    <div class="flex gap-1">
-                                        <button type="button" onclick="insertFormat('b')" class="p-1 px-2 bg-white border border-gray-200 rounded text-[9px] font-black hover:bg-gray-50 transition" title="Negrita">B</button>
-                                        <button type="button" onclick="insertFormat('i')" class="p-1 px-2 bg-white border border-gray-200 rounded text-[9px] italic font-serif hover:bg-gray-50 transition" title="Cursiva">I</button>
-                                    </div>
-                                </label>
-                                <textarea name="cuerpo_template" id="cuerpo_input" rows="5"
-                                    class="w-full rounded-2xl border-gray-200 font-medium text-gray-800 text-sm focus:ring-blue-500 shadow-sm custom-scrollbar">{{ config.cuerpo_template }}</textarea>
-                            </div>
-                        </div>
-
-
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            <span onclick="insertTextAtCursor('{funcionario}')" class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{funcionario}</span>
-                            <span onclick="insertTextAtCursor('{evento}')" class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{evento}</span>
-                            <span onclick="insertTextAtCursor('{marca}')" class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{marca}</span>
-                            <span onclick="insertTextAtCursor('{modelo}')" class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{modelo}</span>
-                            <span onclick="insertTextAtCursor('{fecha_turno}')" class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{fecha_turno}</span>
-                            <span onclick="insertTextAtCursor('{hora}')" class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{hora}</span>
-                            <span onclick="insertTextAtCursor('{equipos_lista}')" class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{equipos_lista}</span>
-                        </div>
-
-                        <!-- Enhanced Preview Card (Based on image reference) -->
-                        <div class="mt-4">
-                            <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                                Previsualización en Tiempo Real</h4>
-                            <div
-                                class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-lg mx-auto w-full border border-gray-100 transform scale-95 origin-top">
-                                <!-- Preview Content -->
-                                <div class="p-8 space-y-6">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-1 h-8 bg-orange-400 rounded-full"></div>
-                                        <h2 class="text-lg font-black text-indigo-900 tracking-tight">Mantenimiento de
-                                            equipos tecnológicos</h2>
-                                    </div>
-
-                                    <div class="flex justify-center">
-                                        <img src="/static/img/mujeru.jpg" alt="Ilustración" class="h-40 object-contain">
-                                    </div>
-
-                                    <div class="text-center space-y-4">
-                                        <p class="text-gray-700 text-sm font-bold">Estimado/a <span
-                                                class="text-indigo-600" id="preview_funcionario_name">Juan Enrique
-                                                Perez</span></p>
-
-                                        <div id="preview_body_text"
-                                            class="text-gray-600 text-xs italic bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">
-                                            [ Mensaje a trasmitir ]
-                                        </div>
-                                    </div>
-
-                                    <div class="space-y-1.5 pt-4 border-t border-gray-100">
-                                        <div class="flex items-center gap-2 text-[10px]">
-                                            <span class="text-gray-500 font-medium">Fecha a Constatar:</span>
-                                            <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
-                                            <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático
-                                                ]</span>
-                                        </div>
-                                        <div class="flex items-center gap-2 text-[10px]">
-                                            <span class="text-gray-500 font-medium">Fecha Inicio:</span>
-                                            <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
-                                            <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático
-                                                ]</span>
-                                        </div>
-                                        <div class="flex items-center gap-2 text-[10px]">
-                                            <span class="text-gray-500 font-medium">Descripción:</span>
-                                            <span class="text-gray-900 font-bold" id="preview_evento_tag">Mantenimiento
-                                            Preventivo</span>
-                                            <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático
-                                                ]</span>
-                                        </div>
-                                        <div class="flex items-center gap-2 text-[10px]">
-                                            <span class="text-gray-500 font-medium">Estado:</span>
-                                            <span class="text-gray-900 font-bold">Planificado</span>
-                                            <span class="text-gray-300 font-medium text-[9px] uppercase">[ Automático
-                                                ]</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="pt-4 text-center">
-                                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider"
-                                            id="preview_enviado_fecha">Enviado
-                                            Fecha / Hora: 28/01/2026 | 09:01 a.m.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Manual Send Modal -->
+    <div id="manualSendModal"
+        class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div>
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-in zoom-in-95 balance">
+                <div
+                    class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 mb-6 text-blue-600">
+                    <i data-lucide="zap" class="w-10 h-10"></i>
                 </div>
+                <h3 class="text-2xl font-black text-gray-900 mb-2">Escaneo Forzado</h3>
+                <p class="text-sm text-gray-500 mb-8 leading-relaxed">
+                    El sistema buscará turnos que deban notificarse en los últimos <span
+                        class="font-bold text-gray-900">90
+                        minutos</span> y disparará los correos ahora mismo.
+                </p>
+                <div class="flex gap-4">
+                    <button onclick="document.getElementById('manualSendModal').classList.add('hidden')"
+                        class="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all">
+                        Cancelar
+                    </button>
+                    <form action="{% url 'ejecutar_envios' %}" method="POST" class="flex-1">
+                        {% csrf_token %}
+                        <button type="submit"
+                            class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-blue-100">
+                            Confirmar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Modal Footer -->
-                <div class="px-8 py-6 bg-white border-t border-gray-100 flex justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('configModal').classList.add('hidden')"
-                        class="px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition">
+
+    <!-- Edit Email Modal -->
+    <div id="editEmailModal"
+        class="fixed inset-0 z-[60] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center"
+        style="display: none;">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in zoom-in-95 balance">
+            <div
+                class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-indigo-100 mb-6 text-indigo-600">
+                <i data-lucide="edit-3" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-2xl font-black text-gray-900 mb-2 text-center">Corregir Correo</h3>
+            <p class="text-sm text-gray-500 mb-6 leading-relaxed text-center">
+                Actualiza la dirección de correo y reintenta el envío de la notificación.
+            </p>
+            <form id="editEmailForm" method="POST">
+                {% csrf_token %}
+                <div class="mb-6">
+                    <label class="block text-[10px] font-black text-gray-400 mb-2 uppercase">Dirección de Correo</label>
+                    <input type="email" name="email" id="modal_edit_email_input" required
+                        class="w-full rounded-2xl border-gray-200 font-bold text-gray-800 text-sm focus:ring-indigo-500 shadow-sm p-3 bg-gray-50 outline-none">
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" onclick="hideModal('editEmailModal')"
+                        class="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all">
                         Cancelar
                     </button>
                     <button type="submit"
-                        class="px-10 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 hover:-translate-y-0.5 transition flex items-center gap-2">
-                        <i data-lucide="save" class="w-5 h-5"></i> Guardar Cambios
+                        class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-100">
+                        Guardar y Enviar
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-<!-- Manual Send Modal -->
-<div id="manualSendModal"
-    class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center">
-    <div>
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-in zoom-in-95 balance">
-            <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 mb-6 text-blue-600">
-                <i data-lucide="zap" class="w-10 h-10"></i>
-            </div>
-            <h3 class="text-2xl font-black text-gray-900 mb-2">Escaneo Forzado</h3>
-            <p class="text-sm text-gray-500 mb-8 leading-relaxed">
-                El sistema buscará turnos que deban notificarse en los últimos <span class="font-bold text-gray-900">90
-                    minutos</span> y disparará los correos ahora mismo.
-            </p>
-            <div class="flex gap-4">
-                <button onclick="document.getElementById('manualSendModal').classList.add('hidden')"
-                    class="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all">
-                    Cancelar
-                </button>
-                <form action="{% url 'ejecutar_envios' %}" method="POST" class="flex-1">
-                    {% csrf_token %}
-                    <button type="submit"
-                        class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-blue-100">
-                        Confirmar
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-<!-- Edit Email Modal -->
-<div id="editEmailModal" class="fixed inset-0 z-[60] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center" style="display: none;">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in zoom-in-95 balance">
-        <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-indigo-100 mb-6 text-indigo-600">
-            <i data-lucide="edit-3" class="w-10 h-10"></i>
-        </div>
-        <h3 class="text-2xl font-black text-gray-900 mb-2 text-center">Corregir Correo</h3>
-        <p class="text-sm text-gray-500 mb-6 leading-relaxed text-center">
-            Actualiza la dirección de correo y reintenta el envío de la notificación.
-        </p>
-        <form id="editEmailForm" method="POST">
-            {% csrf_token %}
-            <div class="mb-6">
-                <label class="block text-[10px] font-black text-gray-400 mb-2 uppercase">Dirección de Correo</label>
-                <input type="email" name="email" id="modal_edit_email_input" required
-                    class="w-full rounded-2xl border-gray-200 font-bold text-gray-800 text-sm focus:ring-indigo-500 shadow-sm p-3 bg-gray-50 outline-none">
-            </div>
-            <div class="flex gap-4">
-                <button type="button" onclick="hideModal('editEmailModal')"
-                    class="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all">
-                    Cancelar
-                </button>
-                <button type="submit"
-                    class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-100">
-                    Guardar y Enviar
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-    </div>
 </div>
 
 <!-- Modal de Selección por Lotes (Nuevo) -->
 <div id="batchModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95">
+    <div
+        class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95">
         <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
             <div>
                 <h3 class="text-xl font-black text-gray-900 tracking-tight">Programación por Lotes</h3>
-                <p class="text-[10px] text-gray-400 font-bold uppercase" id="batchModalRangeTitle">Calculando proyección...</p>
+                <p class="text-[10px] text-gray-400 font-bold uppercase" id="batchModalRangeTitle">Calculando
+                    proyección...</p>
             </div>
-            <button onclick="document.getElementById('batchModal').classList.add('hidden')" class="p-2 hover:bg-gray-200 rounded-full transition text-gray-400">
+            <button onclick="document.getElementById('batchModal').classList.add('hidden')"
+                class="p-2 hover:bg-gray-200 rounded-full transition text-gray-400">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
-        
+
         <div class="p-6 bg-indigo-50/30 border-b border-indigo-100 flex flex-wrap gap-2 items-center">
-            <button onclick="loadBatchProyeccion(3, this)" class="batch-filter-btn px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold hover:border-indigo-400 transition whitespace-nowrap">Próximos 3 días</button>
-            <button onclick="loadBatchProyeccion(7, this)" id="defaultBatchBtn" class="batch-filter-btn px-4 py-2 rounded-xl bg-indigo-600 text-white border border-indigo-600 text-xs font-bold hover:bg-indigo-700 transition whitespace-nowrap">Esta Semana (7d)</button>
-            <button onclick="loadBatchProyeccion(30, this)" class="batch-filter-btn px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold hover:border-indigo-400 transition whitespace-nowrap">Este Mes (30d)</button>
-            <div class="h-6 w-[1px] bg-indigo-200 mx-2"></div>
-            <div class="flex items-center gap-2 bg-white border border-indigo-100 px-3 py-1.5 rounded-xl shadow-sm">
-                <span class="text-[10px] font-black text-gray-400 uppercase">Personalizado:</span>
-                <input type="number" id="customDaysInput" value="3" min="0" max="365" class="w-12 border-none p-0 text-xs font-black text-indigo-600 focus:ring-0 text-center">
-                <button onclick="loadBatchProyeccion(document.getElementById('customDaysInput').value, this)" class="batch-filter-btn px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition">
-                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
-                </button>
-            </div>
+            <button onclick="loadBatchProyeccion(2, 0, this)"
+                class="batch-filter-btn px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold hover:border-indigo-400 transition whitespace-nowrap">Próximos
+                3 días</button>
+            <button onclick="loadBatchProyeccion(3, 3, this)" id="defaultBatchBtn"
+                class="batch-filter-btn px-4 py-2 rounded-xl bg-indigo-600 text-white border border-indigo-600 text-xs font-bold hover:bg-indigo-700 transition whitespace-nowrap">Siguiente
+                Semana (+4d)</button>
+            <button onclick="loadBatchProyeccion(22, 7, this)"
+                class="batch-filter-btn px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold hover:border-indigo-400 transition whitespace-nowrap">Resto
+                del Mes (+23d)</button>
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
@@ -667,22 +812,28 @@
                     <thead class="bg-gray-50 text-[10px] uppercase font-black text-gray-400 sticky top-0 z-10">
                         <tr>
                             <th class="px-6 py-4 w-10">
-                                <input type="checkbox" checked onchange="toggleAllBatch(this)" class="rounded border-gray-300 text-indigo-600">
+                                <input type="checkbox" checked onchange="toggleAllBatch(this)"
+                                    class="rounded border-gray-300 text-indigo-600">
                             </th>
                             <th class="px-6 py-4">Ejecución</th>
                             <th class="px-6 py-4">Funcionario / Turno</th>
                         </tr>
                     </thead>
-                    <tbody id="batchTableBody" class="divide-y divide-gray-100 italic text-gray-400 text-xs text-center">
-                        <tr><td colspan="3" class="py-20 text-center">Cargando proyecciones...</td></tr>
+                    <tbody id="batchTableBody"
+                        class="divide-y divide-gray-100 italic text-gray-400 text-xs text-center">
+                        <tr>
+                            <td colspan="3" class="py-20 text-center">Cargando proyecciones...</td>
+                        </tr>
                     </tbody>
                 </table>
             </form>
         </div>
 
         <div class="px-8 py-6 bg-white border-t border-gray-100 flex justify-end gap-3">
-            <button onclick="document.getElementById('batchModal').classList.add('hidden')" class="px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition">Cancelar</button>
-            <button onclick="document.getElementById('batchConfirmForm').submit()" class="px-10 py-3 bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition flex items-center gap-2">
+            <button onclick="document.getElementById('batchModal').classList.add('hidden')"
+                class="px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition">Cancelar</button>
+            <button onclick="showLoading(); document.getElementById('batchConfirmForm').submit()"
+                class="px-10 py-3 bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition flex items-center gap-2">
                 <i data-lucide="check-circle" class="w-5 h-5"></i> Programar Seleccionados
             </button>
         </div>
@@ -703,7 +854,7 @@
     let exampleDuracion = '{{ ejemplo_real.duracion|escapejs }}';
 
     // Tab switching logic
-    window.switchTab = function(tab) {
+    window.switchTab = function (tab) {
         const radarTab = document.getElementById('tab-radar');
         const queueTab = document.getElementById('tab-queue');
         const radarContent = document.getElementById('content-radar');
@@ -727,74 +878,90 @@
         lucide.createIcons();
     };
 
-    window.openBatchModal = function() {
+    window.openBatchModal = function () {
         document.getElementById('batchModal').classList.remove('hidden');
         const defaultBtn = document.getElementById('defaultBatchBtn');
-        loadBatchProyeccion(7, defaultBtn);
+        // Default: Next 3 days (offset 0)
+        loadBatchProyeccion(3, 0, document.querySelector('.batch-filter-btn'));
     };
 
-    window.loadBatchProyeccion = function(dias, btn) {
+    window.loadBatchProyeccion = function (dias, offset, btn) {
         const body = document.getElementById('batchTableBody');
         const rangeTitle = document.getElementById('batchModalRangeTitle');
         body.innerHTML = '<tr><td colspan="3" class="py-20 text-center">Cargando...</td></tr>';
-        
+
         // Actualizar UI de botones de filtro
         document.querySelectorAll('.batch-filter-btn').forEach(b => {
             b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
             b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
         });
-        
+
         if (btn) {
             btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
             btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
         }
 
-        console.log(`Cargando proyección para ${dias} días...`);
-        fetch(`/notifications/api/proyeccion/?dias=${dias}&_=${new Date().getTime()}`)
+        console.log(`Cargando proyección para ${dias} días con offset ${offset}...`);
+        fetch(`/notifications/api/proyeccion/?dias=${dias}&offset=${offset}&_=${new Date().getTime()}`)
             .then(r => r.json())
             .then(data => {
                 console.log(`Respuesta recibida: ${data.items.length} elementos.`);
                 if (rangeTitle) {
                     const options = { day: '2-digit', month: 'short' };
                     const now = new Date();
+                    const start = new Date();
+                    start.setDate(now.getDate() + offset);
                     const end = new Date();
-                    end.setDate(now.getDate() + dias);
-                    rangeTitle.innerHTML = `<span class="text-indigo-600 font-bold">${now.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}</span> | ${data.items.length} notificaciones encontradas`;
+                    end.setDate(start.getDate() + dias);
+                    rangeTitle.innerHTML = `<span class="text-indigo-600 font-bold">${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}</span> | ${data.items.length} notificaciones encontradas`;
                 }
-                if(data.items.length === 0) {
+                if (data.items.length === 0) {
                     body.innerHTML = '<tr><td colspan="3" class="py-20 text-center">No hay turnos en este rango.</td></tr>';
                     return;
                 }
                 body.innerHTML = data.items.map(item => {
                     const progDate = new Date(item.fecha_programada);
                     // FIX: Set hours to 0 to compare dates only, avoiding "Tomorrow" label for today's evening shifts
-                    progDate.setHours(0,0,0,0);
-                    
+                    progDate.setHours(0, 0, 0, 0);
+
                     const today = new Date();
-                    today.setHours(0,0,0,0);
-                    
+                    today.setHours(0, 0, 0, 0);
+
                     // Round to avoid float errors
                     const diffDays = Math.round((progDate - today) / (1000 * 60 * 60 * 24));
-                    
+
                     let badgeClass = "bg-gray-100 text-gray-600";
                     let badgeText = `+${diffDays} días`;
-                    
-                    if(diffDays === 0) {
+
+                    if (diffDays === 0) {
                         badgeClass = "bg-orange-100 text-orange-600";
                         badgeText = "Hoy";
-                    } else if(diffDays === 1) {
+                    } else if (diffDays === 1) {
                         badgeClass = "bg-blue-100 text-blue-600";
                         badgeText = "Mañana";
                     }
 
+                    let actionCell = '';
+                    const checkboxHtml = `<input type="checkbox" name="proyeccion_items" value="${item.turno_id}:${item.tipo}" ${item.ya_procesado ? '' : 'checked'} class="batch-check rounded border-gray-300 text-indigo-600">`;
+
+                    if (item.ya_procesado) {
+                        actionCell = `
+                            <div class="flex flex-col items-center gap-1">
+                                ${checkboxHtml}
+                                <span class="text-[7px] font-black text-green-600 uppercase leading-none">${item.estado_actual}</span>
+                            </div>`;
+                    } else {
+                        actionCell = checkboxHtml;
+                    }
+
                     return `
-                    <tr class="hover:bg-indigo-50/30 transition">
+                    <tr class="hover:bg-indigo-50/30 transition ${item.ya_procesado ? 'bg-gray-50/50 opacity-75' : ''}">
                         <td class="px-6 py-4 text-center">
-                            <input type="checkbox" name="proyeccion_items" value="${item.turno_id}:${item.tipo}" checked class="batch-check rounded border-gray-300 text-indigo-600">
+                            ${actionCell}
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex items-center gap-2 mb-1">
-                                <div class="text-[11px] font-black text-gray-900">${progDate.toLocaleString('es-ES', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</div>
+                                <div class="text-[11px] font-black text-gray-900">${progDate.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                                 <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${badgeClass}">${badgeText}</span>
                             </div>
                             <div class="text-[9px] font-bold text-indigo-500 uppercase">${item.tipo_display}</div>
@@ -806,22 +973,22 @@
                     </tr>
                     `;
                 }).join('');
-                
+
                 // --- LOGIC FOR EMPTY DATE RANGE FEEDBACK ---
                 if (data.items.length > 0) {
                     const lastItem = data.items[data.items.length - 1];
                     const lastDate = new Date(lastItem.fecha_programada);
-                    lastDate.setHours(0,0,0,0);
-                    
+                    lastDate.setHours(0, 0, 0, 0);
+
                     const endDate = new Date();
-                    endDate.setHours(0,0,0,0);
+                    endDate.setHours(0, 0, 0, 0);
                     endDate.setDate(endDate.getDate() + parseInt(dias));
-                    
+
                     // If the last scheduled turn is before the end date of our filter range
                     if (lastDate < endDate) {
                         const options = { day: '2-digit', month: 'long', year: 'numeric' };
                         const endDateStr = endDate.toLocaleDateString('es-ES', options);
-                        
+
                         body.innerHTML += `
                         <tr>
                             <td colspan="3" class="py-8 text-center border-t border-gray-100 bg-gray-50/30">
@@ -839,17 +1006,17 @@
                         `;
                     }
                 }
-                
+
                 lucide.createIcons();
             });
     };
 
-    window.toggleAllBatch = function(source) {
+    window.toggleAllBatch = function (source) {
         const checkboxes = document.querySelectorAll('.batch-check');
         checkboxes.forEach(c => c.checked = source.checked);
     };
 
-    window.toggleAllProyeccion = function(source) {
+    window.toggleAllProyeccion = function (source) {
         const checkboxes = document.getElementsByName('proyeccion_items');
         for (let checkbox of checkboxes) {
             checkbox.checked = source.checked;
@@ -860,35 +1027,50 @@
 
     // JS for Live Preview
     const asunto_input = document.getElementById('asunto_input');
-    const cuerpo_input = document.getElementById('cuerpo_input');
+    // const cuerpo_input = document.getElementById('cuerpo_input'); // Replaced by hidden input
+
+    // Quill Initialization
+    var quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['clean']
+            ]
+        }
+    });
+
+    const cuerpo_input = document.getElementById('hidden_cuerpo'); // Polyfill for existing code
+
+    // Load initial content
+    if (cuerpo_input && cuerpo_input.value) {
+        quill.root.innerHTML = cuerpo_input.value;
+    }
+
+    // Sync content on change
+    quill.on('text-change', function () {
+        cuerpo_input.value = quill.root.innerHTML;
+        updatePreview();
+    });
 
     // Helper functions for formatting
-    window.insertFormat = function(tag) {
-        const start = cuerpo_input.selectionStart;
-        const end = cuerpo_input.selectionEnd;
-        const text = cuerpo_input.value;
-        const selected = text.substring(start, end);
-        const before = text.substring(0, start);
-        const after = text.substring(end);
-        
-        cuerpo_input.value = before + `<${tag}>` + selected + `</${tag}>` + after;
-        cuerpo_input.focus();
-        cuerpo_input.selectionStart = start + tag.length + 2 + selected.length + tag.length + 3;
-        updatePreview();
+    window.insertFormat = function (tag) {
+        // Deprecated with Quill
+        console.warn("Formatting handled by Quill toolbar");
     };
 
-    window.insertTextAtCursor = function(tagText) {
-        const start = cuerpo_input.selectionStart;
-        const end = cuerpo_input.selectionEnd;
-        const text = cuerpo_input.value;
-        const before = text.substring(0, start);
-        const after = text.substring(end);
-        
-        cuerpo_input.value = before + tagText + after;
-        cuerpo_input.focus();
-        cuerpo_input.selectionStart = start + tagText.length;
-        cuerpo_input.selectionEnd = start + tagText.length;
-        updatePreview();
+    window.insertTextAtCursor = function (tagText) {
+        const range = quill.getSelection(true);
+        if (range) {
+            quill.insertText(range.index, tagText);
+            quill.setSelection(range.index + tagText.length);
+        } else {
+            // Fallback if no focus
+            const length = quill.getLength();
+            quill.insertText(length - 1, tagText);
+        }
     };
 
     const preview_body = document.getElementById('preview_body_text');
@@ -925,7 +1107,7 @@
 
         // Convert newlines to <br> for HTML preview
         let finalHtml = body.replace(/\n/g, '<br>');
-        
+
         preview_body.innerHTML = finalHtml;
         if (preview_evento_tag) preview_evento_tag.textContent = eventName;
 
@@ -1018,11 +1200,11 @@
     function openEditEmailModal(id, currentEmail) {
         const form = document.getElementById('editEmailForm');
         const input = document.getElementById('modal_edit_email_input');
-        
+
         // El id viene de un registro de HistorialEnvio, necesitamos la URL correcta
         form.action = `/notifications/editar-reenviar/${id}/`;
         input.value = currentEmail;
-        
+
         showModal('editEmailModal');
     }
 
@@ -1055,9 +1237,18 @@
 
 
 
+    function showLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+    }
+
     function submitBulk(accion) {
+        showLoading();
         bulkAccion.value = accion;
-        
+
         // Mover los checkboxes seleccionados al formulario antes de enviar
         const checkedItems = document.querySelectorAll('.notif-check:checked');
         checkedItems.forEach(cb => {
@@ -1067,7 +1258,7 @@
             hidden.value = cb.value;
             bulkForm.appendChild(hidden);
         });
-        
+
         bulkForm.submit();
     }
 
@@ -1075,13 +1266,13 @@
     document.querySelectorAll('form').forEach(form => {
         const action = form.getAttribute('action');
         if (action && (
-            action.includes('sincronizar') || 
-            action.includes('ejecutar') || 
-            action.includes('notificar') || 
-            action.includes('masivas') || 
+            action.includes('sincronizar') ||
+            action.includes('ejecutar') ||
+            action.includes('notificar') ||
+            action.includes('masivas') ||
             action.includes('reenviar')
         )) {
-            form.addEventListener('submit', function() {
+            form.addEventListener('submit', function () {
                 // Pequeño delay para que el botón de submit se vea apretado
                 setTimeout(() => {
                     const overlay = document.getElementById('loadingOverlay');
@@ -1105,27 +1296,5 @@
     }, 8000);
 </script>
 
-<style>
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-    }
 
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #e2e8f0;
-        border-radius: 10px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #cbd5e1;
-    }
-
-    .balance {
-        text-wrap: balance;
-    }
-</style>
 {% endblock %}
-

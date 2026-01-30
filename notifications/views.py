@@ -148,11 +148,17 @@ def generar_desde_proyeccion(request):
     """
     if request.method == 'POST':
         items = request.POST.getlist('proyeccion_items')
+        print(f"DEBUG: Items recibidos ({len(items)}): {items}")
         config = ConfiguracionNotificacion.get_solo()
+        ids_a_procesar = []
         creadas = 0
         
         for val in items:
             try:
+                if not ':' in val:
+                    print(f"DEBUG: Valor inválido (sin ':'): {val}")
+                    continue
+                    
                 t_id, tipo = val.split(':')
                 from core.models import Turno 
                 turno = get_object_or_404(Turno, id=t_id)
@@ -167,21 +173,42 @@ def generar_desde_proyeccion(request):
                 elif tipo == 'jornada':
                     prog = dt - timedelta(minutes=config.minutos_antes_jornada)
                 else:
+                    print(f"DEBUG: Tipo desconocido: {tipo}")
                     continue
                 
-                _, created = NotificacionEncolada.objects.get_or_create(
+                # reactivar si ya existe
+                obj, created = NotificacionEncolada.objects.get_or_create(
                     turno=turno,
                     tipo=tipo,
                     defaults={'fecha_programada': prog}
                 )
-                if created: creadas += 1
-            except:
+                
+                if not created:
+                    obj.estado = 'pendiente'
+                    obj.intentos = 0
+                    obj.fecha_programada = prog
+                    obj.save()
+                    print(f"DEBUG: Reactivado item existente ID {obj.id}")
+                else:
+                    creadas += 1
+                    print(f"DEBUG: Creado nuevo item ID {obj.id}")
+                
+                ids_a_procesar.append(obj.id)
+            except Exception as e:
+                print(f"DEBUG Error procesando item {val}: {e}")
                 continue
         
-        if creadas > 0:
-            messages.success(request, f"Se han programado {creadas} notificaciones exitosamente.")
+        print(f"DEBUG: IDs finales a procesar: {ids_a_procesar}")
+        if ids_a_procesar:
+            enviados, errores = NotificationService.ejecutar_vigilancia(specific_ids=ids_a_procesar)
+            print(f"DEBUG: Ejecución vigilancia terminada. Enviados: {enviados}, Errores: {errores}")
+            if errores == 0:
+                messages.success(request, f"¡Logrado! Se enviaron {enviados} notificaciones exitosamente.")
+            else:
+                messages.warning(request, f"Se procesaron las notificaciones. Se enviaron {enviados} con éxito, pero {errores} fallaron.")
         else:
-            messages.info(request, "Las notificaciones seleccionadas ya se encontraban en la cola.")
+            messages.info(request, f"(DEBUG) Items recibidos en server: {items}")
+            messages.info(request, "No se seleccionaron notificaciones válidas o ya estaban procesadas.")
             
     return redirect('notifications_dashboard')
 
@@ -195,7 +222,12 @@ def api_get_proyeccion(request):
     except:
         dias = 7
         
-    proyeccion = NotificationService.calcular_proyeccion(dias)
+    try:
+        offset = int(request.GET.get('offset', 0))
+    except:
+        offset = 0
+        
+    proyeccion = NotificationService.calcular_proyeccion(dias, offset)
     
     data = [{
         'turno_id': item['turno'].id,
@@ -204,7 +236,9 @@ def api_get_proyeccion(request):
         'fecha_programada': item['fecha_programada'].isoformat(),
         'responsable': item['responsable'].nombre,
         'fecha_turno': item['turno'].fecha.strftime("%d/%m/%Y"),
-        'hora_turno': item['turno'].hora.strftime("%H:%M")
+        'hora_turno': item['turno'].hora.strftime("%H:%M"),
+        'ya_procesado': item['ya_procesado'],
+        'estado_actual': item['estado_actual']
     } for item in proyeccion]
     
     from django.http import JsonResponse
@@ -271,7 +305,7 @@ def cancelar_notificacion(request, pk):
     if request.method == 'POST':
         item = get_object_or_404(NotificacionEncolada, pk=pk)
         item.estado = 'cancelado'
-        item.save()
+        item.save()  
         
         AuditLogNotificaciones.objects.create(
             notificacion=item,
