@@ -23,8 +23,44 @@
     }
 
     .ql-editor {
-        min-height: 150px;
+        min-height: 100px;
         font-family: inherit;
+        overflow-y: auto;
+    }
+
+    /* Custom Scrollbar */
+    /* Custom Scrollbar */
+    .custom-scrollbar {
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #94a3b8 #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 10px;
+        border: 2px solid #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+    
+    /* Simple utility to ensure flex items don't shrink away */
+    .no-shrink { flex-shrink: 0 !important; }
+
+    /* Absolute visibility control for wizard steps */
+    .wizard-step-node {
+        display: none !important;
+    }
+    .wizard-step-node.active-step {
+        display: flex !important;
     }
 </style>
 <div class="min-h-screen bg-gray-50/50 w-full flex flex-col relative">
@@ -95,792 +131,795 @@
         }
     </style>
     <!-- Header -->
-    <div class="bg-white border-b border-gray-200 px-8 py-6 shadow-sm">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <header class="bg-white border-b border-gray-100 px-12 py-4 flex items-center justify-between sticky top-0 z-[50]">
+        <div class="flex items-center gap-4">
+            <div class="p-2.5 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100">
+                <i data-lucide="settings" class="w-7 h-7"></i>
+            </div>
             <div>
-                <div class="flex items-center gap-4">
-                    <a href="{% url 'ver_cronograma' %}"
-                        class="p-2 hover:bg-gray-100 rounded-full transition text-gray-400"
-                        title="Volver al Cronograma">
-                        <i data-lucide="arrow-left" class="w-6 h-6"></i>
-                    </a>
-                    <h1 class="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                        <span class="bg-blue-100 text-blue-600 p-2 rounded-xl"><i data-lucide="bell-ring"
-                                class="w-8 h-8"></i></span>
-                        Gestor de Notificaciones
-                    </h1>
-                </div>
-                <p class="text-gray-500 font-medium mt-1 ml-28">Supervisión automática y reglas de aviso</p>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="openBatchModal()"
-                    class="px-5 py-3 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center gap-2 shadow-sm"
-                    title="Programar turnos seleccionados">
-                    <i data-lucide="calendar-plus" class="w-5 h-5"></i> Generar Notificaciones
-                </button>
-                <button onclick="document.getElementById('configModal').classList.remove('hidden')"
-                    class="px-5 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition flex items-center gap-2">
-                    <i data-lucide="settings-2" class="w-5 h-5"></i> Configurar
-                </button>
-                <button onclick="document.getElementById('manualSendModal').classList.remove('hidden')"
-                    class="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition flex items-center gap-2">
-                    <i data-lucide="zap" class="w-5 h-5"></i> Ejecutar Ahora
-                </button>
+                <h1 class="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">Sistema de Notificaciones</h1>
             </div>
         </div>
-    </div>
 
-    <div class="max-w-7xl mx-auto w-full p-8 space-y-8">
+        <div class="flex items-center gap-3">
+            <button onclick="switchMainTab('dashboard')" id="main-tab-dashboard-btn" 
+                class="hidden px-5 py-2.5 text-slate-500 hover:text-indigo-600 font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 rounded-xl hover:bg-slate-50">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 text-indigo-400"></i> Dashboard
+            </button>
+            <button onclick="switchMainTab('history')" id="main-tab-history-btn" 
+                class="px-5 py-2.5 text-slate-500 hover:text-indigo-600 font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 rounded-xl hover:bg-slate-50">
+                <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i> Historial
+            </button>
+        
+            <button onclick="openWizard()" 
+                class="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-2 ml-2">
+                <i data-lucide="plus" class="w-4 h-4"></i> Nueva Notificación
+            </button>
+        </div>
+    </header>
 
+    <!-- Main Content Container -->
+    <div id="main-content-dashboard" class="max-w-[1600px] mx-auto w-full px-12 py-10">
+        
         <!-- Status Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
-                        <i data-lucide="layers" class="w-6 h-6"></i>
-                    </div>
-                    <span class="text-xs font-bold uppercase text-gray-400">Planificadas</span>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-indigo-50/50 transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-6 right-6 p-4 bg-indigo-50 text-indigo-500 rounded-[1.25rem] group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="send" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-3xl font-black text-gray-900">{{ stats.total_esperadas }}</h3>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Total Enviadas</div>
+                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.total_enviadas }}</h3>
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Esta semana</div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-                        <i data-lucide="clock" class="w-6 h-6"></i>
-                    </div>
-                    <span class="text-xs font-bold uppercase text-gray-400">Pendientes</span>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-green-50/50 transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-6 right-6 p-4 bg-green-50 text-green-500 rounded-[1.25rem] group-hover:bg-green-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="check" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-3xl font-black text-gray-900">{{ stats.pendientes }}</h3>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Exitosas</div>
+                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.exitosas }}</h3>
+                <div class="text-[10px] font-bold text-green-500 uppercase">100% de éxito</div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 bg-green-50 text-green-600 rounded-xl">
-                        <i data-lucide="send" class="w-6 h-6"></i>
-                    </div>
-                    <span class="text-xs font-bold uppercase text-gray-400">Enviadas</span>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-red-50/50 transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-6 right-6 p-4 bg-red-50 text-red-500 rounded-[1.25rem] group-hover:bg-red-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-3xl font-black text-gray-900">{{ stats.enviadas }}</h3>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Con Errores</div>
+                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.con_errores }}</h3>
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Sin Incidencias</div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 bg-red-50 text-red-600 rounded-xl">
-                        <i data-lucide="alert-circle" class="w-6 h-6"></i>
-                    </div>
-                    <span class="text-xs font-bold uppercase text-gray-400">Fallidas</span>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-orange-50/50 transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-6 right-6 p-4 bg-orange-50 text-orange-500 rounded-[1.25rem] group-hover:bg-orange-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="calendar" class="w-6 h-6"></i>
                 </div>
-                <h3 class="text-3xl font-black text-gray-900">{{ stats.fallidas }}</h3>
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Enviadas Hoy</div>
+                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.enviadas_hoy }}</h3>
+                <div class="text-[10px] font-bold text-slate-400 uppercase">Actualizado hace 5 min</div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Planificación y Radar (Tabs) -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[600px]">
-                <div class="border-b border-gray-100 bg-gray-50/30 flex items-center justify-between pr-4">
-                    <div class="flex">
-                        <button onclick="switchTab('radar')" id="tab-radar"
-                            class="px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 border-blue-600 text-blue-600 transition-all flex items-center gap-2">
-                            <i data-lucide="cpu" class="w-4 h-4"></i> Radar de Proyección
-                        </button>
-                        <button onclick="switchTab('queue')" id="tab-queue"
-                            class="px-6 py-4 text-xs font-black uppercase tracking-widest border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all flex items-center gap-2">
-                            <i data-lucide="layout-list" class="w-4 h-4"></i> Cola de Mensajes
-                        </button>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <!-- Main Content Area (Radar) -->
+            <div class="lg:col-span-2">
+
+        <!-- Planificación y Radar (Tabs) - Moved from History -->
+            <!-- Modern Radar Card -->
+            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col min-h-[650px] relative group hover:shadow-2xl hover:shadow-slate-200/50 transition duration-500">
+                <div class="px-10 py-8 border-b border-slate-50 flex items-center justify-between bg-white">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-indigo-50 text-indigo-500 rounded-2xl">
+                             <i data-lucide="target" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                                Radar de Proyección
+                                <span class="px-3 py-1 bg-indigo-50 text-indigo-500 text-[10px] font-black uppercase tracking-widest rounded-full">7 días</span>
+                            </h2>
+                        </div>
                     </div>
-                    <form action="{% url 'ejecutar_envios' %}" method="POST">
+                    
+                    <button onclick="document.getElementById('proyeccionForm').submit()"
+                        class="px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-3">
+                        <i data-lucide="send" class="w-4 h-4"></i> Generar y Enviar
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-auto custom-scrollbar p-2">
+                    <form id="proyeccionForm" action="{% url 'generar_desde_proyeccion' %}" method="POST" class="h-full">
                         {% csrf_token %}
-                        <button type="submit"
-                            class="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm flex items-center gap-2 text-[10px] font-bold uppercase">
-                            <i data-lucide="play" class="w-3 h-3"></i> Procesar Cola
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Tab content: Radar de Proyección -->
-                <div id="content-radar" class="flex-1 flex flex-col overflow-hidden">
-                    <div class="p-4 bg-blue-50/50 border-b border-blue-100 flex justify-between items-center">
-                        <span class="text-[10px] font-bold text-blue-700 uppercase">Turnos proyectados para los próximos
-                            7 días</span>
-                        <button onclick="document.getElementById('proyeccionForm').submit()"
-                            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg font-black text-[9px] uppercase hover:bg-blue-700 transition">
-                            Generar Selección
-                        </button>
-                    </div>
-                    <div class="flex-1 overflow-auto custom-scrollbar">
-                        <form id="proyeccionForm" action="{% url 'generar_desde_proyeccion' %}" method="POST">
-                            {% csrf_token %}
-                            <table class="w-full text-left text-sm">
-                                <thead
-                                    class="bg-gray-50 text-[10px] uppercase font-black text-gray-400 sticky top-0 z-10">
-                                    <tr>
-                                        <th class="px-6 py-4 w-10">
+                        <table class="w-full text-left">
+                            <thead class="sticky top-0 z-10 bg-white">
+                                <tr class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    <th class="px-10 py-6 w-20">
+                                        <div class="flex items-center justify-center">
                                             <input type="checkbox" checked onchange="toggleAllProyeccion(this)"
-                                                class="rounded border-gray-300 text-blue-600">
-                                        </th>
-                                        <th class="px-6 py-4">Ejecución</th>
-                                        <th class="px-6 py-4">Funcionario</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    {% for item in proyeccion %}
-                                    <tr
-                                        class="hover:bg-blue-50/30 transition {% if item.ya_procesado %}bg-gray-50/50 opacity-75{% endif %}">
-                                        <td class="px-6 py-4 text-center">
-                                            <div class="flex flex-col items-center gap-1.5">
-                                                <input type="checkbox" name="proyeccion_items"
-                                                    value="{{ item.turno.id }}:{{ item.tipo }}" checked
-                                                    class="proyeccion-check rounded border-gray-300 text-blue-600">
-
-                                                {% if item.ya_procesado %}
-                                                {% if item.estado_actual == 'enviado' %}
-                                                <span
-                                                    class="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[7px] font-black uppercase flex items-center gap-0.5">
-                                                    <i data-lucide="check" class="w-1.5 h-1.5"></i> Enviado
-                                                </span>
-                                                {% elif item.estado_actual == 'pendiente' or item.estado_actual ==
-                                                'procesando' %}
-                                                <span
-                                                    class="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[7px] font-black uppercase flex items-center gap-0.5">
-                                                    <i data-lucide="clock" class="w-1.5 h-1.5"></i> Pendiente
-                                                </span>
-                                                {% elif item.estado_actual == 'fallido' or item.estado_actual ==
-                                                'error_temporal' %}
-                                                <span
-                                                    class="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[7px] font-black uppercase flex items-center gap-0.5">
-                                                    <i data-lucide="alert-circle" class="w-1.5 h-1.5"></i> Fallido
-                                                </span>
-                                                {% else %}
-                                                <span
-                                                    class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[7px] font-black uppercase flex items-center gap-0.5">
-                                                    {{ item.estado_actual }}
-                                                </span>
-                                                {% endif %}
-                                                {% else %}
-                                                <span
-                                                    class="px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-300 text-[7px] font-black uppercase border border-gray-100 whitespace-nowrap">
-                                                    No planificado
-                                                </span>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="text-[11px] font-black text-gray-900">{{
-                                                item.fecha_programada|date:"d M H:i" }}</div>
-                                            <div class="text-[9px] font-bold text-blue-500 uppercase">{{
-                                                item.tipo_display }}</div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <div class="text-[11px] font-bold text-gray-800">{{ item.responsable.nombre }}</div>
-                                            <div class="text-[9px] text-gray-400">Turno: {{ item.turno.fecha|date:"d/m" }} {{ item.turno.hora|time:"H:i" }}</div>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="3" class="px-6 py-20 text-center text-gray-400 italic text-xs">No
-                                            hay turnos proyectados para esta semana.</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Tab content: Cola Activa -->
-                <div id="content-queue" class="hidden flex-1 flex flex-col overflow-hidden">
-                    <div class="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
-                        <table class="w-full text-left text-sm text-gray-500">
-                            <thead
-                                class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 sticky top-0 bg-gray-50 z-10">
-                                <tr>
-                                    <th class="px-6 py-4 w-10">
-                                        <input type="checkbox" id="selectAll" checked
-                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                                class="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
+                                        </div>
                                     </th>
-                                    <th class="px-6 py-4">Ejecución</th>
-                                    <th class="px-6 py-4">Responsable</th>
-                                    <th class="px-6 py-4 text-right">Acciones</th>
+                                    <th class="px-4 py-6">Planificación</th>
+                                    <th class="px-10 py-6">Responsable</th>
+                                    <th class="px-10 py-6 text-right">Previsualizar</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                {% for item in cola_radar %}
-                                <tr
-                                    class="hover:bg-indigo-50/5 transition {% if item.estado == 'error_temporal' %}bg-amber-50/20{% endif %}">
-                                    <td class="px-6 py-4 text-center">
-                                        <input type="checkbox" name="notificaciones" value="{{ item.id }}" checked
-                                            class="notif-check rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="p-2 rounded-lg 
-                                            {% if item.tipo == 'inicio' %}bg-indigo-100 text-indigo-600
-                                            {% elif item.tipo == 'anticipado' %}bg-blue-100 text-blue-600
-                                            {% else %}bg-amber-100 text-amber-600{% endif %}">
-                                                <i data-lucide="{% if item.tipo == 'inicio' %}megaphone{% elif item.tipo == 'anticipado' %}calendar{% else %}zap{% endif %}"
-                                                    class="w-4 h-4"></i>
-                                            </div>
-                                            <div>
-                                                <div class="text-[11px] font-black text-gray-900 leading-tight">{{
-                                                    item.fecha_programada|date:"d/m H:i" }}</div>
-                                                <div class="text-[9px] font-bold uppercase tracking-wider 
-                                                {% if item.tipo == 'inicio' %}text-indigo-500
-                                                {% elif item.tipo == 'anticipado' %}text-blue-500
-                                                {% else %}text-amber-500{% endif %}">
-                                                    {{ item.get_tipo_display }}
-                                                </div>
-                                            </div>
+                            <tbody class="divide-y divide-slate-50">
+                                {% for item in proyeccion %}
+                                <tr class="group/row hover:bg-slate-50 transition duration-300 {% if item.ya_procesado %}opacity-40 grayscale-[0.5]{% endif %}">
+                                    <td class="px-10 py-8">
+                                        <div class="flex items-center justify-center">
+                                            <input type="checkbox" name="proyeccion_items" value="{{ item.turno.id }}:{{ item.tipo }}" 
+                                                {% if not item.ya_procesado %}checked{% else %}disabled{% endif %} 
+                                                class="proyeccion-check w-6 h-6 rounded-xl border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-xs font-bold text-gray-900">{{ item.turno.responsable.nombre }}
+                                    <td class="px-4 py-8">
+                                        <div class="flex flex-col gap-1">
+                                            <div class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ item.tipo_display }}</div>
+                                            <div class="text-[15px] font-black text-slate-900 group-hover/row:text-indigo-600 transition">{{ item.fecha_programada|date:"d M, H:i" }}</div>
+                                            {% if item.ya_procesado %}
+                                            <div class="flex items-center gap-1.5 mt-1 text-green-500">
+                                                <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                                <span class="text-[9px] font-black uppercase tracking-widest">Funcionando correctamente</span>
+                                            </div>
+                                            {% endif %}
                                         </div>
-                                        <div class="text-[10px] text-gray-400">{{ item.turno.responsable.email }}</div>
                                     </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="flex justify-end gap-2">
-                                            <form action="{% url 'reenviar_notificacion' item.id %}" method="POST">
-                                                {% csrf_token %}
-                                                <button type="submit"
-                                                    class="p-1.5 bg-gray-50 text-gray-400 hover:text-blue-600 rounded-lg transition"
-                                                    title="Enviar ahora">
-                                                    <i data-lucide="zap" class="w-4 h-4"></i>
-                                                </button>
-                                            </form>
-                                            <button
-                                                onclick="openEditEmailModal('{{ item.id }}', '{{ item.turno.responsable.email }}')"
-                                                class="p-1.5 bg-gray-50 text-gray-400 hover:text-amber-600 rounded-lg transition"
-                                                title="Corregir correo">
-                                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    <td class="px-10 py-8">
+                                        <div class="text-[15px] font-black text-slate-800">{{ item.responsable.nombre }}</div>
+                                        <div class="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Turno: {{ item.turno.fecha|date:"d/m" }} {{ item.turno.hora|time:"H:i" }}</div>
+                                    </td>
+                                    <td class="px-10 py-8">
+                                        <div class="flex items-center justify-end">
+                                            <button type="button" onclick="openRadarPreview('{{ item.turno.id }}', '{{ item.tipo }}')" 
+                                                class="p-3 bg-slate-50 text-slate-400 hover:bg-white hover:text-indigo-600 rounded-xl transition border border-transparent hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/10 group/btn" 
+                                                title="Previsualizar Contenido">
+                                                <i data-lucide="eye" class="w-5 h-5"></i>
                                             </button>
-                                            <form action="{% url 'cancelar_notificacion' item.id %}" method="POST">
-                                                {% csrf_token %}
-                                                <button type="submit"
-                                                    class="p-1.5 bg-gray-50 text-gray-400 hover:text-red-500 rounded-lg transition"
-                                                    title="Cancelar">
-                                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                                </button>
-                                            </form>
                                         </div>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="3" class="px-6 py-12 text-center text-gray-300 italic text-xs">No hay
-                                        notificaciones pendientes.</td>
+                                    <td colspan="4" class="px-10 py-32">
+                                        <div class="flex flex-col items-center justify-center text-center">
+                                            <div class="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                                                <i data-lucide="sparkles" class="w-10 h-10 text-orange-400"></i>
+                                            </div>
+                                            <h3 class="text-xl font-black text-slate-900 mb-2">¡Todo al día!</h3>
+                                            <p class="text-sm text-slate-400 font-medium max-w-xs mx-auto">
+                                                No hay notificaciones pendientes para los próximos 7 días.
+                                            </p>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </form>
+                </div>
+                
+                {% if proyeccion.paginator.num_pages > 1 %}
+                <div class="px-10 py-6 border-t border-slate-50 bg-white flex justify-between items-center">
+                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        Página {{ proyeccion.number }} de {{ proyeccion.paginator.num_pages }}
                     </div>
+                    <div class="flex gap-3">
+                        {% if proyeccion.has_previous %}
+                        <a href="?page_proj={{ proyeccion.previous_page_number }}" class="p-3 bg-slate-50 text-slate-400 hover:bg-indigo-600 hover:text-white rounded-xl transition shadow-sm">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </a>
+                        {% else %}
+                        <div class="p-3 bg-slate-50 text-slate-200 rounded-xl">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </div>
+                        {% endif %}
 
-                    <!-- Barra de Acciones Masivas (Flotante) -->
-                    <div id="bulkActionsBar"
-                        class="hidden absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-gray-700 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-6 z-30 animate-in slide-in-from-bottom-10">
-                        <div class="flex items-center gap-3 pr-6 border-r border-gray-700">
-                            <div class="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-sm"
-                                id="selectedCount">0</div>
-                            <span class="text-white font-bold text-sm uppercase tracking-wider">Seleccionados</span>
+                        {% if proyeccion.has_next %}
+                        <a href="?page_proj={{ proyeccion.next_page_number }}" class="p-3 bg-slate-50 text-slate-400 hover:bg-indigo-600 hover:text-white rounded-xl transition shadow-sm">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </a>
+                        {% else %}
+                        <div class="p-3 bg-slate-50 text-slate-200 rounded-xl">
+                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
                         </div>
-                        <div class="flex gap-2">
-                            <form id="bulkForm" action="{% url 'notificaciones_masivas' %}" method="POST"
-                                class="hidden">
-                                {% csrf_token %}
-                                <input type="hidden" name="accion" id="bulkAccion">
-                            </form>
-                            <button onclick="submitBulk('reenviar')"
-                                class="px-4 py-2 bg-blue-600 text-white rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition flex items-center gap-2">
-                                <i data-lucide="send" class="w-4 h-4"></i> Reenviar en Bloque
-                            </button>
-                            <button onclick="submitBulk('cancelar')"
-                                class="px-4 py-2 bg-red-600/20 text-red-400 border border-red-500/30 rounded-xl font-black text-xs uppercase hover:bg-red-600/30 transition flex items-center gap-2">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i> Cancelar
-                            </button>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
+                {% endif %}
+            </div>
+        </div>
 
-                <!-- Historial (Log) -->
-                <div
-                    class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-[600px]">
-                    <div
-                        class="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gray-50/20">
-                        <div class="flex items-center gap-3">
-                            <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                                <i data-lucide="history" class="w-5 h-5 text-gray-400"></i> Bitácora de Auditoría
-                            </h3>
-                            <span
-                                class="text-[10px] font-black bg-gray-100 text-gray-600 px-3 py-1 rounded-full uppercase">Últimos
-                                50</span>
+        <!-- Sidebar Area -->
+        <div class="flex flex-col gap-10">
+            <!-- Acciones Rápidas -->
+            <div class="bg-white rounded-[2rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden h-fit">
+                <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Acciones Rápidas</h2>
+                <div class="flex flex-col gap-6">
+                    <button onclick="openWizard()" class="group flex items-center gap-6 p-6 bg-slate-50 hover:bg-indigo-50 transition duration-300 rounded-[1.5rem] text-left border border-transparent hover:border-indigo-100">
+                        <div class="p-4 bg-white text-indigo-500 rounded-2xl shadow-sm group-hover:scale-110 transition duration-300">
+                            <i data-lucide="plus" class="w-6 h-6"></i>
                         </div>
-
-                        <!-- Filtro de Búsqueda -->
-                        <div class="relative w-full md:w-64">
-                            <input type="text" id="auditSearch" placeholder="Filtrar por nombre o email..."
-                                class="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                                onkeyup="filterAuditTrail()">
-                            <i data-lucide="search"
-                                class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <div>
+                            <div class="text-[13px] font-black text-slate-900 group-hover:text-indigo-600">Nueva Notificación</div>
+                            <div class="text-[10px] text-slate-400 font-bold mt-0.5">Crear alerta</div>
                         </div>
-                    </div>
-                    <div class="flex-1 overflow-x-auto overflow-y-auto custom-scrollbar">
-                        <table class="w-full text-left text-sm text-gray-500">
-                            <thead
-                                class="bg-gray-50/50 text-[10px] uppercase font-black text-gray-400 sticky top-0 bg-gray-50 z-10">
-                                <tr>
-                                    <th class="px-6 py-4">Realizado</th>
-                                    <th class="px-6 py-4">Asunto / Destinatario</th>
-                                    <th class="px-6 py-4 text-right">Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                {% for h in historial %}
-                                <tr class="audit-row hover:bg-gray-50 transition"
-                                    data-search="{{ h.turno.responsable.nombre|lower }} {{ h.destinatario|lower }} {{ h.asunto|lower }} {{ h.estado|lower }}">
-                                    <td class="px-6 py-4 font-mono text-[10px] text-gray-500">
-                                        {{ h.fecha_envio|date:"d/m H:i" }}
-                                    </td>
-                                    <td class="px-6 py-4 text-xs">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <i data-lucide="{% if h.tipo == 'inicio' %}megaphone{% elif h.tipo == 'anticipado' %}calendar{% else %}zap{% endif %}"
-                                                class="w-3.5 h-3.5 {% if h.tipo == 'inicio' %}text-indigo-400{% elif h.tipo == 'anticipado' %}text-blue-400{% else %}text-amber-400{% endif %}"></i>
-                                            <div class="text-gray-900 font-bold truncate max-w-[200px]"
-                                                title="{{ h.asunto }}">
-                                                {{ h.asunto }}</div>
-                                        </div>
-                                        <div class="flex items-center gap-2 mt-0.5">
-                                            <span
-                                                class="text-[9px] font-black px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded uppercase">N°
-                                                {{ h.intento_n }}</span>
-                                            <div class="text-gray-700 font-bold text-[10px]">{{ h.turno.responsable.nombre }}</div>
-                                            <div class="text-gray-400 text-[10px]">• {{ h.destinatario }}</div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="flex flex-col items-end gap-2">
-                                            {% if h.estado == 'enviado' %}
-                                            <span
-                                                class="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[7px] font-black uppercase flex items-center gap-0.5 shadow-sm">
-                                                <i data-lucide="check" class="w-1.5 h-1.5"></i> Entregado
-                                            </span>
-                                            {% elif h.estado == 'cancelado' %}
-                                            <span
-                                                class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 text-[7px] font-black uppercase flex items-center gap-0.5 shadow-sm">
-                                                <i data-lucide="slash" class="w-1.5 h-1.5"></i> Cancelado
-                                            </span>
-                                            {% else %}
-                                            <span
-                                                class="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[7px] font-black uppercase flex items-center gap-0.5 shadow-sm"
-                                                title="{{ h.error_log }}">
-                                                <i data-lucide="alert-circle" class="w-1.5 h-1.5"></i> Fallido
-                                            </span>
-                                            {% endif %}
+                    </button>
 
-                                            <div class="flex items-center gap-3">
-                                                {% if h.notificacion %}
-                                                <form action="{% url 'reenviar_notificacion' h.notificacion.id %}"
-                                                    method="POST" class="inline">
-                                                    {% csrf_token %}
-                                                    <button type="submit"
-                                                        class="text-[10px] font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1 uppercase tracking-tighter hover:underline">
-                                                        <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reenviar
-                                                    </button>
-                                                </form>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr id="auditNoResults" class="hidden">
-                                    <td colspan="3" class="px-6 py-20 text-center text-gray-400 italic text-xs">
-                                        No se encontraron resultados para su búsqueda.
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                    <button onclick="switchMainTab('history')" class="group flex items-center gap-6 p-6 bg-slate-50 hover:bg-indigo-50 transition duration-300 rounded-[1.5rem] text-left border border-transparent hover:border-indigo-100">
+                        <div class="p-4 bg-white text-emerald-500 rounded-2xl shadow-sm group-hover:scale-110 transition duration-300">
+                            <i data-lucide="list" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <div class="text-[13px] font-black text-slate-900 group-hover:text-indigo-600">Ver Historial</div>
+                            <div class="text-[10px] text-slate-400 font-bold mt-0.5">Revisar enviadas</div>
+                        </div>
+                    </button>
+
+                    <a href="{% url 'ver_cronograma' %}" class="group flex items-center gap-6 p-6 bg-slate-50 hover:bg-orange-50 transition duration-300 rounded-[1.5rem] text-left border border-transparent hover:border-orange-100">
+                        <div class="p-4 bg-white text-orange-500 rounded-2xl shadow-sm group-hover:scale-110 transition duration-300">
+                            <i data-lucide="calendar" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <div class="text-[13px] font-black text-slate-900 group-hover:text-orange-600">Cronograma</div>
+                            <div class="text-[10px] text-slate-400 font-bold mt-0.5">Ver calendario</div>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Configuration Modal -->
-    <div id="configModal"
-        class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center"
-        style="display: none;">
-        <div class="flex items-center justify-center min-h-screen">
-            <div
-                class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
-                <!-- Modal Header -->
-                <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                    <div>
-                        <h3 class="text-xl font-black text-gray-900 tracking-tight">Reglas y Formato de Notificación
-                        </h3>
-                        <p class="text-xs text-gray-500 font-medium">Define cuándo y cómo se avisará a los técnicos.</p>
+    <!-- History Tab Content (Hidden by default) -->
+    <div id="main-content-history" class="hidden max-w-[1600px] mx-auto w-full px-12 py-10">
+        <!-- Historial de Notificaciones Card (Design Match) -->
+        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden group hover:shadow-2xl hover:shadow-slate-200/50 transition duration-500">
+            <!-- Header -->
+            <div class="flex justify-between items-center px-10 py-8 border-b border-slate-50 bg-white">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-emerald-50 text-emerald-500 rounded-2xl">
+                         <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
                     </div>
-                    <button onclick="document.getElementById('configModal').classList.add('hidden')"
-                        class="p-2 hover:bg-gray-200 rounded-full transition text-gray-400">
-                        <i data-lucide="x" class="w-6 h-6"></i>
-                    </button>
+                    <div>
+                        <h3 class="text-xl font-black text-slate-800 tracking-tight">Historial de Notificaciones</h3>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Registro general de envíos</p>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Modal Body -->
-                <form method="POST" class="flex-1 overflow-y-auto custom-scrollbar">
-                    {% csrf_token %}
-                    <div class="grid grid-cols-1 lg:grid-cols-12">
-                        <!-- Reglas -->
-                        <div class="lg:col-span-5 p-8 space-y-8 border-r border-gray-100">
-                            <div>
-                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Gatillos
-                                    de
-                                    Tiempo</h4>
-                                <div class="space-y-4">
-                                    <!-- Anticipado -->
-                                    <div
-                                        class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:border-blue-200 transition group">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="font-bold text-gray-900">Aviso Anticipado</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" name="activar_anticipado" class="sr-only peer"
-                                                    {%if config.activar_anticipado %} checked {% endif %}>
-                                                <div
-                                                    class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
-                                                </div>
-                                            </label>
-                                        </div>
-                                        <div class="flex items-center gap-2 mt-4">
-                                            <input type="number" name="dias_antes" value="{{ config.dias_antes }}"
-                                                class="w-16 rounded-xl border-gray-200 text-sm font-black p-2 bg-gray-50 text-center">
-                                            <span class="text-xs text-gray-500 font-bold">días antes a la hora
-                                                programada.</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Mismo día (X mins antes) -->
-                                    <div
-                                        class="p-6 border border-gray-100 rounded-2xl bg-white shadow-sm hover:border-indigo-200 transition group">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="font-bold text-gray-900">Aviso el Día del Turno</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" name="activar_jornada" class="sr-only peer" {% if config.activar_jornada %} checked {% endif %}>
-                                                <div
-                                                    class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
-                                                </div>
-                                            </label>
-                                        </div>
-                                        <div class="flex items-center gap-2 mt-4">
-                                            <input type="number" name="minutos_antes_jornada"
-                                                value="{{ config.minutos_antes_jornada }}"
-                                                class="w-16 rounded-xl border-gray-200 text-sm font-black p-2 bg-gray-50 text-center">
-                                            <span class="text-xs text-gray-500 font-bold">minutos antes del
-                                                evento.</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Copia
-                                    Oculta
-                                    (BCC) y Actividad</h4>
-                                <div class="space-y-4">
-                                    <div
-                                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <i data-lucide="mail" class="w-5 h-5 text-gray-400"></i>
-                                        <input type="email" name="cc_email" value="{{ config.cc_email|default:'' }}"
-                                            placeholder="Supervisión (BCC)"
-                                            class="bg-transparent border-none w-full text-xs font-bold focus:ring-0 text-gray-800">
-                                    </div>
-                                    <div
-                                        class="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <i data-lucide="tag" class="w-5 h-5 text-gray-400"></i>
-                                        <input type="text" name="actividad_general"
-                                            value="{{ config.actividad_general }}"
-                                            placeholder="Actividad General (ej: Mantenimiento)"
-                                            class="bg-transparent border-none w-full text-xs font-bold focus:ring-0 text-gray-800">
-                                    </div>
-                                </div>
+            <!-- Filters -->
+            <div class="p-6 border-b border-gray-100">
+                <form method="GET" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <!-- Fecha Desde -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha Turno Desde</label>
+                            <div class="relative">
+                                <input type="date" name="fecha_desde" class="w-full pl-4 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition transition-colors" value="{{ request.GET.fecha_desde }}">
                             </div>
                         </div>
-
-                        <!-- Formato y Preview -->
-                        <div class="lg:col-span-7 bg-gray-50/50 p-8 flex flex-col space-y-6">
-                            <div class="flex border-b border-gray-200">
-                                <h4
-                                    class="px-4 py-2 text-xs font-black border-b-2 border-blue-600 text-blue-600 uppercase tracking-widest">
-                                    Plantilla de Recordatorios</h4>
+                        <!-- Fecha Hasta -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha Turno Hasta</label>
+                            <div class="relative">
+                                <input type="date" name="fecha_hasta" class="w-full pl-4 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition transition-colors" value="{{ request.GET.fecha_hasta }}">
                             </div>
+                        </div>
+                        <!-- Estado -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Estado</label>
+                            <div class="relative">
+                                <select name="estado" class="w-full pl-4 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none appearance-none transition transition-colors cursor-pointer">
+                                    <option value="">Todos</option>
+                                    <option value="enviado">Enviado</option>
+                                    <option value="fallido">Error</option>
+                                    <option value="pendiente">Pendiente</option>
+                                </select>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                            </div>
+                        </div>
+                        <!-- Buscar -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Buscar por Nombre</label>
+                            <div class="relative">
+                                <input type="text" name="search" placeholder="Nombre del funcionario..." class="w-full pl-4 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition transition-colors">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition shadow-sm text-sm flex items-center gap-2">
+                            <i data-lucide="search" class="w-4 h-4"></i> Aplicar Filtros
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                            <div id="section-notif" class="space-y-4">
-                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plantilla de
-                                    Recordatorios</h4>
-                                <div>
-                                    <label
-                                        class="block text-[10px] font-black text-gray-400 mb-2 uppercase">Asunto</label>
-                                    <input type="text" name="asunto_template" id="asunto_input"
-                                        value="{{ config.asunto_template }}"
-                                        class="w-full rounded-2xl border-gray-200 font-bold text-gray-800 text-sm focus:ring-blue-500 shadow-sm">
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-gray-100">
+                            <th class="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Fecha/Hora Envío</th>
+                            <th class="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Funcionario</th>
+                            <th class="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Fecha Turno</th>
+                            <th class="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-4 text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm">
+                        {% for h in historial %}
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="px-6 py-6">
+                                <span class="font-bold text-gray-900">{{ h.fecha_envio|date:"d/m/Y" }}</span>
+                                <span class="text-xs text-gray-500 ml-1">{{ h.fecha_envio|time:"H:i" }}</span>
+                            </td>
+                            <td class="px-6 py-6 font-medium text-gray-700">
+                                {{ h.turno.responsable.nombre }}
+                            </td>
+                            <td class="px-6 py-6 text-gray-600">
+                                {{ h.destinatario }}
+                            </td>
+                            <td class="px-6 py-6 text-gray-600">
+                                {{ h.turno.fecha|date:"d M" }} {{ h.turno.hora|time:"H:i" }}
+                            </td>
+                            <td class="px-6 py-6">
+                                {% if h.estado == 'enviado' %}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-50 text-green-600 font-bold text-xs">
+                                    <i data-lucide="check" class="w-3 h-3"></i> Enviado
+                                </span>
+                                {% elif h.estado == 'fallido' %}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-50 text-red-600 font-bold text-xs" title="{{ h.error_log }}">
+                                    <i data-lucide="x" class="w-3 h-3"></i> Error de envío
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-100 text-gray-600 font-bold text-xs">
+                                    {{ h.get_estado_display }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-6 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    {% if h.notificacion %}
+                                    <button onclick="openConfirmResendModal('{{ h.notificacion.id }}')" class="p-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition shadow-sm" title="Reenviar ahora">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="openEditEmailModal('{{ h.notificacion.id }}', '{{ h.destinatario }}')" type="button" class="p-2 bg-white border border-orange-200 text-orange-500 rounded-md hover:bg-orange-50 transition shadow-sm" title="Editar Email y Reenviar">
+                                        <i data-lucide="pencil" class="w-4 h-4"></i>
+                                    </button>
+                                    {% endif %}
                                 </div>
-                                <div>
-                                    <label
-                                        class="block text-[10px] font-black text-gray-400 mb-2 uppercase flex justify-between items-center">
-                                        Contenido del Mensaje
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">No se encontraron notificaciones en el historial.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination (if needed) -->
+            {% if historial.paginator.num_pages > 1 %}
+            <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/30 flex justify-between items-center">
+                <span class="text-xs text-gray-500 font-medium">
+                    Mostrando página {{ historial.number }} de {{ historial.paginator.num_pages }}
+                </span>
+                <div class="flex gap-2">
+                    {% if historial.has_previous %}
+                    <a href="?page={{ historial.previous_page_number }}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </a>
+                    {% endif %}
+                    {% if historial.has_next %}
+                    <a href="?page={{ historial.next_page_number }}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
 
-                                    </label>
-                                    <input type="hidden" name="cuerpo_template" id="hidden_cuerpo"
-                                        value="{{ config.cuerpo_template }}">
-                                    <div id="quill-editor" class="bg-white rounded-b-2xl"></div>
+    </div>
+
+    <!-- Wizard Modal -->
+    <div id="wizardModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[95%] lg:max-w-6xl max-h-[95vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
+            <!-- Wizard Header -->
+            <div class="px-10 py-6 border-b border-gray-100 flex justify-between items-center bg-white">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100">
+                        <i data-lucide="bell-ring" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight">Crear Notificaciones</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Configuración en 3 pasos</p>
+                    </div>
+                </div>
+                <button onclick="closeWizard()" class="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="px-10 pt-6 pb-2 bg-white">
+                <div class="flex items-center w-full relative">
+                    <div class="absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -translate-y-1/2 z-0"></div>
+                    <div id="wizardProgress" class="absolute top-1/2 left-0 w-0 h-0.5 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-500"></div>
+                    
+                    <!-- Step 1 Indicator -->
+                    <div class="flex-1 flex flex-col items-center relative z-10">
+                        <div id="step1-indicator" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-xs transition-all duration-300 ring-4 ring-white">1</div>
+                        <span class="text-[8px] truncate max-w-full font-black uppercase mt-2 tracking-widest text-blue-600 px-2" id="step1-label">Configuración</span>
+                    </div>
+                    
+                    <!-- Step 2 Indicator -->
+                    <div class="flex-1 flex flex-col items-center relative z-10">
+                        <div id="step2-indicator" class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-black text-xs transition-all duration-300 ring-4 ring-white">2</div>
+                        <span class="text-[8px] truncate max-w-full font-black uppercase mt-2 tracking-widest text-gray-400 px-2" id="step2-label">Destinatarios</span>
+                    </div>
+                    
+                    <!-- Step 3 Indicator -->
+                    <div class="flex-1 flex flex-col items-center relative z-10">
+                        <div id="step3-indicator" class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center font-black text-xs transition-all duration-300 ring-4 ring-white">3</div>
+                        <span class="text-[8px] truncate max-w-full font-black uppercase mt-2 tracking-widest text-gray-400 px-2" id="step3-label">Programación</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wizard Body -->
+            <div class="flex-1 overflow-hidden flex flex-col min-h-0">
+                <form id="wizardForm" method="POST" action="{% url 'generar_desde_proyeccion' %}" class="flex-1 flex flex-col overflow-hidden min-h-0">
+                    {% csrf_token %}
+                    
+                    <!-- STEP 1: CONFIGURATION -->
+                    <div id="wizardStep1" class="wizard-step-node active-step flex-1 flex flex-col overflow-hidden min-h-0">
+                        <div class="flex h-full min-h-0 w-full">
+                            <!-- Column 1: Configuration Sidebar (ULTRA-SLIM) -->
+                            <div class="w-32 border-r border-gray-100 bg-gray-50/50 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-4 no-shrink">
+                                <div class="space-y-3">
+                                    <h4 class="text-[7px] font-black text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1 px-1">
+                                        <i data-lucide="settings-2" class="w-2.5 h-2.5"></i> Reglas
+                                    </h4>
+                                    <!-- Anticipado -->
+                                    <div class="p-2 bg-white rounded-lg border border-gray-100 shadow-sm space-y-1.5">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[8px] font-black text-gray-700 uppercase">Anticip.</span>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="activar_anticipado" class="sr-only peer" {% if config.activar_anticipado %}checked{% endif %}>
+                                                <div class="w-6 h-3 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all"></div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <input type="number" name="dias_antes" value="{{ config.dias_antes }}" class="w-full px-1.5 py-0.5 bg-gray-50 border-gray-100 rounded text-[10px] font-bold text-gray-700 focus:ring-0">
+                                            <span class="text-[6px] font-bold text-gray-400 uppercase">D</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Jornada -->
+                                    <div class="p-2 bg-white rounded-lg border border-gray-100 shadow-sm space-y-1.5">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[8px] font-black text-gray-700 uppercase">Hoy</span>
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="activar_jornada" class="sr-only peer" {% if config.activar_jornada %}checked{% endif %}>
+                                                <div class="w-6 h-3 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all"></div>
+                                            </label>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <input type="number" name="minutos_antes_jornada" value="{{ config.minutos_antes_jornada }}" class="w-full px-1.5 py-0.5 bg-gray-50 border-gray-100 rounded text-[10px] font-bold text-gray-700 focus:ring-0">
+                                            <span class="text-[6px] font-bold text-gray-400 uppercase">Min</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="px-1">
+                                    <h4 class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                        <i data-lucide="hash" class="w-2.5 h-2.5"></i> Tags
+                                    </h4>
+                                    <div class="space-y-1">
+                                        <button type="button" onclick="insertPlaceholderWizard('{funcionario}')" class="w-full flex items-center justify-between px-2 py-1.5 bg-white text-[7px] font-black text-gray-500 rounded-lg border border-gray-100 hover:border-blue-400 hover:text-blue-600 transition-all group shadow-sm">
+                                            <span>Funcionario</span>
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderWizard('{evento}')" class="w-full flex items-center justify-between px-2 py-1.5 bg-white text-[7px] font-black text-gray-500 rounded-lg border border-gray-100 hover:border-blue-400 hover:text-blue-600 transition-all group shadow-sm">
+                                            <span>Actividad</span>
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderWizard('{fecha_turno}')" class="w-full flex items-center justify-between px-2 py-1.5 bg-white text-[7px] font-black text-gray-500 rounded-lg border border-gray-100 hover:border-blue-400 hover:text-blue-600 transition-all group shadow-sm">
+                                            <span>Fecha</span>
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderWizard('{hora}')" class="w-full flex items-center justify-between px-2 py-1.5 bg-white text-[7px] font-black text-gray-500 rounded-lg border border-gray-100 hover:border-blue-400 hover:text-blue-600 transition-all group shadow-sm">
+                                            <span>Hora</span>
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderWizard('{equipos_lista}')" class="w-full flex items-center justify-between px-2 py-1.5 bg-white text-[7px] font-black text-gray-500 rounded-lg border border-gray-100 hover:border-blue-400 hover:text-blue-600 transition-all group shadow-sm">
+                                            <span>Equipos</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
+                            <!-- Column 2: Editor Center -->
+                            <div class="flex-1 bg-white overflow-y-auto custom-scrollbar p-5 border-r border-gray-100">
+                                <div class="max-w-xl mx-auto space-y-4">
+                                    <div>
+                                        <h3 class="text-base font-black text-slate-900 tracking-tight">Redacción</h3>
+                                        <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Define tu mensaje base</p>
+                                    </div>
 
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                <span onclick="insertTextAtCursor('{funcionario}')"
-                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{funcionario}</span>
-                                <span onclick="insertTextAtCursor('{evento}')"
-                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{evento}</span>
-                                <span onclick="insertTextAtCursor('{marca}')"
-                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{marca}</span>
-                                <span onclick="insertTextAtCursor('{modelo}')"
-                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{modelo}</span>
-                                <span onclick="insertTextAtCursor('{fecha_turno}')"
-                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{fecha_turno}</span>
-                                <span onclick="insertTextAtCursor('{hora}')"
-                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{hora}</span>
-                                <span onclick="insertTextAtCursor('{equipos_lista}')"
-                                    class="cursor-pointer text-[9px] bg-white border border-gray-200 text-gray-500 px-2 py-1 rounded-lg font-mono hover:border-blue-300 transition">{equipos_lista}</span>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-[9px] font-black text-slate-400 mb-1.5 uppercase tracking-widest">Asunto del Correo</label>
+                                            <input type="text" name="asunto_template" id="asunto_input_wizard" value="{{ config.asunto_template }}"
+                                                class="w-full rounded-xl border-slate-100 font-bold text-slate-700 text-[11px] focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all p-4 outline-none bg-slate-50/50">
+                                        </div>
+
+                                        <div class="flex flex-col">
+                                            <label class="block text-[9px] font-black text-slate-400 mb-1.5 uppercase tracking-widest">Cuerpo del Mensaje</label>
+                                            <input type="hidden" name="cuerpo_template" id="hidden_cuerpo_wizard" value="{{ config.cuerpo_template }}">
+                                            <div id="quill-editor-wizard" class="bg-white rounded-xl border border-slate-100 min-h-[250px] shadow-inner shadow-gray-50/50"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Enhanced Preview Card (Based on image reference) -->
-                            <div class="mt-4">
-                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                                    Previsualización en Tiempo Real</h4>
-                                <div
-                                    class="bg-white rounded-2xl shadow-xl overflow-hidden max-w-lg mx-auto w-full border border-gray-100 transform scale-95 origin-top">
-                                    <!-- Preview Content -->
-                                    <div class="p-8 space-y-6">
+                            <!-- Column 3: Live Preview -->
+                            <div class="flex-1 bg-gray-50/50 overflow-y-auto custom-scrollbar p-4 shrink-0 shadow-inner">
+                                <div class="max-w-md mx-auto">
+                                    <h4 class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-4 text-center">Vista Previa Real</h4>
+                                    <div class="bg-white rounded-[1.5rem] shadow-xl overflow-hidden w-full border border-gray-100 transform scale-[0.95] origin-top">
+                                    <div class="p-5 space-y-4">
                                         <div class="flex items-center gap-3">
                                             <div class="w-1 h-8 bg-orange-400 rounded-full"></div>
-                                            <h2 class="text-lg font-black text-indigo-900 tracking-tight">Mantenimiento
-                                                de
-                                                equipos tecnológicos</h2>
-                                        </div>
-
-                                        <div class="flex justify-center">
-                                            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-                                            <img src="/static/img/mujeru.jpg" alt="Ilustración"
-                                                class="h-40 object-contain">
-                                        </div>
-
-                                        <div class="text-center space-y-4">
-                                            <p class="text-gray-700 text-sm font-bold">Estimado/a <span
-                                                    class="text-indigo-600" id="preview_funcionario_name">Juan Enrique
-                                                    Perez</span></p>
-
-                                            <div id="preview_body_text"
-                                                class="text-gray-600 text-xs italic bg-gray-50 p-4 rounded-xl border border-dashed border-gray-200">
-                                                [ Mensaje a trasmitir ]
+                                            <div class="min-w-0 flex-1">
+                                                <h2 class="text-sm font-black text-gray-900 tracking-tight leading-tight truncate" id="live_preview_subject">{{ config.asunto_template }}</h2>
+                                                <p class="text-[7px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Recordatorio</p>
                                             </div>
                                         </div>
 
-                                        <div class="space-y-1.5 pt-4 border-t border-gray-100">
-                                            <div class="flex items-center gap-2 text-[10px]">
-                                                <span class="text-gray-500 font-medium">Fecha a Constatar:</span>
-                                                <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
-                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
-                                                    Automático
-                                                    ]</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-[10px]">
-                                                <span class="text-gray-500 font-medium">Fecha Inicio:</span>
-                                                <span class="text-gray-900 font-bold">28/01/2026 | 09:01 a.m.</span>
-                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
-                                                    Automático
-                                                    ]</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-[10px]">
-                                                <span class="text-gray-500 font-medium">Descripción:</span>
-                                                <span class="text-gray-900 font-bold"
-                                                    id="preview_evento_tag">Mantenimiento
-                                                    Preventivo</span>
-                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
-                                                    Automático
-                                                    ]</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-[10px]">
-                                                <span class="text-gray-500 font-medium">Estado:</span>
-                                                <span class="text-gray-900 font-bold">Planificado</span>
-                                                <span class="text-gray-300 font-medium text-[9px] uppercase">[
-                                                    Automático
-                                                    ]</span>
+                                        <div class="flex justify-center py-3 bg-gray-50 rounded-2xl border border-dashed border-gray-200/50">
+                                            <img src="/static/img/mujeru.jpg" alt="Preview" class="h-16 object-contain filter drop-shadow-md">
+                                        </div>
+
+                                        <div class="space-y-3">
+                                            <p class="text-gray-900 text-[11px] font-black tracking-tight leading-none">Estimado/a <span class="text-blue-600" id="live_preview_funcionario">Funcionario</span></p>
+                                            <div id="live_preview_body" class="text-gray-600 text-[9px] italic bg-blue-50/30 p-3 rounded-[1rem] border border-blue-100/20 leading-relaxed font-semibold">
+                                                <!-- Content -->
                                             </div>
                                         </div>
 
-                                        <div class="pt-4 text-center">
-                                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider"
-                                                id="preview_enviado_fecha">Enviado
-                                                Fecha / Hora: 28/01/2026 | 09:01 a.m.</p>
+                                        <div class="space-y-1.5 pt-3 border-t border-gray-50">
+                                            <div class="flex items-center justify-between text-[8px]">
+                                                <span class="text-gray-400 font-bold uppercase tracking-widest">Fecha:</span>
+                                                <span class="text-gray-900 font-black" id="live_preview_fecha">00/00/0000</span>
+                                            </div>
+                                            <div class="flex items-center justify-between text-[8px]">
+                                                <span class="text-gray-400 font-bold uppercase tracking-widest">Hora:</span>
+                                                <span class="text-gray-900 font-black" id="live_preview_hora">00:00</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Modal Footer -->
-                    <div class="px-8 py-6 bg-white border-t border-gray-100 flex justify-end gap-3">
-                        <button type="button" onclick="document.getElementById('configModal').classList.add('hidden')"
-                            class="px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition">
-                            Cancelar
-                        </button>
-                        <button type="submit"
-                            class="px-10 py-3 bg-blue-600 text-white rounded-xl font-black shadow-lg shadow-blue-100 hover:bg-blue-700 hover:-translate-y-0.5 transition flex items-center gap-2">
-                            <i data-lucide="save" class="w-5 h-5"></i> Guardar Cambios
-                        </button>
+                <!-- STEP 2: RECIPIENTS -->
+                <div id="wizardStep2" class="wizard-step-node flex-1 flex flex-col overflow-hidden p-5 min-h-0">
+                        <div class="flex flex-col h-full gap-4 min-h-0">
+                            <div class="flex justify-between items-center bg-gray-50/50 p-3 rounded-[1.5rem] border border-gray-100">
+                                <div class="px-3">
+                                    <h4 class="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-0.5">
+                                        <i data-lucide="users" class="w-3 h-3 text-blue-500"></i> Selección de Destinatarios
+                                    </h4>
+                                    <p class="text-lg font-black text-gray-800 tracking-tight" id="wizardRecipientsTitle">Cargando turnos...</p>
+                                </div>
+                                <div class="flex gap-1.5 p-1 bg-white rounded-xl border border-gray-100 shadow-sm">
+                                    <button type="button" onclick="loadRecipients(3, 0, this)" class="recipient-filter-btn px-4 py-2 rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-100 border border-blue-600 text-[8px] font-black uppercase tracking-wider transition-all">3 días</button>
+                                    <button type="button" onclick="loadRecipients(4, 3, this)" class="recipient-filter-btn px-4 py-2 rounded-lg bg-white text-[8px] font-black uppercase tracking-wider text-gray-400 hover:text-blue-600 border border-transparent transition-all">Siguiente Sem.</button>
+                                    <button type="button" onclick="loadRecipients(23, 7, this)" class="recipient-filter-btn px-4 py-2 rounded-lg bg-white text-[8px] font-black uppercase tracking-wider text-gray-400 hover:text-blue-600 border border-transparent transition-all">Mes</button>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 rounded-[2rem] border border-gray-100 overflow-hidden bg-white shadow-inner shadow-gray-50 flex flex-col min-h-0">
+                                <div class="overflow-y-auto custom-scrollbar flex-1">
+                                    <table class="w-full text-left text-[11px] border-separate border-spacing-0">
+                                        <thead class="bg-gray-50/50 text-[9px] font-black text-gray-400 sticky top-0 z-20 backdrop-blur-md">
+                                            <tr>
+                                                <th class="px-4 py-3 border-b border-gray-100">
+                                                    <div class="flex items-center justify-center">
+                                                        <input type="checkbox" id="wizardToggleAll" checked class="w-4 h-4 rounded-md border-gray-200 text-blue-600 focus:ring-blue-500" onchange="toggleAllWizard(this)">
+                                                    </div>
+                                                </th>
+                                                <th class="px-4 py-3 border-b border-gray-100 uppercase tracking-widest text-[8px]">Ejecución</th>
+                                                <th class="px-4 py-3 border-b border-gray-100 uppercase tracking-widest text-[8px]">Responsable / Compromiso</th>
+                                                <th class="px-4 py-3 border-b border-gray-100 uppercase tracking-widest text-[8px]">Tipo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="wizardRecipientsBody" class="divide-y divide-gray-50">
+                                            <tr>
+                                                <td colspan="4" class="py-20 text-center">
+                                                    <div class="animate-pulse space-y-2">
+                                                        <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mx-auto text-blue-200">
+                                                            <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                                                        </div>
+                                                        <p class="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Buscando...</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: SUMMARY -->
+                    <div id="wizardStep3" class="wizard-step-node flex-1 flex flex-col overflow-hidden p-5 min-h-0">
+                        <div class="min-h-full flex flex-col items-center justify-center text-center space-y-8 py-6">
+                            <div class="max-w-xl w-full space-y-8 animate-in slide-in-from-bottom-5 duration-500">
+                                <div class="relative w-24 h-24 mx-auto">
+                                    <div class="absolute inset-0 bg-blue-100 rounded-[2rem] rotate-6 animate-pulse"></div>
+                                    <div class="absolute inset-0 bg-blue-600 rounded-[2rem] shadow-xl flex items-center justify-center -rotate-3 transition-transform hover:rotate-0 duration-500">
+                                        <i data-lucide="send" class="w-10 h-10 text-white"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-2">
+                                    <h3 class="text-2xl font-black text-gray-900 tracking-tight leading-tight">¡Todo configurado!</h3>
+                                    <p class="text-gray-500 font-bold uppercase tracking-[0.2em] text-[8px]">Resumen de Programación</p>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
+                                        <p id="summaryCount" class="text-4xl font-black text-blue-600 tabular-nums group-hover:scale-110 transition-transform">0</p>
+                                        <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-2">Notificaciones<br>a Programar</p>
+                                    </div>
+                                    <div class="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                                        <p id="summaryTypes" class="text-lg font-black text-gray-900 mt-2 uppercase tracking-tight">Múltiples</p>
+                                        <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-4">Tipos de Alerta<br>Configurados</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest justify-center">
+                                    <i data-lucide="info" class="w-4 h-4"></i>
+                                    <span>Se programarán los envíos seleccionados.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Wizard Footer -->
+                <div class="px-10 py-5 border-t border-gray-100 bg-white flex justify-between items-center bg-white shrink-0">
+                    <button type="button" onclick="closeWizard()" class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-gray-600 transition">Cancelar Proceso</button>
+                    <div class="flex gap-3">
+                        <button type="button" id="prevBtn" onclick="moveStep(-1)" class="hidden px-6 py-2.5 bg-gray-100 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-200 transition">Anterior</button>
+                        <button type="button" id="nextBtn" onclick="moveStep(1)" class="px-7 py-2.5 bg-blue-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-2">Siguiente <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+                        <button type="submit" id="submitBtn" class="hidden px-8 py-2.5 bg-green-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-green-700 transition shadow-lg shadow-green-100">Finalizar y Programar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Separate Email Preview Modal -->
+    <div id="emailPreviewModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+        <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
+            <div class="px-10 py-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                <div class="flex items-center gap-4">
+                    <div class="p-4 bg-blue-50 text-blue-600 rounded-2xl">
+                        <i data-lucide="mail" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-black text-gray-900 tracking-tight">Previsualización Real</h4>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Vista de Correo Electrónico</p>
+                    </div>
+                </div>
+                <button onclick="hideModal('emailPreviewModal')" class="p-3 hover:bg-gray-100 rounded-2xl transition text-gray-400">
+                    <i data-lucide="x" class="w-8 h-8"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-12 bg-gray-50/50 custom-scrollbar">
+                <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden w-full border border-gray-100 mx-auto">
+                    <div class="p-10 space-y-8">
+                        <div class="flex items-center gap-5">
+                            <div class="w-2 h-12 bg-orange-400 rounded-full shadow-sm shadow-orange-100"></div>
+                            <div>
+                                <h2 class="text-2xl font-black text-gray-900 tracking-tight leading-tight" id="modal_preview_asunto">Asunto</h2>
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Recordatorio Sistema de Gestión</p>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-center py-8 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200/50">
+                            <img src="/static/img/mujeru.jpg" alt="Preview" class="h-48 object-contain filter drop-shadow-xl">
+                        </div>
+
+                        <div class="space-y-6">
+                            <p class="text-gray-900 text-lg font-black tracking-tight">Estimado/a <span class="text-blue-600">{{ ejemplo_real.funcionario }}</span></p>
+
+                            <div id="modal_preview_body" class="text-gray-600 text-sm italic bg-blue-50/30 p-8 rounded-[2rem] border border-blue-100/20 leading-relaxed font-semibold">
+                                [ Contenido ]
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 pt-10 border-t border-gray-50 px-4">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-400 font-bold uppercase tracking-widest">Fecha Evento:</span>
+                                <span class="text-gray-900 font-black">{{ ejemplo_real.fecha_turno }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-400 font-bold uppercase tracking-widest">Hora Inicio:</span>
+                                <span class="text-gray-900 font-black">{{ ejemplo_real.hora }}</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-10 text-center">
+                            <p class="text-[10px] text-gray-300 font-black uppercase tracking-[0.2em]">Enviado automáticamente por el Sistema de Turnos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-8 border-t border-gray-100 bg-white flex justify-center sticky bottom-0 z-10">
+                <button onclick="hideModal('emailPreviewModal')" class="px-16 py-5 bg-gray-900 text-white rounded-[1.5rem] font-black uppercase text-xs tracking-widest shadow-xl shadow-gray-200 hover:bg-black hover:-translate-y-0.5 transition-all">
+                    Cerrar Vista Previa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Email Modal -->
+    <div id="editEmailModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div class="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-900">Corregir Email y Reenviar</h3>
+                <button onclick="hideModal('editEmailModal')" class="text-gray-400 hover:text-gray-600 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="editEmailForm" method="POST" class="p-8">
+                {% csrf_token %}
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nuevo Correo Electrónico</label>
+                    <input type="email" name="email" id="modal_edit_email_input" required
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition font-medium">
+                    <p class="text-[10px] text-gray-400 mt-2">Esta acción actualizará el correo del funcionario y reenviará la notificación inmediatamente.</p>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="hideModal('editEmailModal')" class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg font-bold text-xs uppercase hover:bg-gray-50 transition">Cancelar</button>
+                    <button type="submit" class="px-6 py-2 bg-orange-500 text-white rounded-lg font-bold text-xs uppercase hover:bg-orange-600 shadow-lg shadow-orange-100 transition">Guardar y Reenviar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Resend Modal -->
+    <div id="confirmResendModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform transition-all animate-in zoom-in-95 duration-200 overflow-hidden">
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="refresh-cw" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-black text-gray-900 mb-2">¿Confirmar Reenvío?</h3>
+                <p class="text-sm text-gray-500 leading-relaxed mb-6">
+                    Estás a punto de enviar nuevamente esta notificación. Esta acción quedará registrada en el historial.
+                </p>
+                
+                <form id="confirmResendForm" method="POST">
+                    {% csrf_token %}
+                    <div class="flex gap-3">
+                        <button type="button" onclick="hideModal('confirmResendModal')" class="flex-1 px-4 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs uppercase hover:bg-gray-200 transition">Cancelar</button>
+                        <button type="submit" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition">Confirmar</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Manual Send Modal -->
-    <div id="manualSendModal"
-        class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center">
-        <div>
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 text-center animate-in zoom-in-95 balance">
-                <div
-                    class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-blue-100 mb-6 text-blue-600">
-                    <i data-lucide="zap" class="w-10 h-10"></i>
-                </div>
-                <h3 class="text-2xl font-black text-gray-900 mb-2">Escaneo Forzado</h3>
-                <p class="text-sm text-gray-500 mb-8 leading-relaxed">
-                    El sistema buscará turnos que deban notificarse en los últimos <span
-                        class="font-bold text-gray-900">90
-                        minutos</span> y disparará los correos ahora mismo.
-                </p>
-                <div class="flex gap-4">
-                    <button onclick="document.getElementById('manualSendModal').classList.add('hidden')"
-                        class="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all">
-                        Cancelar
-                    </button>
-                    <form action="{% url 'ejecutar_envios' %}" method="POST" class="flex-1">
-                        {% csrf_token %}
-                        <button type="submit"
-                            class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-blue-100">
-                            Confirmar
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Edit Email Modal -->
-    <div id="editEmailModal"
-        class="fixed inset-0 z-[60] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center"
-        style="display: none;">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-8 animate-in zoom-in-95 balance">
-            <div
-                class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-indigo-100 mb-6 text-indigo-600">
-                <i data-lucide="edit-3" class="w-10 h-10"></i>
-            </div>
-            <h3 class="text-2xl font-black text-gray-900 mb-2 text-center">Corregir Correo</h3>
-            <p class="text-sm text-gray-500 mb-6 leading-relaxed text-center">
-                Actualiza la dirección de correo y reintenta el envío de la notificación.
-            </p>
-            <form id="editEmailForm" method="POST">
-                {% csrf_token %}
-                <div class="mb-6">
-                    <label class="block text-[10px] font-black text-gray-400 mb-2 uppercase">Dirección de Correo</label>
-                    <input type="email" name="email" id="modal_edit_email_input" required
-                        class="w-full rounded-2xl border-gray-200 font-bold text-gray-800 text-sm focus:ring-indigo-500 shadow-sm p-3 bg-gray-50 outline-none">
-                </div>
-                <div class="flex gap-4">
-                    <button type="button" onclick="hideModal('editEmailModal')"
-                        class="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl text-xs font-bold transition-all">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                        class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-100">
-                        Guardar y Enviar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-</div>
-
-<!-- Modal de Selección por Lotes (Nuevo) -->
-<div id="batchModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center">
-    <div
-        class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95">
-        <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <div>
-                <h3 class="text-xl font-black text-gray-900 tracking-tight">Programación por Lotes</h3>
-                <p class="text-[10px] text-gray-400 font-bold uppercase" id="batchModalRangeTitle">Calculando
-                    proyección...</p>
-            </div>
-            <button onclick="document.getElementById('batchModal').classList.add('hidden')"
-                class="p-2 hover:bg-gray-200 rounded-full transition text-gray-400">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-
-        <div class="p-6 bg-indigo-50/30 border-b border-indigo-100 flex flex-wrap gap-2 items-center">
-            <button onclick="loadBatchProyeccion(2, 0, this)"
-                class="batch-filter-btn px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold hover:border-indigo-400 transition whitespace-nowrap">Próximos
-                3 días</button>
-            <button onclick="loadBatchProyeccion(3, 3, this)" id="defaultBatchBtn"
-                class="batch-filter-btn px-4 py-2 rounded-xl bg-indigo-600 text-white border border-indigo-600 text-xs font-bold hover:bg-indigo-700 transition whitespace-nowrap">Siguiente
-                Semana (+4d)</button>
-            <button onclick="loadBatchProyeccion(22, 7, this)"
-                class="batch-filter-btn px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold hover:border-indigo-400 transition whitespace-nowrap">Resto
-                del Mes (+23d)</button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto custom-scrollbar p-6">
-            <form id="batchConfirmForm" action="{% url 'generar_desde_proyeccion' %}" method="POST">
-                {% csrf_token %}
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-50 text-[10px] uppercase font-black text-gray-400 sticky top-0 z-10">
-                        <tr>
-                            <th class="px-6 py-4 w-10">
-                                <input type="checkbox" checked onchange="toggleAllBatch(this)"
-                                    class="rounded border-gray-300 text-indigo-600">
-                            </th>
-                            <th class="px-6 py-4">Ejecución</th>
-                            <th class="px-6 py-4">Funcionario / Turno</th>
-                        </tr>
-                    </thead>
-                    <tbody id="batchTableBody"
-                        class="divide-y divide-gray-100 italic text-gray-400 text-xs text-center">
-                        <tr>
-                            <td colspan="3" class="py-20 text-center">Cargando proyecciones...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </form>
-        </div>
-
-        <div class="px-8 py-6 bg-white border-t border-gray-100 flex justify-end gap-3">
-            <button onclick="document.getElementById('batchModal').classList.add('hidden')"
-                class="px-6 py-3 text-gray-500 font-bold hover:text-gray-700 transition">Cancelar</button>
-            <button onclick="showLoading(); document.getElementById('batchConfirmForm').submit()"
-                class="px-10 py-3 bg-indigo-600 text-white rounded-xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition flex items-center gap-2">
-                <i data-lucide="check-circle" class="w-5 h-5"></i> Programar Seleccionados
-            </button>
-        </div>
-    </div>
-</div>
-
 <script>
-    // Get real funcionario data from proyeccion for preview
-    const proyeccionData = {{ proyeccion_json| safe }};
     // Variables para Previsualización Realista (Inyectadas con ejemplo_real)
     let exampleFuncionario = '{{ ejemplo_real.funcionario|escapejs }}';
     let exampleEvento = 'Mantenimiento Preventivo';
@@ -891,442 +930,409 @@
     let exampleModelo = '{{ ejemplo_real.modelo|escapejs }}';
     let exampleDuracion = '{{ ejemplo_real.duracion|escapejs }}';
 
-    // Tab switching logic
-    window.switchTab = function (tab) {
-        const radarTab = document.getElementById('tab-radar');
-        const queueTab = document.getElementById('tab-queue');
-        const radarContent = document.getElementById('content-radar');
-        const queueContent = document.getElementById('content-queue');
 
-        if (tab === 'radar') {
-            radarTab.classList.add('border-blue-600', 'text-blue-600');
-            radarTab.classList.remove('border-transparent', 'text-gray-400');
-            queueTab.classList.add('border-transparent', 'text-gray-400');
-            queueTab.classList.remove('border-blue-600', 'text-blue-600');
-            radarContent.classList.remove('hidden');
-            queueContent.classList.add('hidden');
-        } else {
-            queueTab.classList.add('border-blue-600', 'text-blue-600');
-            queueTab.classList.remove('border-transparent', 'text-gray-400');
-            radarTab.classList.add('border-transparent', 'text-gray-400');
-            radarTab.classList.remove('border-blue-600', 'text-blue-600');
-            queueContent.classList.remove('hidden');
-            radarContent.classList.add('hidden');
+
+
+    // Main tab switching (Dashboard vs History)
+    window.switchMainTab = function(tab) {
+        const dashboardContent = document.getElementById('main-content-dashboard');
+        const historyContent = document.getElementById('main-content-history');
+        const historyBtn = document.getElementById('main-tab-history-btn');
+        const dashboardBtn = document.getElementById('main-tab-dashboard-btn');
+
+        if (tab === 'dashboard') {
+            dashboardContent.classList.remove('hidden');
+            historyContent.classList.add('hidden');
+            if(historyBtn) historyBtn.classList.remove('hidden');
+            if(dashboardBtn) dashboardBtn.classList.add('hidden');
+        } else if (tab === 'history') {
+            historyContent.classList.remove('hidden');
+            dashboardContent.classList.add('hidden');
+            if(historyBtn) historyBtn.classList.add('hidden');
+            if(dashboardBtn) dashboardBtn.classList.remove('hidden');
         }
         lucide.createIcons();
     };
 
-    window.openBatchModal = function () {
-        document.getElementById('batchModal').classList.remove('hidden');
-        const defaultBtn = document.getElementById('defaultBatchBtn');
-        // Default: Next 3 days (offset 0)
-        loadBatchProyeccion(3, 0, document.querySelector('.batch-filter-btn'));
+    // --- NEW WIZARD LOGIC ---
+    let currentStep = 1;
+
+    window.openWizard = function() {
+        showModal('wizardModal');
+        currentStep = 1;
+        updateWizardUI();
+        // Initialize Quill if not done
+        initWizardQuill();
     };
 
-    window.loadBatchProyeccion = function (dias, offset, btn) {
-        const body = document.getElementById('batchTableBody');
-        const rangeTitle = document.getElementById('batchModalRangeTitle');
-        body.innerHTML = '<tr><td colspan="3" class="py-20 text-center">Cargando...</td></tr>';
+    window.closeWizard = function() {
+        hideModal('wizardModal');
+    };
 
-        // Actualizar UI de botones de filtro
-        document.querySelectorAll('.batch-filter-btn').forEach(b => {
-            b.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
-            b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+    function updateWizardUI() {
+        // Absolute control over step nodes to prevent overlap or leakage
+        const stepIds = ['wizardStep1', 'wizardStep2', 'wizardStep3'];
+        
+        stepIds.forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            const isActive = (idx + 1 === currentStep);
+            if (isActive) {
+                el.classList.add('active-step');
+            } else {
+                el.classList.remove('active-step');
+            }
         });
 
-        if (btn) {
-            btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
-            btn.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+        // Progress Bar
+        const progress = ((currentStep - 1) / 2) * 100;
+        const progressBar = document.getElementById('wizardProgress');
+        if (progressBar) progressBar.style.width = `${progress}%`;
+
+        // Indicators
+        for (let i = 1; i <= 3; i++) {
+            const ind = document.getElementById(`step${i}-indicator`);
+            const label = document.getElementById(`step${i}-label`);
+            if (!ind || !label) continue;
+
+            if (i < currentStep) {
+                ind.classList.remove('bg-blue-600', 'bg-gray-100');
+                ind.classList.add('bg-green-500', 'text-white');
+                ind.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
+                label.classList.remove('text-blue-600');
+                label.classList.add('text-gray-400');
+            } else if (i === currentStep) {
+                ind.classList.remove('bg-green-500', 'bg-gray-100');
+                ind.classList.add('bg-blue-600', 'text-white');
+                ind.innerHTML = i;
+                label.classList.remove('text-gray-400');
+                label.classList.add('text-blue-600');
+            } else {
+                ind.classList.remove('bg-blue-600', 'bg-green-500');
+                ind.classList.add('bg-gray-100', 'text-gray-400');
+                ind.innerHTML = i;
+                label.classList.remove('text-blue-600');
+                label.classList.add('text-gray-400');
+            }
         }
 
-        console.log(`Cargando proyección para ${dias} días con offset ${offset}...`);
+        // Buttons
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (prevBtn) prevBtn.classList.toggle('hidden', currentStep === 1);
+        if (nextBtn) nextBtn.classList.toggle('hidden', currentStep === 3);
+        if (submitBtn) submitBtn.classList.toggle('hidden', currentStep !== 3);
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    window.moveStep = function(delta) {
+        if (currentStep === 1 && delta === 1) {
+            // Validate step 1 if needed
+            loadRecipients(7, 0); // Load default for step 2
+        }
+        if (currentStep === 2 && delta === 1) {
+            // Prepare step 3
+            updateSummary();
+        }
+        currentStep += delta;
+        updateWizardUI();
+    };
+
+    // Recipient Loading (AJAX)
+    window.loadRecipients = function(dias, offset, btn) {
+        const body = document.getElementById('wizardRecipientsBody');
+        const title = document.getElementById('wizardRecipientsTitle');
+        body.innerHTML = '<tr><td colspan="4" class="py-32 text-center text-gray-400">Buscando turnos...</td></tr>';
+
+        // Filter buttons UI
+        document.querySelectorAll('.recipient-filter-btn').forEach(b => {
+            b.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100', 'border-blue-600');
+            b.classList.add('bg-white', 'text-gray-600', 'border-gray-100');
+        });
+        if (btn) {
+            btn.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100', 'border-blue-600');
+            btn.classList.remove('bg-white', 'text-gray-600', 'border-gray-100');
+        }
+
         fetch(`/notifications/api/proyeccion/?dias=${dias}&offset=${offset}&_=${new Date().getTime()}`)
             .then(r => r.json())
             .then(data => {
-                console.log(`Respuesta recibida: ${data.items.length} elementos.`);
-                if (rangeTitle) {
+                if (title) {
                     const options = { day: '2-digit', month: 'short' };
                     const now = new Date();
                     const start = new Date();
                     start.setDate(now.getDate() + offset);
                     const end = new Date();
                     end.setDate(start.getDate() + dias);
-                    rangeTitle.innerHTML = `<span class="text-indigo-600 font-bold">${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}</span> | ${data.items.length} notificaciones encontradas`;
+                    const rangeStr = `${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}`;
+                    
+                    title.innerHTML = `
+                        <span class="text-blue-600 font-black">${data.items.length}</span> 
+                        <span class="text-gray-900 font-black">Notificaciones</span>
+                        <span class="mx-3 text-gray-200">|</span>
+                        <span class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">${rangeStr}</span>
+                    `;
                 }
+                
                 if (data.items.length === 0) {
-                    body.innerHTML = '<tr><td colspan="3" class="py-20 text-center">No hay turnos en este rango.</td></tr>';
+                    body.innerHTML = '<tr><td colspan="4" class="py-32 text-center text-gray-400 italic">No se encontraron turnos en este rango.</td></tr>';
                     return;
                 }
+
                 body.innerHTML = data.items.map(item => {
                     const progDate = new Date(item.fecha_programada);
-                    // FIX: Set hours to 0 to compare dates only, avoiding "Tomorrow" label for today's evening shifts
+                    const dateStr = progDate.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    
+                    // Relative date logic
                     progDate.setHours(0, 0, 0, 0);
-
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
-
-                    // Round to avoid float errors
                     const diffDays = Math.round((progDate - today) / (1000 * 60 * 60 * 24));
-
-                    let badgeClass = "bg-gray-100 text-gray-600";
-                    let badgeText = `+${diffDays} días`;
+                    
+                    let badgeClass = "text-gray-400";
+                    let badgeText = `En ${diffDays} días`;
 
                     if (diffDays === 0) {
-                        badgeClass = "bg-orange-100 text-orange-600";
+                        badgeClass = "text-orange-500 font-black";
                         badgeText = "Hoy";
                     } else if (diffDays === 1) {
-                        badgeClass = "bg-blue-100 text-blue-600";
+                        badgeClass = "text-blue-500 font-black";
                         badgeText = "Mañana";
                     }
 
-                    const checkboxHtml = `<input type="checkbox" name="proyeccion_items" value="${item.turno_id}:${item.tipo}" checked class="batch-check rounded border-gray-300 text-indigo-600">`;
-                    let statusBadge = '';
-                    if (item.ya_procesado) {
-                        if (item.estado_actual === 'enviado') {
-                            statusBadge = '<span class="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[7px] font-black uppercase flex items-center gap-0.5"><i data-lucide="check" class="w-1.5 h-1.5"></i> Enviado</span>';
-                        } else if (item.estado_actual === 'pendiente' || item.estado_actual === 'procesando') {
-                            statusBadge = '<span class="px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[7px] font-black uppercase flex items-center gap-0.5"><i data-lucide="clock" class="w-1.5 h-1.5"></i> Pendiente</span>';
-                        } else if (item.estado_actual === 'fallido' || item.estado_actual === 'error_temporal') {
-                            statusBadge = '<span class="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[7px] font-black uppercase flex items-center gap-0.5"><i data-lucide="alert-circle" class="w-1.5 h-1.5"></i> Fallido</span>';
-                        } else {
-                            statusBadge = `<span class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700 text-[7px] font-black uppercase">${item.estado_actual}</span>`;
-                        }
-                    } else {
-                        statusBadge = '<span class="px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-300 text-[7px] font-black uppercase border border-gray-100">No planificado</span>';
-                    }
-
-                    const actionCell = `
-                        <div class="flex flex-col items-center gap-1.5">
-                            ${checkboxHtml}
-                            ${statusBadge}
-                        </div>`;
-
                     return `
-                    <tr class="hover:bg-indigo-50/30 transition ${item.ya_procesado ? 'bg-gray-50/50 opacity-75' : ''}">
-                        <td class="px-6 py-4 text-center">
-                            ${actionCell}
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-2 mb-1">
-                                <div class="text-[11px] font-black text-gray-900">${progDate.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-                                <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${badgeClass}">${badgeText}</span>
-                            </div>
-                            <div class="text-[9px] font-bold text-indigo-500 uppercase">${item.tipo_display}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-[11px] font-bold text-gray-800">${item.responsable}</div>
-                            <div class="text-[9px] text-gray-400">Turno: ${item.fecha_turno} ${item.hora_turno}</div>
-                        </td>
-                    </tr>
+                        <tr class="hover:bg-blue-50/50 transition duration-200 ${item.ya_procesado ? 'opacity-60 bg-gray-50' : ''}">
+                            <td class="px-4 py-4 text-center">
+                                <input type="checkbox" name="proyeccion_items" value="${item.turno_id}:${item.tipo}" ${item.ya_procesado ? '' : 'checked'} class="wizard-notif-check rounded-lg border-gray-200 text-blue-600">
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-[11px] font-black text-gray-900">${dateStr}</div>
+                                <div class="text-[8px] ${badgeClass} uppercase tracking-widest mt-0.5">${badgeText}</div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-[11px] font-black text-gray-700 leading-tight">${item.responsable}</div>
+                                <div class="text-[9px] text-blue-500 font-bold mt-0.5">${item.fecha_turno}</div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="px-2 py-0.5 bg-white border border-gray-100 rounded-lg text-[8px] font-black uppercase tracking-wider text-gray-500">${item.tipo_display}</span>
+                            </td>
+                        </tr>
                     `;
                 }).join('');
 
-                // --- LOGIC FOR EMPTY DATE RANGE FEEDBACK ---
+                // FEEDBACK: No more turns in range logic
                 if (data.items.length > 0) {
                     const lastItem = data.items[data.items.length - 1];
                     const lastDate = new Date(lastItem.fecha_programada);
                     lastDate.setHours(0, 0, 0, 0);
 
-                    const endDate = new Date();
-                    endDate.setHours(0, 0, 0, 0);
-                    endDate.setDate(endDate.getDate() + parseInt(dias));
+                    const filterEndDate = new Date();
+                    filterEndDate.setHours(0, 0, 0, 0);
+                    filterEndDate.setDate(filterEndDate.getDate() + offset + dias);
 
-                    // If the last scheduled turn is before the end date of our filter range
-                    if (lastDate < endDate) {
+                    if (lastDate < filterEndDate) {
                         const options = { day: '2-digit', month: 'long', year: 'numeric' };
-                        const endDateStr = endDate.toLocaleDateString('es-ES', options);
+                        const endDateStr = filterEndDate.toLocaleDateString('es-ES', options);
 
                         body.innerHTML += `
                         <tr>
-                            <td colspan="3" class="py-8 text-center border-t border-gray-100 bg-gray-50/30">
-                                <div class="flex flex-col items-center gap-2">
-                                    <div class="p-2 bg-green-50 text-green-600 rounded-full">
-                                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                            <td colspan="4" class="py-12 bg-gray-50/20 border-t border-gray-100">
+                                <div class="flex flex-col items-center gap-2 text-center">
+                                    <div class="p-2 bg-green-50 text-green-500 rounded-full">
+                                        <i data-lucide="check-circle" class="w-4 h-4"></i>
                                     </div>
-                                    <p class="text-xs font-bold text-gray-500">
-                                        No hay más turnos asignados hasta el <span class="text-gray-900 underline decoration-dotted">${endDateStr}</span>.
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
+                                        Todo al día. No hay más turnos programados<br>hasta el <span class="text-blue-600 underline decoration-dotted">${endDateStr}</span>.
                                     </p>
-                                    <p class="text-[10px] text-gray-400">El sistema ha verificado todo el rango seleccionado.</p>
                                 </div>
                             </td>
                         </tr>
                         `;
                     }
                 }
-
                 lucide.createIcons();
             });
     };
 
-    window.toggleAllBatch = function (source) {
-        const checkboxes = document.querySelectorAll('.batch-check');
-        checkboxes.forEach(c => c.checked = source.checked);
+    window.toggleAllWizard = function(source) {
+        const checks = document.querySelectorAll('.wizard-notif-check');
+        checks.forEach(c => c.checked = source.checked);
     };
 
-    window.toggleAllProyeccion = function (source) {
-        const checkboxes = document.getElementsByName('proyeccion_items');
-        for (let checkbox of checkboxes) {
-            checkbox.checked = source.checked;
-        }
-    };
-
-    // JS for Live Preview
-
-    // JS for Live Preview
-    const asunto_input = document.getElementById('asunto_input');
-    // const cuerpo_input = document.getElementById('cuerpo_input'); // Replaced by hidden input
-
-    // Quill Initialization
-    var quill = new Quill('#quill-editor', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                [{ 'color': [] }, { 'background': [] }],
-                ['clean']
-            ]
-        }
-    });
-
-    const cuerpo_input = document.getElementById('hidden_cuerpo'); // Polyfill for existing code
-
-    // Load initial content
-    if (cuerpo_input && cuerpo_input.value) {
-        quill.root.innerHTML = cuerpo_input.value;
+    function updateSummary() {
+        const checkedCount = document.querySelectorAll('.wizard-notif-check:checked').length;
+        document.getElementById('summaryCount').textContent = checkedCount;
+        
+        // Find if multiple types
+        const types = new Set();
+        document.querySelectorAll('.wizard-notif-check:checked').forEach(c => {
+            types.add(c.value.split(':')[1]);
+        });
+        document.getElementById('summaryTypes').textContent = types.size > 1 ? 'Múltiples' : (types.size === 1 ? Array.from(types)[0].toUpperCase() : 'Ninguna');
     }
 
-    // Sync content on change
-    quill.on('text-change', function () {
-        cuerpo_input.value = quill.root.innerHTML;
-        updatePreview();
-    });
+    // --- ENHANCED PREVIEW LOGIC ---
+    let wizardQuill;
 
-    // Helper functions for formatting
-    window.insertFormat = function (tag) {
-        // Deprecated with Quill
-        console.warn("Formatting handled by Quill toolbar");
-    };
+    function initWizardQuill() {
+        if (!wizardQuill) {
+            wizardQuill = new Quill('#quill-editor-wizard', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['clean']
+                    ]
+                }
+            });
 
-    window.insertTextAtCursor = function (tagText) {
-        const range = quill.getSelection(true);
-        if (range) {
-            quill.insertText(range.index, tagText);
-            quill.setSelection(range.index + tagText.length);
-        } else {
-            // Fallback if no focus
-            const length = quill.getLength();
-            quill.insertText(length - 1, tagText);
+            const hiddenInput = document.getElementById('hidden_cuerpo_wizard');
+            if (hiddenInput.value) {
+                wizardQuill.root.innerHTML = hiddenInput.value;
+            }
+
+            wizardQuill.on('text-change', () => {
+                hiddenInput.value = wizardQuill.root.innerHTML;
+                updateWizardPreview();
+            });
+
+            document.getElementById('asunto_input_wizard').addEventListener('input', updateWizardPreview);
+            updateWizardPreview();
         }
+    }
+
+    window.openRadarPreview = function(turnoId, tipo) {
+        fetch(`/notifications/api/preview/?turno_id=${turnoId}&tipo=${tipo}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                const modalAsunto = document.getElementById('modal_preview_asunto');
+                const modalBody = document.getElementById('modal_preview_body');
+                
+                if (modalAsunto) modalAsunto.textContent = data.subject;
+                if (modalBody) {
+                    modalBody.innerHTML = data.body;
+                }
+                
+                showModal('emailPreviewModal');
+            });
     };
 
-    const preview_body = document.getElementById('preview_body_text');
-    const preview_evento_tag = document.getElementById('preview_evento_tag');
+    function showPreviewModal() {
+        updateWizardPreview();
+        showModal('emailPreviewModal');
+    }
 
-    // Static fields in preview card
-    const preview_fecha_constatar = document.getElementById('preview_fecha_constatar');
-    const preview_fecha_inicio = document.getElementById('preview_fecha_inicio');
-    const preview_enviado_fecha = document.getElementById('preview_enviado_fecha');
-
-    function updatePreview() {
-        let body = cuerpo_input.value;
-        let eventName = exampleEvento;
-
-        body = body || "[ Mensaje a trasmitir ]";
-
-        // Use real example data - now including real date/time
+    function updateWizardPreview() {
+        const asunto = document.getElementById('asunto_input_wizard').value;
+        const cuerpo = document.getElementById('hidden_cuerpo_wizard').value;
+        
+        // 1. Target live preview elements in Wizard Step 1
+        const liveAsunto = document.getElementById('live_preview_subject');
+        const liveBody = document.getElementById('live_preview_body');
+        const liveFunc = document.getElementById('live_preview_funcionario');
+        const liveFecha = document.getElementById('live_preview_fecha');
+        const liveHora = document.getElementById('live_preview_hora');
+        
+        // Populate static-ish fields in live preview
+        if (liveFunc) liveFunc.textContent = exampleFuncionario;
+        if (liveFecha) liveFecha.textContent = exampleFecha;
+        if (liveHora) liveHora.textContent = exampleHora;
+        
+        // 2. Target separate Modal preview elements (if still used)
+        const modalAsunto = document.getElementById('modal_preview_asunto');
+        const modalBody = document.getElementById('modal_preview_body');
+        
+        const previewAsunto = asunto || 'Mantenimiento de equipos tecnológicos';
+        if (liveAsunto) liveAsunto.textContent = previewAsunto;
+        if (modalAsunto) modalAsunto.textContent = previewAsunto;
+        
+        let previewHtml = cuerpo || "[ Cargando mensaje... ]";
+        
         const mockData = {
             '{funcionario}': `<strong>${exampleFuncionario}</strong>`,
             '{evento}': `<strong>${exampleEvento}</strong>`,
-            '{fecha}': `<strong>${exampleFecha}</strong>`,
+            '{fecha_turno}': `<strong>${exampleFecha}</strong>`,
             '{hora}': `<strong>${exampleHora}</strong>`,
-            '{equipos_lista}': `<div style="margin: 10px 0;">${exampleListaEquipos}</div>`,
-            '{marca}': `<strong>${exampleMarca}</strong>`,
-            '{modelo}': `<strong>${exampleModelo}</strong>`,
-            '{duracion}': `<strong>${exampleDuracion}</strong>`,
-            '{fecha_turno}': `<strong>${exampleFecha}</strong>`
+            '{equipos_lista}': `<div class="my-2">${exampleListaEquipos}</div>`
         };
 
         for (const [key, val] of Object.entries(mockData)) {
-            body = body.replace(new RegExp(key.replace('{', '\\{').replace('}', '\\}'), 'g'), val);
-            if (key === '{evento}') eventName = val;
+            previewHtml = previewHtml.replace(new RegExp(key.replace('{', '\\{').replace('}', '\\}'), 'g'), val);
         }
 
-        // Convert newlines to <br> for HTML preview
-        let finalHtml = body.replace(/\n/g, '<br>');
-
-        preview_body.innerHTML = finalHtml;
-        if (preview_evento_tag) preview_evento_tag.textContent = eventName;
-
-        // Update funcionario name in preview
-        const preview_funcionario = document.getElementById('preview_funcionario_name');
-        if (preview_funcionario) preview_funcionario.textContent = exampleFuncionario;
-
-        if (preview_funcionario) preview_funcionario.textContent = exampleFuncionario;
-
-        // Update static date/time fields in preview card
-        const dateTimeStr = `${exampleFecha} | ${exampleHora}`;
-
-        // Generate current date/time for "Fecha a Constatar" and "Enviado"
-        const now = new Date();
-        const day = now.getDate().toString().padStart(2, '0');
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const year = now.getFullYear();
-        let hours = now.getHours();
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const ampm = hours >= 12 ? 'p.m.' : 'a.m.';
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-        const currentDataTimeStr = `${day}/${month}/${year} | ${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
-
-        if (preview_fecha_constatar) preview_fecha_constatar.textContent = currentDataTimeStr;
-        if (preview_fecha_inicio) preview_fecha_inicio.textContent = dateTimeStr;
-        if (preview_enviado_fecha) preview_enviado_fecha.textContent = `Enviado Fecha / Hora: ${currentDataTimeStr}`;
+        if (liveBody) liveBody.innerHTML = previewHtml;
+        if (modalBody) modalBody.innerHTML = previewHtml;
     }
 
-    asunto_input.addEventListener('input', updatePreview);
-    cuerpo_input.addEventListener('input', updatePreview);
+    window.insertPlaceholderWizard = function(tag) {
+        const range = wizardQuill.getSelection(true);
+        wizardQuill.insertText(range.index, tag);
+        wizardQuill.setSelection(range.index + tag.length);
+    };
 
-    // Initial update
-    updatePreview();
-
-    // Modal show/hide functions
-    function showModal(modalId) {
-        const modal = document.getElementById(modalId);
+    // --- MODAL UTILS ---
+    function showModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
     }
 
-    function hideModal(modalId) {
-        const modal = document.getElementById(modalId);
+    function hideModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
         modal.classList.add('hidden');
         modal.style.display = 'none';
     }
 
-    // Update button onclick handlers
-    document.querySelectorAll('[onclick*="configModal"]').forEach(btn => {
-        btn.onclick = function (e) {
-            e.preventDefault();
-            if (this.getAttribute('onclick').includes('remove')) {
-                showModal('configModal');
-            } else {
-                hideModal('configModal');
-            }
-        };
-    });
-
-    document.querySelectorAll('[onclick*="manualSendModal"]').forEach(btn => {
-        btn.onclick = function (e) {
-            e.preventDefault();
-            if (this.getAttribute('onclick').includes('remove')) {
-                showModal('manualSendModal');
-            } else {
-                hideModal('manualSendModal');
-            }
-        };
-    });
-
-
-    // Close modal on escape
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            hideModal('configModal');
-            hideModal('manualSendModal');
-        }
-    });
-
-    // Close modal on background click
-    ['configModal', 'manualSendModal', 'editEmailModal'].forEach(modalId => {
-        document.getElementById(modalId).addEventListener('click', (e) => {
-            if (e.target.id === modalId) {
-                hideModal(modalId);
-            }
-        });
-    });
-
-    function openEditEmailModal(id, currentEmail) {
+    window.openEditEmailModal = function(id, currentEmail) {
         const form = document.getElementById('editEmailForm');
         const input = document.getElementById('modal_edit_email_input');
+        if (!form || !input) return;
 
-        // El id viene de un registro de HistorialEnvio, necesitamos la URL correcta
         form.action = `/notifications/editar-reenviar/${id}/`;
         input.value = currentEmail;
 
         showModal('editEmailModal');
-    }
-
-    // Bulk Actions Javascript
-    const selectAll = document.getElementById('selectAll');
-    const notifChecks = document.querySelectorAll('.notif-check');
-    const bulkBar = document.getElementById('bulkActionsBar');
-    const selectedCount = document.getElementById('selectedCount');
-    const bulkForm = document.getElementById('bulkForm');
-    const bulkAccion = document.getElementById('bulkAccion');
-
-    function updateBulkBar() {
-        const checkedCount = document.querySelectorAll('.notif-check:checked').length;
-        if (checkedCount > 0) {
-            bulkBar.classList.remove('hidden');
-            selectedCount.textContent = checkedCount;
-        } else {
-            bulkBar.classList.add('hidden');
-        }
-    }
-
-    selectAll.addEventListener('change', () => {
-        notifChecks.forEach(cb => cb.checked = selectAll.checked);
-        updateBulkBar();
-    });
-
-    notifChecks.forEach(cb => {
-        cb.addEventListener('change', updateBulkBar);
-    });
-
-    // Cargar estado inicial de la barra de acciones masivas
-    updateBulkBar();
-
-    window.filterAuditTrail = function () {
-        const query = document.getElementById('auditSearch').value.toLowerCase();
-        const rows = document.querySelectorAll('.audit-row');
-        const noResults = document.getElementById('auditNoResults');
-        const countBadge = document.getElementById('auditTrailCount');
-        let visibleCount = 0;
-
-        rows.forEach(row => {
-            const searchable = row.getAttribute('data-search') || '';
-            if (searchable.includes(query)) {
-                row.classList.remove('hidden');
-                visibleCount++;
-            } else {
-                row.classList.add('hidden');
-            }
-        });
-
-        if (noResults) {
-            if (visibleCount === 0 && rows.length > 0) noResults.classList.remove('hidden');
-            else noResults.classList.add('hidden');
-        }
-
-        if (countBadge) {
-            countBadge.textContent = query ? `${visibleCount} encontrados` : `Últimos ${rows.length}`;
-        }
     };
 
+    // Initialize UI
+    document.addEventListener('DOMContentLoaded', () => {
+        lucide.createIcons();
 
-
-    function showLoading() {
-        const overlay = document.getElementById('loadingOverlay');
-        if (overlay) {
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
+        // Restore active tab (History vs Dashboard)
+        const activeTab = "{{ active_tab|default:'dashboard' }}";
+        if (activeTab === 'history') {
+            switchMainTab('history');
+        } else {
+            switchMainTab('dashboard');
         }
-    }
 
-    function submitBulk(accion) {
+        // Loading overlay for wizard submission
+        const wizardForm = document.getElementById('wizardForm');
+        if (wizardForm) {
+            wizardForm.addEventListener('submit', () => {
+                showLoading();
+            });
+        }
+    });
+
+    // Handle Bulk Actions
+    window.submitBulk = function(accion) {
         showLoading();
+        const bulkForm = document.getElementById('bulkForm');
+        const bulkAccion = document.getElementById('bulkAccion');
         bulkAccion.value = accion;
 
-        // Mover los checkboxes seleccionados al formulario antes de enviar
         const checkedItems = document.querySelectorAll('.notif-check:checked');
         checkedItems.forEach(cb => {
             const hidden = document.createElement('input');
@@ -1337,41 +1343,54 @@
         });
 
         bulkForm.submit();
-    }
+    };
 
-    // Interceptar envíos de formularios pesados para mostrar el Overlay de Carga
-    document.querySelectorAll('form').forEach(form => {
-        const action = form.getAttribute('action');
-        if (action && (
-            action.includes('sincronizar') ||
-            action.includes('ejecutar') ||
-            action.includes('notificar') ||
-            action.includes('masivas') ||
-            action.includes('reenviar')
-        )) {
-            form.addEventListener('submit', function () {
-                // Pequeño delay para que el botón de submit se vea apretado
-                setTimeout(() => {
-                    const overlay = document.getElementById('loadingOverlay');
-                    if (overlay) {
-                        overlay.classList.remove('hidden');
-                        overlay.classList.add('flex');
-                    }
-                }, 100);
-            });
-        }
+    window.showLoading = function() {
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+        document.getElementById('loadingOverlay').classList.add('flex');
+    };
+
+    // Audit Trail Filter
+    window.filterAuditTrail = function() {
+        const query = document.getElementById('auditSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('.audit-row');
+        let count = 0;
+
+        rows.forEach(row => {
+            const text = row.getAttribute('data-search') || '';
+            if (text.includes(query)) {
+                row.classList.remove('hidden');
+                count++;
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+
+        const countBadge = document.getElementById('auditTrailCount');
+        if (countBadge) countBadge.textContent = query ? `${count} encontrados` : `Últimos ${rows.length}`;
+        
+        const noResults = document.getElementById('auditNoResults');
+        if (noResults) noResults.classList.toggle('hidden', count > 0 || rows.length === 0);
+    };
+
+    // Close on escape
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeWizard();
     });
 
-    // Autohide Toasts después de 8 segundos
-    setTimeout(() => {
-        document.querySelectorAll('.toast-item').forEach(toast => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            toast.style.transition = 'all 0.5s ease';
-            setTimeout(() => toast.remove(), 500);
-        });
-    }, 8000);
+    // Close on backdrop
+    document.getElementById('wizardModal').addEventListener('click', (e) => {
+        if (e.target.id === 'wizardModal') closeWizard();
+    });
+    // Confirm Resend Logic
+    window.openConfirmResendModal = function(id) {
+        const form = document.getElementById('confirmResendForm');
+        if (!form) return;
+        form.action = `/notifications/reenviar/${id}/`;
+        showModal('confirmResendModal');
+    };
 </script>
 
 
 {% endblock %}
+```

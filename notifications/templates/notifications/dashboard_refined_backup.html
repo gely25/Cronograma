@@ -1,0 +1,1424 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Notificaciones - Sistema de Mantenimiento</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            color: white;
+            padding: 2rem;
+            margin: -2rem -2rem 2rem -2rem;
+            border-radius: 0 0 16px 16px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header-subtitle {
+            opacity: 0.9;
+            font-size: 0.95rem;
+            font-weight: 300;
+        }
+
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 0.875rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .tab.active {
+            color: var(--primary);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.75rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.blue { background: rgba(37, 99, 235, 0.1); }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.1); }
+        .stat-icon.red { background: rgba(239, 68, 68, 0.1); }
+        .stat-icon.yellow { background: rgba(245, 158, 11, 0.1); }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Filters */
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .input, .select {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .input:focus, .select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+        }
+
+        .table thead {
+            background: #f8fafc;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(37, 99, 235, 0.02);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.875rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #059669;
+        }
+
+        .badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        .badge.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #d97706;
+        }
+
+        /* Button */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-main);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-icon {
+            padding: 0.5rem;
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal:hover {
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        /* Wizard */
+        .wizard-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .wizard-steps::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 48px;
+            right: 48px;
+            height: 2px;
+            background: var(--border);
+            z-index: 0;
+        }
+
+        .wizard-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .wizard-step-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.125rem;
+            transition: all 0.3s ease;
+        }
+
+        .wizard-step.active .wizard-step-circle {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .wizard-step.completed .wizard-step-circle {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .wizard-step-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .wizard-step.active .wizard-step-label {
+            color: var(--primary);
+        }
+
+        .wizard-content {
+            min-height: 400px;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            resize: vertical;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .checkbox-item:hover {
+            background: rgba(37, 99, 235, 0.02);
+            border-color: var(--primary);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .checkbox-content {
+            flex: 1;
+        }
+
+        .checkbox-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .checkbox-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .summary-box {
+            background: rgba(37, 99, 235, 0.05);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(37, 99, 235, 0.1);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .summary-value {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .alert {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert.warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #d97706;
+        }
+
+        .alert.info {
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            color: var(--primary);
+        }
+
+        .alert.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #dc2626;
+        }
+
+        .info-box {
+            background: var(--bg-main);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-title {
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .info-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .info-list li::before {
+            content: '•';
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .wizard-steps {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .wizard-steps::before {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>📧</span>
+                Gestor de Notificaciones
+            </h1>
+            <p class="header-subtitle">Sistema de notificaciones para mantenimiento preventivo de hardware</p>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('dashboard')">
+                📊 Dashboard
+            </button>
+            <button class="tab" onclick="switchTab('history')">
+                📋 Historial y Gestión
+            </button>
+            <button class="tab" onclick="openWizard()">
+                ➕ Crear Notificación
+            </button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon blue">📤</div>
+                        <div class="stat-label">Total Enviadas</div>
+                    </div>
+                    <div class="stat-value">{{ metrics.total_enviadas }}</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon green">✅</div>
+                        <div class="stat-label">Exitosas</div>
+                    </div>
+                    <div class="stat-value">{{ metrics.exitosas }}</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon red">❌</div>
+                        <div class="stat-label">Con Errores</div>
+                    </div>
+                    <div class="stat-value">{{ metrics.con_errores }}</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon yellow">📅</div>
+                        <div class="stat-label">Enviadas Hoy</div>
+                    </div>
+                    <div class="stat-value">{{ metrics.enviadas_hoy }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Acciones Rápidas</h2>
+                </div>
+                <div style="display: grid; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="openWizard()">
+                        ➕ Crear Nueva Notificación
+                    </button>
+                    <button class="btn btn-secondary" onclick="switchTab('history')">
+                        📋 Ver Historial Completo
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Últimas Notificaciones Enviadas</h2>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha Envío</th>
+                                <th>Funcionario</th>
+                                <th>Email</th>
+                                <th>Fecha Turno</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for notif in ultimas_notificaciones %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600;">{{ notif.fecha_envio|date:"d M Y" }}</div>
+                                    <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ notif.fecha_envio|time:"H:i" }}</div>
+                                </td>
+                                <td>{{ notif.turno.responsable.nombre|default:"N/A" }}</td>
+                                <td>{{ notif.destinatario }}</td>
+                                <td>{{ notif.turno.fecha|date:"d M"|default:"N/A" }} {{ notif.turno.hora|time:"H:i"|default:"" }}</td>
+                                <td>
+                                    {% if notif.estado == 'enviado' %}
+                                        <span class="badge success">✓ Enviado</span>
+                                    {% elif notif.estado == 'fallido' %}
+                                        <span class="badge error">✗ Error</span>
+                                    {% else %}
+                                        <span class="badge pending">{{ notif.get_estado_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">📭</div>
+                                        <div>No hay notificaciones registradas</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📋 Historial de Notificaciones</h2>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <label class="filter-label">Fecha Desde</label>
+                        <input type="date" class="input" id="filterFrom">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Fecha Hasta</label>
+                        <input type="date" class="input" id="filterTo">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Estado</label>
+                        <select class="select" id="filterStatus">
+                            <option value="">Todos</option>
+                            <option value="enviado">Enviado</option>
+                            <option value="fallido">Error</option>
+                            <option value="pendiente">Pendiente</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Buscar por Nombre</label>
+                        <input type="text" class="input" id="filterName" placeholder="Nombre del funcionario...">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" style="margin-bottom: 1.5rem;" onclick="applyFilters()">
+                    🔍 Aplicar Filtros
+                </button>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora Envío</th>
+                                <th>Funcionario</th>
+                                <th>Email</th>
+                                <th>Fecha Turno</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historialTable">
+                            {% for notif in historial %}
+                            <tr data-notification-id="{{ notif.notificacion.id|default:'none' }}" data-status="{{ notif.estado }}">
+                                <td>
+                                    <div style="font-weight: 600;">{{ notif.fecha_envio|date:"d M Y" }}</div>
+                                    <div style="font-size: 0.875rem; color: var(--text-secondary);">{{ notif.fecha_envio|time:"H:i:s" }}</div>
+                                </td>
+                                <td>{{ notif.turno.responsable.nombre|default:"N/A" }}</td>
+                                <td>{{ notif.destinatario }}</td>
+                                <td>{{ notif.turno.fecha|date:"d M"|default:"N/A" }} {{ notif.turno.hora|time:"H:i"|default:"" }}</td>
+                                <td>
+                                    {% if notif.estado == 'enviado' %}
+                                        <span class="badge success">✓ Enviado</span>
+                                    {% elif notif.estado == 'fallido' %}
+                                        <span class="badge error">✗ Error de envío</span>
+                                    {% else %}
+                                        <span class="badge pending">{{ notif.get_estado_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="actions">
+                                        {% if notif.estado == 'fallido' and notif.notificacion %}
+                                            <button class="btn btn-primary btn-sm btn-icon" title="Reintentar" onclick="showRetryModal('{{ notif.notificacion.id }}', '{{ notif.turno.responsable.nombre|default:"N/A" }}', '{{ notif.destinatario }}')">
+                                                🔄
+                                            </button>
+                                        {% endif %}
+                                        {% if notif.notificacion %}
+                                            <button class="btn btn-secondary btn-sm btn-icon" title="Ver detalles" onclick="showDetailsModal('{{ notif.notificacion.id }}')">
+                                                👁️
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">📭</div>
+                                        <div>No hay notificaciones en el historial</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wizard Modal -->
+    <div id="wizardModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Crear Notificación</h2>
+                <button class="close-modal" onclick="closeWizard()">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Wizard Steps -->
+                <div class="wizard-steps">
+                    <div class="wizard-step active" id="step-indicator-1">
+                        <div class="wizard-step-circle">1</div>
+                        <div class="wizard-step-label">Contenido</div>
+                    </div>
+                    <div class="wizard-step" id="step-indicator-2">
+                        <div class="wizard-step-circle">2</div>
+                        <div class="wizard-step-label">Destinatarios</div>
+                    </div>
+                    <div class="wizard-step" id="step-indicator-3">
+                        <div class="wizard-step-circle">3</div>
+                        <div class="wizard-step-label">Confirmar</div>
+                    </div>
+                </div>
+
+                <!-- Step 1: Content -->
+                <div id="wizard-step-1" class="wizard-content">
+                    <div class="info-box">
+                        <div class="info-title">ℹ️ Configuración del Mensaje</div>
+                        <ul class="info-list">
+                            <li>Define el asunto y contenido del mensaje que se enviará</li>
+                            <li>Puedes usar variables: {nombre}, {fecha_turno}, {hora}, {duracion}</li>
+                            <li>El mensaje será personalizado para cada destinatario</li>
+                        </ul>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Asunto del Correo</label>
+                        <input type="text" class="input" id="wizardSubject" placeholder="Ej: Recordatorio: Mantenimiento Preventivo de Hardware" value="{{ config.asunto_template }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Contenido del Mensaje</label>
+                        <textarea class="textarea" id="wizardMessage" placeholder="Escribe el contenido del mensaje...">{{ config.cuerpo_template }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Step 2: Recipients -->
+                <div id="wizard-step-2" class="wizard-content" style="display: none;">
+                    <div class="info-box">
+                        <div class="info-title">ℹ️ Selección de Destinatarios</div>
+                        <ul class="info-list">
+                            <li>Selecciona los funcionarios que recibirán la notificación</li>
+                            <li>Verifica que las direcciones de correo sean correctas</li>
+                            <li>Cada funcionario recibirá un mensaje personalizado</li>
+                        </ul>
+                    </div>
+
+                    <div class="checkbox-list" id="recipientList">
+                        <div class="loading">Cargando destinatarios...</div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Confirm -->
+                <div id="wizard-step-3" class="wizard-content" style="display: none;">
+                    <div class="alert warning">
+                        ⚠️ Los correos se enviarán inmediatamente al confirmar. Esta acción no se puede deshacer.
+                    </div>
+
+                    <div class="summary-box">
+                        <h3 style="margin-bottom: 1rem; font-size: 1.125rem;">📋 Resumen del Envío</h3>
+                        
+                        <div class="summary-item">
+                            <span class="summary-label">Destinatarios seleccionados</span>
+                            <span class="summary-value" id="summaryCount">0</span>
+                        </div>
+                        
+                        <div class="summary-item">
+                            <span class="summary-label">Asunto</span>
+                            <span class="summary-value" id="summarySubject">-</span>
+                        </div>
+
+                        <div class="summary-item">
+                            <span class="summary-label">Tipo de envío</span>
+                            <span class="summary-value">Inmediato</span>
+                        </div>
+                    </div>
+
+                    <div class="card" style="background: var(--bg-main); border: none; box-shadow: none;">
+                        <h4 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 700;">Lista de destinatarios:</h4>
+                        <ul class="info-list" id="summaryRecipients">
+                        </ul>
+                    </div>
+
+                    <div class="alert info">
+                        ℹ️ Podrás ver el estado de cada envío en el Historial. Si algún correo falla, podrás reintentarlo.
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="prevBtn" style="display: none;" onclick="previousStep()">
+                    ← Anterior
+                </button>
+                <button class="btn btn-secondary" onclick="closeWizard()">
+                    Cancelar
+                </button>
+                <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">
+                    Siguiente →
+                </button>
+                <button class="btn btn-primary" id="submitBtn" style="display: none;" onclick="submitNotification()">
+                    ✉️ Enviar Ahora
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Retry Modal -->
+    <div id="retryModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 class="modal-title">🔄 Reintentar Notificación</h2>
+                <button class="close-modal" onclick="closeModal('retryModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Funcionario</label>
+                    <input type="text" class="input" id="retryName" disabled style="background: var(--bg-main);">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Actual</label>
+                    <input type="email" class="input" id="retryEmail">
+                </div>
+                <input type="hidden" id="retryNotificationId">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('retryModal')">
+                    Cancelar
+                </button>
+                <button class="btn btn-primary" onclick="retryNotification()">
+                    🔄 Reintentar Ahora
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">👁️ Detalles de Notificación</h2>
+                <button class="close-modal" onclick="closeModal('detailsModal')">✕</button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <div class="loading">Cargando detalles...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('detailsModal')">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let recipientCandidates = [];
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Wizard functions
+        function openWizard() {
+            document.getElementById('wizardModal').classList.add('active');
+            currentStep = 1;
+            showStep(1);
+        }
+
+        function closeWizard() {
+            document.getElementById('wizardModal').classList.remove('active');
+            currentStep = 1;
+            showStep(1);
+        }
+
+        function showStep(step) {
+            for (let i = 1; i <= 3; i++) {
+                document.getElementById(`wizard-step-${i}`).style.display = 'none';
+                document.getElementById(`step-indicator-${i}`).classList.remove('active', 'completed');
+            }
+
+            document.getElementById(`wizard-step-${step}`).style.display = 'block';
+            document.getElementById(`step-indicator-${step}`).classList.add('active');
+
+            for (let i = 1; i < step; i++) {
+                document.getElementById(`step-indicator-${i}`).classList.add('completed');
+            }
+
+            document.getElementById('prevBtn').style.display = step === 1 ? 'none' : 'inline-flex';
+            document.getElementById('nextBtn').style.display = step === 3 ? 'none' : 'inline-flex';
+            document.getElementById('submitBtn').style.display = step === 3 ? 'inline-flex' : 'none';
+        }
+
+        function nextStep() {
+            if (currentStep < 3) {
+                if (currentStep === 1) {
+                    loadRecipients();
+                }
+                currentStep++;
+                showStep(currentStep);
+                
+                if (currentStep === 3) {
+                    updateSummary();
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        function loadRecipients() {
+            const listContainer = document.getElementById('recipientList');
+            listContainer.innerHTML = '<div class="loading">Cargando destinatarios...</div>';
+            
+            fetch('/notifications/api/recipient-candidates/')
+                .then(res => res.json())
+                .then(data => {
+                    recipientCandidates = data.candidatos;
+                    
+                    if (recipientCandidates.length === 0) {
+                        listContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div>No hay funcionarios con turnos próximos</div></div>';
+                        return;
+                    }
+                    
+                    listContainer.innerHTML = '';
+                    recipientCandidates.forEach((candidate, index) => {
+                        const label = document.createElement('label');
+                        label.className = 'checkbox-item';
+                        label.innerHTML = `
+                            <input type="checkbox" id="recipient${index}" value="${candidate.id}" data-name="${candidate.nombre}" data-email="${candidate.email}">
+                            <div class="checkbox-content">
+                                <div class="checkbox-title">${candidate.nombre}</div>
+                                <div class="checkbox-subtitle">
+                                    📧 ${candidate.email}<br>
+                                    📅 Turno: ${candidate.fecha_turno} a las ${candidate.hora} (Duración: ${candidate.duracion} min)
+                                </div>
+                            </div>
+                        `;
+                        listContainer.appendChild(label);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    listContainer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div>Error al cargar destinatarios</div></div>';
+                });
+        }
+
+        function updateSummary() {
+            const checkboxes = document.querySelectorAll('#recipientList input[type="checkbox"]:checked');
+            const count = checkboxes.length;
+            const asunto = document.getElementById('wizardSubject').value;
+            
+            document.getElementById('summaryCount').textContent = count + ' funcionario' + (count !== 1 ? 's' : '');
+            document.getElementById('summarySubject').textContent = asunto || 'Sin asunto';
+            
+            const summaryContainer = document.getElementById('summaryRecipients');
+            summaryContainer.innerHTML = '';
+            
+            if (count === 0) {
+                const li = document.createElement('li');
+                li.textContent = 'No hay destinatarios seleccionados';
+                li.style.color = 'var(--text-secondary)';
+                summaryContainer.appendChild(li);
+            } else {
+                checkboxes.forEach(cb => {
+                    const name = cb.getAttribute('data-name');
+                    const email = cb.getAttribute('data-email');
+                    
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong>${name}</strong> (${email})`;
+                    summaryContainer.appendChild(li);
+                });
+            }
+        }
+
+        function submitNotification() {
+            const checkboxes = document.querySelectorAll('#recipientList input[type="checkbox"]:checked');
+            if (checkboxes.length === 0) {
+                alert('⚠️ Debes seleccionar al menos un destinatario');
+                return;
+            }
+            
+            const recipientIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            const asunto = document.getElementById('wizardSubject').value;
+            const mensaje = document.getElementById('wizardMessage').value;
+            
+            if (!confirm(`¿Confirmas que deseas enviar ${checkboxes.length} notificación(es) AHORA?`)) {
+                return;
+            }
+            
+            fetch('/notifications/api/send-manual/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    asunto: asunto,
+                    mensaje: mensaje,
+                    recipient_ids: recipientIds
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ ¡Notificaciones enviadas!\n\nEnviados: ${data.enviados}\nErrores: ${data.errores}`);
+                    closeWizard();
+                    location.reload();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'Desconocido'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ Error al enviar notificaciones');
+            });
+        }
+
+        // Modal functions
+        function showRetryModal(notificationId, name, email) {
+            document.getElementById('retryNotificationId').value = notificationId;
+            document.getElementById('retryName').value = name;
+            document.getElementById('retryEmail').value = email;
+            document.getElementById('retryModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function retryNotification() {
+            const notificationId = document.getElementById('retryNotificationId').value;
+            const email = document.getElementById('retryEmail').value;
+            
+            fetch(`/notifications/api/retry/${notificationId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ Reintento exitoso');
+                    closeModal('retryModal');
+                    location.reload();
+                } else {
+                    alert('❌ Error en reintento: ' + data.ultimo_error);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('❌ Error al reintentar');
+            });
+        }
+
+        function showDetailsModal(notificationId) {
+            document.getElementById('detailsModal').classList.add('active');
+            const content = document.getElementById('detailsContent');
+            content.innerHTML = '<div class="loading">Cargando detalles...</div>';
+            
+            fetch(`/notifications/api/details/${notificationId}/`)
+                .then(res => res.json())
+                .then(data => {
+                    let html = `
+                        <div class="summary-box">
+                            <div class="summary-item">
+                                <span class="summary-label">Funcionario</span>
+                                <span class="summary-value">${data.funcionario}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Email</span>
+                                <span class="summary-value">${data.email}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Estado</span>
+                                <span class="summary-value">${data.estado}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="summary-label">Intentos</span>
+                                <span class="summary-value">${data.intentos}</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (data.ultimo_error) {
+                        html += `<div class="alert error">
+                            <div><strong>Último Error:</strong><br>${data.ultimo_error}</div>
+                        </div>`;
+                    }
+                    
+                    if (data.historial && data.historial.length > 0) {
+                        html += '<div class="card" style="background: var(--bg-main); border: none; box-shadow: none;"><h4 style="margin-bottom: 1rem; font-size: 1rem; font-weight: 700;">Historial de Intentos</h4>';
+                        data.historial.forEach(h => {
+                            const fecha = new Date(h.fecha_envio);
+                            html += `<div style="padding: 0.75rem; margin-bottom: 0.5rem; background: white; border-radius: 6px; border-left: 3px solid ${h.estado === 'enviado' ? 'var(--success)' : 'var(--error)'};">
+                                <div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.25rem;">${fecha.toLocaleString('es-ES')}</div>
+                                <div>${h.estado === 'enviado' ? '✓' : '✗'} Intento ${h.intento_n}: ${h.estado}</div>
+                                ${h.error_log ? '<div style="font-size: 0.875rem; color: var(--error); margin-top: 0.25rem;">' + h.error_log + '</div>' : ''}
+                            </div>`;
+                        });
+                        html += '</div>';
+                    }
+                    
+                    content.innerHTML = html;
+                })
+                .catch(err => {
+                    console.error(err);
+                    content.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div>Error al cargar detalles</div></div>';
+                });
+        }
+
+        function applyFilters() {
+            const desde = document.getElementById('filterFrom').value;
+            const hasta = document.getElementById('filterTo').value;
+            const estado = document.getElementById('filterStatus').value;
+            const search = document.getElementById('filterName').value;
+            
+            const rows = document.querySelectorAll('#historialTable tr[data-notification-id]');
+            rows.forEach(row => {
+                let show = true;
+                
+                if (estado && row.getAttribute('data-status') !== estado) {
+                    show = false;
+                }
+                
+                if (search) {
+                    const text = row.textContent.toLowerCase();
+                    if (!text.includes(search.toLowerCase())) {
+                        show = false;
+                    }
+                }
+                
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

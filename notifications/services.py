@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta, time
+import os
+import time
+from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
@@ -119,32 +121,49 @@ class NotificationService:
             # Regla 1: Anticipado
             if config.activar_anticipado:
                 fecha_notif = turno_dt - timedelta(days=config.dias_antes)
-                if start_date <= timezone.localdate(fecha_notif) <= end_date:
-                    estado_real = memo_cola.get((turno.id, 'anticipado'))
+                estado_real = memo_cola.get((turno.id, 'anticipado'))
+                ya_procesado = estado_real is not None and estado_real != 'cancelado'
+                
+                # Mostrar si está en el rango futuro O si es pasado pero no se ha procesado (pendiente)
+                in_range = start_date <= timezone.localdate(fecha_notif) <= end_date
+                is_pending_overdue = timezone.localdate(fecha_notif) < start_date and not ya_procesado
+
+                if in_range or is_pending_overdue:
                     proyeccion.append({
                         'turno': turno,
                         'tipo': 'anticipado',
+                        'tipo_id': f"{turno.id}:anticipado",
                         'tipo_display': 'Recordatorio Anticipado',
                         'fecha_programada': fecha_notif,
                         'responsable': turno.responsable,
                         'estado_actual': estado_real,
-                        'ya_procesado': estado_real is not None and estado_real != 'cancelado'
+                        'ya_procesado': ya_procesado,
+                        'es_retrasado': is_pending_overdue
                     })
             
-            # Regla 2: Día del Turno (X minutos antes)
+            # Regla 2: Día del Turno
             if config.activar_jornada:
                 fecha_notif = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
-                if start_date <= timezone.localdate(fecha_notif) <= end_date:
-                    estado_real = memo_cola.get((turno.id, 'jornada'))
+                estado_real = memo_cola.get((turno.id, 'jornada'))
+                ya_procesado = estado_real is not None and estado_real != 'cancelado'
+                
+                # Para jornada solemos mostrar si es hoy o mañana
+                in_range = start_date <= timezone.localdate(fecha_notif) <= end_date
+                
+                if in_range:
                     proyeccion.append({
                         'turno': turno,
                         'tipo': 'jornada',
-                        'tipo_display': 'Aviso Próximo (Hoy)',
+                        'tipo_id': f"{turno.id}:jornada",
+                        'tipo_display': 'Día del Turno',
                         'fecha_programada': fecha_notif,
                         'responsable': turno.responsable,
                         'estado_actual': estado_real,
-                        'ya_procesado': estado_real is not None and estado_real != 'cancelado'
+                        'ya_procesado': ya_procesado,
+                        'es_retrasado': False
                     })
+            
+
                     
         # Ordenar por fecha de notificación
         proyeccion.sort(key=lambda x: x['fecha_programada'])
@@ -178,8 +197,30 @@ class NotificationService:
 
         config = ConfiguracionNotificacion.get_solo()
         connection = get_connection()
-        connection.open()
         
+        def check_connection(conn):
+            try:
+                if not conn or not conn.connection:
+                    conn.open()
+                else:
+                    conn.connection.noop()
+            except:
+                conn.open()
+            return conn
+
+        # Función para traducir errores técnicos a mensajes amigables
+        def get_friendly_error(error_str):
+            err = error_str.lower()
+            if "connect() first" in err or "broken pipe" in err or "connection reset" in err:
+                return "La conexión con el servidor de correo se interrumpió. El sistema intentará reconectar automáticamente."
+            if "authentication failed" in err or "username and password not accepted" in err:
+                return "Error de autenticación. Por favor, verifique la configuración de correo y la contraseña de aplicación."
+            if "timeout" in err:
+                return "El servidor de correo tardó demasiado en responder. Se reintentará en el siguiente ciclo."
+            if "quota exceeded" in err or "daily sending quota" in err:
+                return "Límite de envíos diarios alcanzado en Gmail. Los correos restantes se enviarán mañana."
+            return "Hubo un problema técnico al entregar el mensaje. Se registrará el detalle para mantenimiento."
+
         # Imagen de encabezado
         header_img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
         header_img_data = None
@@ -221,6 +262,9 @@ class NotificationService:
                 html_message = render_to_string('notifications/email_template.html', context)
                 plain_message = strip_tags(html_message)
                 
+                # Asegurar conexión activa antes de cada envío
+                connection = check_connection(connection)
+
                 msg = EmailMultiAlternatives(
                     subject,
                     plain_message,
@@ -240,30 +284,12 @@ class NotificationService:
                     l_img.add_header('Content-ID', '<unemi_logo>')
                     msg.attach(l_img)
                 
-                 # BCC de supervisión
-                if config.cc_email:
-                    try:
-                        bcc_msg = EmailMultiAlternatives(
-                            f"[BCC] {subject}",
-                            plain_message,
-                            settings.DEFAULT_FROM_EMAIL,
-                            [config.cc_email],
-                            connection=connection
-                        )
-                        bcc_msg.attach_alternative(html_message, "text/html")
-                        if header_img_data:
-                            h_img_copy = MIMEImage(header_img_data)
-                            h_img_copy.add_header('Content-ID', '<header_image>')
-                            bcc_msg.attach(h_img_copy)
-                        if logo_data:
-                            l_img_copy = MIMEImage(logo_data)
-                            l_img_copy.add_header('Content-ID', '<unemi_logo>')
-                            bcc_msg.attach(l_img_copy)
-                        bcc_msg.send()
-                    except:
-                        pass # No bloquear si el BCC falla
+                # BCC ELIMINADO según requerimiento de simplificación y fiabilidad
 
                 msg.send()
+
+                # Pausa de seguridad para evitar bloqueos de Gmail y saturación de conexión
+                time.sleep(1.5)
 
                 # ÉXITO
                 item.estado = 'enviado'
@@ -293,8 +319,11 @@ class NotificationService:
                 enviados += 1
                 
             except Exception as e:
+                error_label = str(e)
+                friendly_msg = get_friendly_error(error_label)
+                
                 item.intentos += 1
-                item.ultimo_error = str(e)
+                item.ultimo_error = error_label
                 # Decidir si agotamos intentos o reintentamos luego
                 if item.intentos >= item.max_intentos:
                     item.estado = 'fallido'
@@ -302,15 +331,24 @@ class NotificationService:
                     item.estado = 'error_temporal'
                 item.save()
                 
+                # Registrar en historial con el error real pero detalle amigable
                 HistorialEnvio.objects.create(
                     notificacion=item,
                     turno=item.turno,
                     tipo=item.tipo,
                     intento_n=item.intentos,
-                    estado='fallido',
-                    destinatario=item.turno.responsable.email if item.turno else "??",
-                    asunto="Error en envío automático",
-                    error_log=str(e)
+                    estado='fallido' if item.estado == 'fallido' else 'reintento',
+                    destinatario=item.turno.responsable.email if item.turno and item.turno.responsable else "Desconocido",
+                    asunto=f"Error en envío: {item.get_tipo_display()}",
+                    cuerpo=f"Error técnico: {error_label}",
+                    error_log=error_label
+                )
+
+                from .models import AuditLogNotificaciones
+                AuditLogNotificaciones.objects.create(
+                    notificacion=item,
+                    accion="Fallo de Envío",
+                    detalles=f"{friendly_msg} (Intento {item.intentos})"
                 )
                 errores += 1
 

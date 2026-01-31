@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import HttpResponse
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
@@ -12,41 +12,22 @@ from core.models import Turno
 
 def dashboard(request):
     """
-    Vista principal del Sistema Inteligente de Notificaciones (Observer Pattern).
-    Muestra:
-    1. Configuración (Reglas) con sincronización.
-    2. Radar (Cola de Notificaciones Pendientes en BD)
-    3. Historial (Bitácora de intentos reales)
+    Vista principal del Sistema Manual de Notificaciones.
+    Dashboard con métricas y gestión de notificaciones manuales.
     """
     config = ConfiguracionNotificacion.get_solo()
     
-    if request.method == 'POST':
-        # Actualizar Configuración
-        config.activar_anticipado = request.POST.get('activar_anticipado') == 'on'
-        config.dias_antes = int(request.POST.get('dias_antes', 1))
-        config.activar_jornada = request.POST.get('activar_jornada') == 'on'
-        config.minutos_antes_jornada = int(request.POST.get('minutos_antes_jornada', 60))
-        
-        config.asunto_template = request.POST.get('asunto_template', '')
-        config.cuerpo_template = request.POST.get('cuerpo_template', '')
-        
-        config.save()
-        messages.success(request, "Configuración del Gestor de Notificaciones actualizada.")
-        return redirect('notifications_dashboard')
-        
-    # --- COLA PENDIENTE (RADAR REAL) ---
-    # Mostramos lo que está en la base de datos pendiente de enviarse
-    cola_radar = NotificacionEncolada.objects.filter(
-        estado__in=['pendiente', 'error_temporal']
-    ).select_related('turno', 'turno__responsable').order_by('fecha_programada')
+    # Calcular métricas para el nuevo dashboard
+    hoy = timezone.now().date()
     
-    #Stats reales de la arquitectura robusta
-    stats_data = {
-        'total_esperadas': NotificacionEncolada.objects.exclude(estado='cancelado').count(),
-        'enviadas': NotificacionEncolada.objects.filter(estado='enviado').count(),
-        'fallidas': NotificacionEncolada.objects.filter(estado='fallido').count(),
-        'pendientes': NotificacionEncolada.objects.filter(estado__in=['pendiente', 'error_temporal']).count()
+    metrics = {
+        'total_enviadas': HistorialEnvio.objects.count(),
+        'exitosas': HistorialEnvio.objects.filter(estado='enviado').count(),
+        'con_errores': HistorialEnvio.objects.filter(estado='fallido').count(),
+        'enviadas_hoy': HistorialEnvio.objects.filter(fecha_envio__date=hoy).count(),
     }
+    
+
     
     # --- DATOS PARA PREVISUALIZACIÓN REALISTA ---
     # Buscamos un responsable real con equipos para el ejemplo
@@ -65,7 +46,7 @@ def dashboard(request):
         resp = primer_turno.responsable
         equipos = resp.equipos.all()
         if equipos.exists():
-            lista = "\n".join([f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})" for e in equipos])
+            lista = "\\n".join([f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})" for e in equipos])
             marca = equipos.first().marca
             modelo = equipos.first().modelo
         else:
@@ -87,34 +68,50 @@ def dashboard(request):
             'modelo': modelo,
             'duracion': duracion
         })
-    # --- HISTORIAL (AUDITORÍA) CON PAGINACIÓN ---
-    historial_list = HistorialEnvio.objects.select_related(
+    
+    # --- HISTORIAL (AUDITORÍA) CON PAGINACIÓN Y FILTROS ---
+    historial_queryset = HistorialEnvio.objects.select_related(
         'turno', 
         'turno__responsable'
     ).order_by('-fecha_envio')
+
+    # Filtros
+    fecha_desde = request.GET.get('fecha_desde')
+    fecha_hasta = request.GET.get('fecha_hasta')
+    estado = request.GET.get('estado')
+    search = request.GET.get('search')
+
+    if fecha_desde:
+        historial_queryset = historial_queryset.filter(turno__fecha__gte=fecha_desde)
+    if fecha_hasta:
+        historial_queryset = historial_queryset.filter(turno__fecha__lte=fecha_hasta)
+    if estado:
+        historial_queryset = historial_queryset.filter(estado=estado)
+    if search:
+        historial_queryset = historial_queryset.filter(
+            Q(turno__responsable__nombre__icontains=search) | 
+            Q(destinatario__icontains=search) |
+            Q(asunto__icontains=search)
+        )
     
-    paginator = Paginator(historial_list, 20) # 20 por página
-    page_number = request.GET.get('page')
-    historial = paginator.get_page(page_number)
+    paginator_hist = Paginator(historial_queryset, 5) # 5 por página para no sobrecargar
+    page_number_hist = request.GET.get('page')
+    historial = paginator_hist.get_page(page_number_hist)
 
     # --- PROYECCIÓN (RADAR SEMANAL) ---
-    proyeccion = NotificationService.calcular_proyeccion(7)
+    proyeccion_list = NotificationService.calcular_proyeccion(7)
+    paginator_proj = Paginator(proyeccion_list, 7) # 7 notificaciones por página (ideal para vista semanal)
+    page_number_proj = request.GET.get('page_proj')
+    proyeccion = paginator_proj.get_page(page_number_proj)
     
     context = {
         'config': config,
-        'stats': stats_data,
-        'cola_radar': cola_radar,
-        'proyeccion': proyeccion,
+        'metrics': metrics,
+
+        'historial': historial, # Usamos el objeto paginado
         'ejemplo_real': ejemplo_data,
-        'proyeccion_json': json.dumps([{
-            'responsable': {'nombre': item['responsable'].nombre if item.get('responsable') else 'Broadcast'},
-            'tipo': item['tipo'],
-            'fecha_programada': item['fecha_programada'].isoformat(),
-            'fecha_turno': item['turno'].fecha.strftime("%d/%m/%Y") if item.get('turno') and item['turno'].fecha else '',
-            'hora_turno': item['turno'].hora.strftime("%H:%M") if item.get('turno') and item['turno'].hora else ''
-        } for item in proyeccion[:20]]), # Ahora sí es el radar de proyección real
-        'historial': historial,
-        'estados_choices': Turno.ESTADO_CHOICES
+        'proyeccion': proyeccion, # Ahora es un Page object
+        'active_tab': 'history' if any(k in request.GET for k in ['fecha_desde', 'fecha_hasta', 'estado', 'search', 'page']) else 'dashboard'
     }
     return render(request, 'notifications/dashboard.html', context)
 
@@ -150,11 +147,39 @@ def ejecutar_envios(request):
 def generar_desde_proyeccion(request):
     """
     Toma selecciones del Radar de Proyección y las convierte en registros de la COLA.
+    Ahora también actualiza la configuración base si se envía desde el Wizard.
     """
     if request.method == 'POST':
+        # --- NUEVA LÓGICA: ACTUALIZAR CONFIGURACIÓN DESDE EL WIZARD ---
+        config = ConfiguracionNotificacion.get_solo()
+        
+        # Leemos campos del wizard (si vienen)
+        asunto = request.POST.get('asunto_template')
+        cuerpo = request.POST.get('cuerpo_template')
+        
+        # Nuevos campos de la barra lateral
+        activar_ant = request.POST.get('activar_anticipado') == 'on'
+        dias_antes = request.POST.get('dias_antes')
+        activar_jor = request.POST.get('activar_jornada') == 'on'
+        minutos_jor = request.POST.get('minutos_antes_jornada')
+
+        if asunto:
+            config.asunto_template = asunto
+        if cuerpo:
+            config.cuerpo_template = cuerpo
+        
+        config.activar_anticipado = activar_ant
+        if dias_antes:
+            config.dias_antes = int(dias_antes)
+        config.activar_jornada = activar_jor
+        if minutos_jor:
+            config.minutos_antes_jornada = int(minutos_jor)
+        
+        config.save()
+        # -------------------------------------------------------------
+
         items = request.POST.getlist('proyeccion_items')
         print(f"DEBUG: Items recibidos ({len(items)}): {items}")
-        config = ConfiguracionNotificacion.get_solo()
         ids_a_procesar = []
         creadas = 0
         
@@ -212,8 +237,7 @@ def generar_desde_proyeccion(request):
             else:
                 messages.warning(request, f"Se procesaron las notificaciones. Se enviaron {enviados} con éxito, pero {errores} fallaron.")
         else:
-            messages.info(request, f"(DEBUG) Items recibidos en server: {items}")
-            messages.info(request, "No se seleccionaron notificaciones válidas o ya estaban procesadas.")
+            messages.info(request, "Wizard finalizado. No se seleccionaron turnos nuevos para procesar.")
             
     return redirect('notifications_dashboard')
 
@@ -250,6 +274,40 @@ def api_get_proyeccion(request):
     response = JsonResponse({'items': data})
     response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
+
+def get_render_preview(request):
+    """
+    Renderiza el contenido (asunto y cuerpo) para un turno y tipo específico,
+    aplicando las variables dinámicas de la configuración actual.
+    """
+    turno_id = request.GET.get('turno_id')
+    tipo = request.GET.get('tipo', 'anticipado')
+    
+    if not turno_id:
+        return JsonResponse({'error': 'Falta turno_id'}, status=400)
+    
+    from collections import namedtuple
+    
+    turno = get_object_or_404(Turno, id=turno_id)
+    config = ConfiguracionNotificacion.get_solo()
+    
+    # Mock para usar la lógica compartida de services.py
+    MockItem = namedtuple('MockItem', ['turno', 'get_tipo_display', 'tipo'])
+    item = MockItem(
+        turno=turno, 
+        get_tipo_display=lambda: 'Recordatorio Anticipado' if tipo == 'anticipado' else 'Día del Turno',
+        tipo=tipo
+    )
+    
+    try:
+        subject, body = NotificationService._preparar_contenido(item, config)
+        return JsonResponse({
+            'subject': subject,
+            'body': body,
+            'tipo_display': item.get_tipo_display()
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 def reenviar_notificacion(request, pk):
@@ -345,3 +403,293 @@ def notificaciones_masivas(request):
             messages.info(request, f"Se cancelaron {count} notificaciones.")
             
     return redirect('notifications_dashboard')
+
+
+# ============================================================
+# NUEVOS ENDPOINTS PARA EL SISTEMA MANUAL DE NOTIFICACIONES
+# ============================================================
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.db.models import Q
+
+@require_http_methods(["GET"])
+def get_recipient_candidates(request):
+    """
+    API endpoint para obtener lista de funcionarios con turnos próximos.
+    Para el Paso 2 del wizard de creación manual.
+    """
+    from core.models import Responsable
+    from datetime import timedelta
+    
+    # Obtener turnos de los próximos 30 días
+    hoy = timezone.now().date()
+    fecha_limite = hoy + timedelta(days=30)
+    
+    turnos_proximos = Turno.objects.filter(
+        fecha__gte=hoy,
+        fecha__lte=fecha_limite,
+        estado='asignado'
+    ).select_related('responsable').order_by('fecha', 'hora')
+    
+    candidatos = []
+    vistos = set()  # Para evitar duplicados
+    
+    for turno in turnos_proximos:
+        if not turno.responsable or not turno.responsable.email:
+            continue
+            
+        # Evitar duplicados (mismo responsable con múltiples turnos)
+        if turno.responsable.id in vistos:
+            continue
+        vistos.add(turno.responsable.id)
+        
+        from core.models import ConfiguracionCronograma
+        config_crono = ConfiguracionCronograma.objects.first()
+        duracion = config_crono.duracion_turno if config_crono else 30
+        
+        candidatos.append({
+            'id': turno.responsable.id,
+            'turno_id': turno.id,
+            'nombre': turno.responsable.nombre,
+            'email': turno.responsable.email,
+            'fecha_turno': turno.fecha.strftime("%d/%m/%Y"),
+            'hora': turno.hora.strftime("%H:%M") if turno.hora else "N/A",
+            'duracion': duracion
+        })
+    
+    return JsonResponse({'candidatos': candidatos})
+
+
+@require_http_methods(["POST"])
+def send_manual_notifications(request):
+    """
+    Envía notificaciones manuales de forma inmediata.
+    Recibe: asunto, mensaje, recipient_ids[]
+    """
+    import json
+    
+    try:
+        data = json.loads(request.body)
+        asunto = data.get('asunto', '')
+        mensaje = data.get('mensaje', '')
+        recipient_ids = data.get('recipient_ids', [])
+        
+        if not asunto or not mensaje:
+            return JsonResponse({'error': 'Asunto y mensaje son requeridos'}, status=400)
+        
+        if not recipient_ids:
+            return JsonResponse({'error': 'Debes seleccionar al menos un destinatario'}, status=400)
+        
+        # Crear notificaciones para cada destinatario
+        from core.models import Responsable
+        notificaciones_creadas = []
+        
+        for resp_id in recipient_ids:
+            try:
+                responsable = Responsable.objects.get(id=resp_id)
+                
+                # Buscar el turno más próximo de este responsable
+                turno = Turno.objects.filter(
+                    responsable=responsable,
+                    fecha__gte=timezone.now().date(),
+                    estado='asignado'
+                ).order_by('fecha', 'hora').first()
+                
+                if not turno:
+                    continue
+                
+                # Crear notificación en cola para envío inmediato
+                notif = NotificacionEncolada.objects.create(
+                    turno=turno,
+                    tipo='manual',
+                    fecha_programada=timezone.now(),
+                    estado='pendiente'
+                )
+                notificaciones_creadas.append(notif.id)
+                
+            except Responsable.DoesNotExist:
+                continue
+        
+        # Ejecutar envío inmediato
+        enviados, errores = NotificationService.ejecutar_vigilancia(specific_ids=notificaciones_creadas)
+        
+        return JsonResponse({
+            'success': True,
+            'enviados': enviados,
+            'errores': errores,
+            'total': len(notificaciones_creadas)
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Formato JSON inválido'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_http_methods(["POST"])
+def retry_notification(request, notification_id):
+    """
+    Reintenta el envío de una notificación que falló.
+    Puede recibir un nuevo email opcional.
+    """
+    import json
+    
+    try:
+        notif = get_object_or_404(NotificacionEncolada, id=notification_id)
+        
+        data = json.loads(request.body)
+        nuevo_email = data.get('email', None)
+        
+        # Si se proporciona un nuevo email, actualizarlo
+        if nuevo_email and notif.turno and notif.turno.responsable:
+            notif.turno.responsable.email = nuevo_email
+            notif.turno.responsable.save()
+        
+        # Reintentar envío
+        enviados, errores = NotificationService.ejecutar_vigilancia(specific_ids=[notification_id])
+        
+        # Recargar para obtener el estado actualizado
+        notif.refresh_from_db()
+        
+        return JsonResponse({
+            'success': enviados > 0,
+            'estado': notif.estado,
+            'ultimo_error': notif.ultimo_error
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Formato JSON inválido'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_http_methods(["POST"])
+def edit_notification(request, notification_id):
+    """
+    Edita una notificación fallida y opcionalmente la reenvía.
+    """
+    import json
+    
+    try:
+        notif = get_object_or_404(NotificacionEncolada, id=notification_id)
+        
+        data = json.loads(request.body)
+        email = data.get('email', None)
+        asunto = data.get('asunto', None)
+        mensaje = data.get('mensaje', None)
+        auto_retry = data.get('auto_retry', False)
+        
+        # Actualizar email si se proporciona
+        if email and notif.turno and notif.turno.responsable:
+            notif.turno.responsable.email = email
+            notif.turno.responsable.save()
+        
+        # Para asunto y mensaje, tendríamos que almacenarlos en un campo adicional
+        # o usar la configuración global. Por ahora, solo registramos el cambio
+        
+        if auto_retry:
+            enviados, errores = NotificationService.ejecutar_vigilancia(specific_ids=[notification_id])
+            notif.refresh_from_db()
+            
+            return JsonResponse({
+                'success': enviados > 0,
+                'estado': notif.estado,
+                'reenviado': True
+            })
+        else:
+            return JsonResponse({
+                'success': True,
+                'mensaje': 'Cambios guardados'
+            })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Formato JSON inválido'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_http_methods(["GET"])
+def get_notification_details(request, notification_id):
+    """
+    Obtiene todos los detalles de una notificación incluyendo historial de intentos.
+    """
+    try:
+        notif = get_object_or_404(NotificacionEncolada, id=notification_id)
+        
+        # Obtener historial de intentos
+        historial = HistorialEnvio.objects.filter(
+            notificacion=notif
+        ).order_by('-fecha_envio').values(
+            'fecha_envio', 'estado', 'error_log', 'intento_n', 'asunto', 'cuerpo'
+        )
+        
+        return JsonResponse({
+            'id': notif.id,
+            'funcionario': notif.turno.responsable.nombre if notif.turno and notif.turno.responsable else 'N/A',
+            'email': notif.turno.responsable.email if notif.turno and notif.turno.responsable else 'N/A',
+            'estado': notif.estado,
+            'tipo': notif.get_tipo_display(),
+            'fecha_programada': notif.fecha_programada.isoformat(),
+            'intentos': notif.intentos,
+            'ultimo_error': notif.ultimo_error,
+            'historial': list(historial)
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_http_methods(["GET"])
+def filter_historial(request):
+    """
+    Filtra el historial de notificaciones según criterios.
+    """
+    fecha_desde = request.GET.get('fecha_desde', None)
+    fecha_hasta = request.GET.get('fecha_hasta', None)
+    estado = request.GET.get('estado', None)
+    search_name = request.GET.get('search_name', None)
+    
+    queryset = HistorialEnvio.objects.select_related('turno', 'turno__responsable').all()
+    
+    if fecha_desde:
+        try:
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
+            queryset = queryset.filter(fecha_envio__date__gte=fecha_desde_dt)
+        except ValueError:
+            pass
+    
+    if fecha_hasta:
+        try:
+            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
+            queryset = queryset.filter(fecha_envio__date__lte=fecha_hasta_dt)
+        except ValueError:
+            pass
+    
+    if estado:
+        queryset = queryset.filter(estado=estado)
+    
+    if search_name:
+        queryset = queryset.filter(
+            Q(turno__responsable__nombre__icontains=search_name) |
+            Q(destinatario__icontains=search_name)
+        )
+    
+    # Limitar a 100 resultados y ordenar
+    resultados = queryset.order_by('-fecha_envio')[:100]
+    
+    data = []
+    for item in resultados:
+        data.append({
+            'id': item.id,
+            'fecha_envio': item.fecha_envio.isoformat(),
+            'funcionario': item.turno.responsable.nombre if item.turno and item.turno.responsable else 'N/A',
+            'email': item.destinatario,
+            'fecha_turno': item.turno.fecha.strftime("%d/%m/%Y") if item.turno and item.turno.fecha else 'N/A',
+            'hora_turno': item.turno.hora.strftime("%H:%M") if item.turno and item.turno.hora else 'N/A',
+            'estado': item.estado,
+            'asunto': item.asunto,
+        })
+    
+    return JsonResponse({'resultados': data})
+

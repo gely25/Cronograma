@@ -33,11 +33,8 @@
             --shadow: rgba(0, 0, 0, 0.04);
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-primary);
             color: var(--text-primary);
-            overflow: hidden;
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
 
         .appointment-card:hover {
@@ -58,7 +55,7 @@
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="h-screen overflow-hidden">
+<body class="min-h-screen bg-gray-50/50">
     {% csrf_token %}
     <script>
         const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
