@@ -546,6 +546,31 @@
         </div>
     </div>
 
+    <!-- NO PENDING TURNS MODAL -->
+    <div id="noPendingModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[10020] backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-8 text-center shadow-2xl transform transition-all scale-95 opacity-0" id="noPendingModalContainer">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-50 mb-6 group">
+                <i data-lucide="info" class="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform"></i>
+            </div>
+            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">Sin Turnos Pendientes</h3>
+            <p class="text-sm text-gray-500 font-medium leading-relaxed mb-8">
+                No hay nuevos responsables en estado <span class="text-blue-600 font-bold">"Pendiente"</span> para procesar.<br><br>
+                Si deseas redistribuir el cronograma actual, primero debes utilizar el botón 
+                <span class="text-red-500 font-bold">"Reiniciar Sistema"</span> o subir un nuevo archivo Excel.
+            </p>
+            <div class="flex flex-col gap-3">
+                <button onclick="closeNoPendingModal()" 
+                    class="w-full py-3 bg-gray-900 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-lg shadow-gray-200">
+                    Entendido
+                </button>
+                <button onclick="closeNoPendingModal(); resetSystem();" 
+                    class="w-full py-3 bg-white border-2 border-red-50 text-red-500 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-red-50 transition-all active:scale-95">
+                    Reiniciar Sistema
+                </button>
+            </div>
+        </div>
+    </div>
+
     </div>
     {% endblock %}
 
@@ -1540,7 +1565,7 @@
                     if (!silent) showToast(data.message || 'Configuración guardada');
                     return true;
                 } else {
-                    showToast('Error al guardar la configuración', 'error');
+                    showToast(data.message || 'Error al guardar la configuración', 'error');
                     return false;
                 }
             } catch (error) {
@@ -1616,6 +1641,8 @@
                         } else {
                             if (result.data && result.data.error_type === 'insufficient_slots') {
                                 showErrorModal(result.data);
+                            } else if (result.data && result.data.error_type === 'no_pending_turns') {
+                                showNoPendingModal();
                             } else {
                                 showToast(result.data ? result.data.message : 'Error desconocido', 'error');
                             }
@@ -1662,6 +1689,27 @@
             const modal = document.getElementById('errorModal');
             const container = document.getElementById('errorModalContainer');
 
+            container.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function showNoPendingModal() {
+            const modal = document.getElementById('noPendingModal');
+            const container = document.getElementById('noPendingModalContainer');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                container.classList.remove('scale-95', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeNoPendingModal() {
+            const modal = document.getElementById('noPendingModal');
+            const container = document.getElementById('noPendingModalContainer');
             container.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');

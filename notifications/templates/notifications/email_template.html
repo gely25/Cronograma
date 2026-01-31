@@ -59,20 +59,85 @@
         }
 
         .custom-message {
-            background-color: #f9fafb;
-            padding: 25px;
-            border-radius: 16px;
-            border: 1px dashed #e5e7eb;
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            border: none;
             font-size: 14px;
             line-height: 1.6;
-            color: #4b5563;
+            color: #374151;
             margin-bottom: 35px;
-            text-align: center;
+            text-align: justify;
         }
 
         .details-box {
             border-top: 1px solid #f3f4f6;
             padding-top: 25px;
+            margin-bottom: 40px;
+        }
+
+        /* Signature Styles */
+        .signature-container {
+            margin-top: 40px;
+            border-top: 1px solid #fb923c;
+            padding-top: 30px;
+            font-family: Arial, sans-serif;
+        }
+
+        .sig-logo {
+            width: 140px;
+            vertical-align: top;
+        }
+
+        .sig-content {
+            padding-left: 20px;
+            border-left: 1px solid #fb923c;
+            margin-left: 20px;
+            display: inline-block;
+        }
+
+        .sig-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: #003366;
+            margin: 0;
+        }
+
+        .sig-title {
+            font-size: 13px;
+            color: #4b5563;
+            margin: 2px 0 0 0;
+        }
+
+        .sig-dept {
+            font-size: 11px;
+            font-weight: bold;
+            color: #003366;
+            margin: 4px 0 0 0;
+            text-transform: uppercase;
+        }
+
+        .sig-info-row {
+            margin-top: 12px;
+            font-size: 11px;
+            color: #4b5563;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sig-social {
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .social-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #003366;
+            border-radius: 50%;
+            display: inline-block;
         }
 
         .detail-row {
@@ -131,7 +196,7 @@
             </div>
 
             <div class="custom-message">
-                {{ cuerpo_personalizado|linebreaksbr }}
+                {{ cuerpo_personalizado|safe }}
             </div>
 
             <!-- Automatic Detail Block -->
@@ -151,12 +216,104 @@
                     <span class="detail-value">{{ tipo_nombre }}</span>
                     <span class="detail-auto">[ Automático ]</span>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Estado:</span>
-                    <span class="detail-value">{{ turno.get_estado_display }}</span>
-                    <span class="detail-auto">[ Automático ]</span>
-                </div>
             </div>
+
+            <div style="font-size: 14px; color: #374151; margin-bottom: 30px;">
+                Saludos Cordiales,
+            </div>
+
+            <!-- UNEMI Professional Signature -->
+            <table class="signature-container" cellpadding="0" cellspacing="0" border="0"
+                style="width: 100%; border-top: 1px solid #e5e7eb; padding-top: 30px; margin-top: 40px; font-family: Arial, sans-serif;">
+                <tr>
+                    <td
+                        style="width: 160px; vertical-align: top; padding-right: 20px; border-right: 2px solid #fb923c;">
+                        <img src="cid:unemi_logo" alt="UNEMI"
+                            style="width: 150px; display: block; margin-bottom: 15px;">
+
+                        <!-- Social Media Icons -->
+                        <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 10px;">
+                            <tr>
+                                <td style="padding-right: 6px;">
+                                    <a href="https://www.facebook.com/UNEMIEcuador" style="text-decoration: none;">
+                                        <img src="https://img.icons8.com/ios-filled/32/003366/facebook-new.png"
+                                            width="24" height="24" alt="FB">
+                                    </a>
+                                </td>
+                                <td style="padding-right: 6px;">
+                                    <a href="https://x.com/UNEMIEcuador" style="text-decoration: none;">
+                                        <img src="https://img.icons8.com/ios-filled/32/003366/twitterx--v2.png"
+                                            width="24" height="24" alt="X">
+                                    </a>
+                                </td>
+                                <td style="padding-right: 6px;">
+                                    <a href="https://www.linkedin.com/school/unemiecuador/"
+                                        style="text-decoration: none;">
+                                        <img src="https://img.icons8.com/ios-filled/32/003366/linkedin.png" width="24"
+                                            height="24" alt="IN">
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="https://www.instagram.com/UNEMIEcuador/" style="text-decoration: none;">
+                                        <img src="https://img.icons8.com/ios-filled/32/003366/instagram-new.png"
+                                            width="24" height="24" alt="IG">
+                                    </a>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td style="padding-left: 20px; vertical-align: top;">
+                        <div style="font-size: 20px; font-weight: 800; color: #003366; line-height: 1.2;">
+                            Luis Enrique <span style="background-color: #fef3c7; padding: 0 2px;">Castillo</span>
+                            Salvatierra
+                        </div>
+                        <div style="font-size: 14px; color: #4b5563; margin-top: 4px; font-weight: 500;">
+                            Experto de Operaciones y Soporte
+                        </div>
+                        <div
+                            style="font-size: 12px; font-weight: 700; color: #003366; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                            DIRECCIÓN DE TECNOLOGÍA DE LA INFORMACIÓN Y COMUNICACIONES
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <table cellpadding="0" cellspacing="0" border="0"
+                                style="font-size: 12px; color: #4b5563; line-height: 1.8;">
+                                <tr>
+                                    <td style="padding-right: 8px; vertical-align: middle;">
+                                        <img src="https://img.icons8.com/material-rounded/16/fb923c/phone.png"
+                                            width="14" height="14">
+                                    </td>
+                                    <td>0000-0002-1111-2740</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-right: 8px; vertical-align: middle;">
+                                        <img src="https://img.icons8.com/material-rounded/16/fb923c/new-post.png"
+                                            width="14" height="14">
+                                    </td>
+                                    <td>lcastillos1@unemi.edu.ec</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-right: 8px; vertical-align: middle;">
+                                        <img src="https://img.icons8.com/material-rounded/16/fb923c/globe.png"
+                                            width="14" height="14">
+                                    </td>
+                                    <td>www.unemi.edu.ec</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-right: 8px; vertical-align: top; padding-top: 4px;">
+                                        <img src="https://img.icons8.com/material-rounded/16/fb923c/marker.png"
+                                            width="14" height="14">
+                                    </td>
+                                    <td style="font-size: 11px; color: #6b7280;">
+                                        Cdla. Universitaria Dr. Rómulo Minchala Murillo km 1,5 vía Milagro - Virgen de
+                                        Fátima. Milagro, Ecuador.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <div class="footer">
