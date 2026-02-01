@@ -1,0 +1,10 @@
+ID: 18328 | Resp: sssss | Fecha: 2026-02-03 | Hora: 08:00:00 | Email: chavezmaclovia5@gmail.com | Estado: completado
+ID: 18327 | Resp: JOSÉ MARÍA VELAZCO IBARRA | Fecha: 2026-02-02 | Hora: 14:00:00 | Email: josenarvaes996@gmail.com | Estado: asignado
+ID: 18326 | Resp: JAHIR LIMONES ALVARADO RODRIGUEZ | Fecha: 2026-02-02 | Hora: 12:30:00 | Email: marcosenrique8910@gmail.com | Estado: asignado
+ID: 18325 | Resp: BYRON ENRIQUE MILLAN OLVERA | Fecha: 2026-02-02 | Hora: 12:00:00 | Email: marcoschulde48@gmail.com | Estado: asignado
+ID: 18324 | Resp: TANDAZO ROBLES TARO SASUKI | Fecha: 2026-02-02 | Hora: 11:30:00 | Email: tandazoarelis425@gmail.com | Estado: asignado
+ID: 18323 | Resp: BELIZACA MORA ALASKA NOAH | Fecha: 2026-02-02 | Hora: 11:00:00 | Email: chenoamora36@outlook.com | Estado: asignado
+ID: 18322 | Resp: CHULDE VILLAVICENCIO MARCOS ENRIQUE | Fecha: 2026-02-02 | Hora: 10:30:00 | Email: mchuldev@unemi.edu.ec | Estado: asignado
+ID: 18321 | Resp: BELIZACA MORA OLESKA CHENOA | Fecha: 2026-02-02 | Hora: 10:00:00 | Email: chenoabelizaca@gmail.com | Estado: asignado
+ID: 18320 | Resp: TANDAZO ROBLES ARELIS BRIGITTE | Fecha: 2026-02-02 | Hora: 09:30:00 | Email: arelistandazo26@gmail.com | Estado: asignado
+ID: 18319 | Resp: CASTRO RUIZ JORGE DYLAN | Fecha: 2026-02-02 | Hora: 09:00:00 | Email: asunchavez27@gmail.com | Estado: completado

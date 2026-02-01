@@ -81,13 +81,13 @@ def dashboard(request):
     estado = request.GET.get('estado')
     search = request.GET.get('search')
 
-    if fecha_desde:
+    if fecha_desde and fecha_desde.strip():
         historial_queryset = historial_queryset.filter(turno__fecha__gte=fecha_desde)
-    if fecha_hasta:
+    if fecha_hasta and fecha_hasta.strip():
         historial_queryset = historial_queryset.filter(turno__fecha__lte=fecha_hasta)
-    if estado:
+    if estado and estado.strip():
         historial_queryset = historial_queryset.filter(estado=estado)
-    if search:
+    if search and search.strip():
         historial_queryset = historial_queryset.filter(
             Q(turno__responsable__nombre__icontains=search) | 
             Q(destinatario__icontains=search) |
@@ -100,13 +100,19 @@ def dashboard(request):
 
     # --- PROYECCIÓN (RADAR SEMANAL) ---
     proyeccion_list = NotificationService.calcular_proyeccion(7)
-    paginator_proj = Paginator(proyeccion_list, 7) # 7 notificaciones por página (ideal para vista semanal)
+    paginator_proj = Paginator(proyeccion_list, 5) # 5 notificaciones por página (consistente con el historial)
     page_number_proj = request.GET.get('page_proj')
     proyeccion = paginator_proj.get_page(page_number_proj)
+    
+    # Determine Active Tab
+    active_tab = 'dashboard'
+    if any(k in request.GET for k in ['fecha_desde', 'fecha_hasta', 'estado', 'search', 'page']):
+         active_tab = 'history'
     
     context = {
         'config': config,
         'metrics': metrics,
+        'active_tab': active_tab,
 
         'historial': historial, # Usamos el objeto paginado
         'ejemplo_real': ejemplo_data,
@@ -119,12 +125,21 @@ def sincronizar_cola_view(request):
     """
     Controlador para forzar la sincronización de la cola con los turnos.
     """
-    if request.method == 'POST':
-        creadas = NotificationService.sincronizar_cola()
-        if creadas > 0:
-            messages.success(request, f"Se han programado {creadas} nuevas notificaciones en la cola.")
-        else:
-            messages.info(request, "La cola ya está sincronizada con los turnos actuales.")
+    creadas = NotificationService.sincronizar_cola()
+    
+    # Si es AJAX (fetch), retornamos JSON
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+        return JsonResponse({
+            'status': 'ok',
+            'creadas': creadas,
+            'message': f"Se han programado {creadas} nuevas notificaciones."
+        })
+
+    if creadas > 0:
+        messages.success(request, f"Se han programado {creadas} nuevas notificaciones en la cola.")
+    else:
+        messages.info(request, "La cola ya está sincronizada con los turnos actuales.")
+    
     return redirect('notifications_dashboard')
 
 def ejecutar_envios(request):
@@ -169,11 +184,18 @@ def generar_desde_proyeccion(request):
             config.cuerpo_template = cuerpo
         
         config.activar_anticipado = activar_ant
-        if dias_antes:
-            config.dias_antes = int(dias_antes)
+        try:
+            if dias_antes:
+                config.dias_antes = int(dias_antes)
+        except (ValueError, TypeError):
+            pass
+
         config.activar_jornada = activar_jor
-        if minutos_jor:
-            config.minutos_antes_jornada = int(minutos_jor)
+        try:
+            if minutos_jor:
+                config.minutos_antes_jornada = int(minutos_jor)
+        except (ValueError, TypeError):
+            pass
         
         config.save()
         # -------------------------------------------------------------
@@ -210,10 +232,19 @@ def generar_desde_proyeccion(request):
                 obj, created = NotificacionEncolada.objects.get_or_create(
                     turno=turno,
                     tipo=tipo,
-                    defaults={'fecha_programada': prog}
+                    defaults={'fecha_programada': prog, 'estado': 'pendiente'}
                 )
                 
                 if not created:
+                    # BLOQUEO: Si ya se está procesando o se envió hace muy poco (menos de 30s), saltar
+                    # para evitar duplicados por doble click o refresco de página.
+                    ahora = timezone.now()
+                    # Si el estado es 'enviado' pero fue hace más de 5 minutos, permitimos re-envío (forzado)
+                    # Si el estado es 'procesando', no tocamos nada.
+                    if obj.estado == 'procesando':
+                        print(f"DEBUG: Item {obj.id} ya está en proceso. Saltando.")
+                        continue
+                    
                     obj.estado = 'pendiente'
                     obj.intentos = 0
                     obj.fecha_programada = prog
@@ -230,12 +261,17 @@ def generar_desde_proyeccion(request):
         
         print(f"DEBUG: IDs finales a procesar: {ids_a_procesar}")
         if ids_a_procesar:
-            enviados, errores = NotificationService.ejecutar_vigilancia(specific_ids=ids_a_procesar)
-            print(f"DEBUG: Ejecución vigilancia terminada. Enviados: {enviados}, Errores: {errores}")
-            if errores == 0:
-                messages.success(request, f"¡Logrado! Se enviaron {enviados} notificaciones exitosamente.")
-            else:
-                messages.warning(request, f"Se procesaron las notificaciones. Se enviaron {enviados} con éxito, pero {errores} fallaron.")
+            try:
+                enviados, errores = NotificationService.ejecutar_vigilancia(specific_ids=ids_a_procesar)
+                print(f"DEBUG: Ejecución vigilancia terminada. Enviados: {enviados}, Errores: {errores}")
+                if errores == 0:
+                    messages.success(request, f"¡Logrado! Se enviaron {enviados} notificaciones exitosamente.")
+                else:
+                    messages.warning(request, f"Se procesaron las notificaciones. Se enviaron {enviados} con éxito, pero {errores} fallaron.")
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f"Error crítico al procesar envíos: {str(e)}")
         else:
             messages.info(request, "Wizard finalizado. No se seleccionaron turnos nuevos para procesar.")
             
@@ -267,7 +303,8 @@ def api_get_proyeccion(request):
         'fecha_turno': item['turno'].fecha.strftime("%d/%m/%Y"),
         'hora_turno': item['turno'].hora.strftime("%H:%M"),
         'ya_procesado': item['ya_procesado'],
-        'estado_actual': item['estado_actual']
+        'estado_actual': item['estado_actual'],
+        'missing_email': item.get('missing_email', False)
     } for item in proyeccion]
     
     from django.http import JsonResponse
@@ -349,12 +386,7 @@ def editar_reenviar(request, pk):
                 detalles=f"Cambiado a {nuevo_email}"
             )
             
-            # 3. Reenviar
-            success, message = NotificationService.reenviar_individual(pk)
-            if success:
-                messages.success(request, f"¡Envío logrado! El correo de {item.turno.responsable.nombre} fue actualizado y enviado correctamente.")
-            else:
-                messages.error(request, f"No se pudo completar el envío: {message}. Info: Verifica si el correo es válido o si hay conexión con el servidor de salida.")
+            messages.success(request, f"¡Cambio guardado! El correo de {item.turno.responsable.nombre} fue actualizado. Ahora puedes usar el botón de reenvío si lo deseas.")
                 
         except Exception as e:
             messages.error(request, f"Error al procesar: {str(e)}")
@@ -436,7 +468,7 @@ def get_recipient_candidates(request):
     vistos = set()  # Para evitar duplicados
     
     for turno in turnos_proximos:
-        if not turno.responsable or not turno.responsable.email:
+        if not turno.responsable:
             continue
             
         # Evitar duplicados (mismo responsable con múltiples turnos)
@@ -452,10 +484,11 @@ def get_recipient_candidates(request):
             'id': turno.responsable.id,
             'turno_id': turno.id,
             'nombre': turno.responsable.nombre,
-            'email': turno.responsable.email,
+            'email': turno.responsable.email or 'Sin correo',
             'fecha_turno': turno.fecha.strftime("%d/%m/%Y"),
             'hora': turno.hora.strftime("%H:%M") if turno.hora else "N/A",
-            'duracion': duracion
+            'duracion': duracion,
+            'missing_email': not bool(turno.responsable.email)
         })
     
     return JsonResponse({'candidatos': candidatos})

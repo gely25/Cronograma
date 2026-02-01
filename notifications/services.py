@@ -32,14 +32,13 @@ class NotificationService:
         
         turnos = Turno.objects.filter(
             fecha__gte=local_today - timedelta(days=1),
-            fecha__lte=end_date + timedelta(days=config.dias_antes + 1)
-        ).exclude(
-            estado__in=['cancelado', 'completado']
+            fecha__lte=end_date + timedelta(days=config.dias_antes + 1),
+            estado__in=['pendiente', 'asignado']  # Filtrado Estricto: Solo pendientes y asignados
         ).select_related('responsable')
 
         creadas = 0
         for turno in turnos:
-            if not turno.fecha or not turno.hora or not turno.responsable.email:
+            if not turno.fecha or not turno.hora:
                 continue
             
             try:
@@ -75,29 +74,29 @@ class NotificationService:
     def calcular_proyeccion(dias=7, offset=0):
         """
         Calcula qué notificaciones corresponden a los turnos en el rango [offset, offset+dias].
-        Enfoque centrado en TURNOS para que el usuario vea todo su plan.
+        AHORA FILTRA POR FECHA DE PROGRAMACIÓN (No fecha de turno).
+        Range is [start_date, end_date) -> Exclusive end to avoid overlaps.
         """
         config = ConfiguracionNotificacion.get_solo()
         now = timezone.now()
-        # Rango basado en fechas de TURNOS
-        # CRITICAL FIX: Use localdate() because in UTC it might be tomorrow, 
-        # causing today's evening shifts to be skipped in the projection.
         local_today = timezone.localdate(now)
+        
+        # Define window based on Notification Date
         start_date = local_today + timedelta(days=offset)
         end_date = start_date + timedelta(days=dias)
         
-        # 1. Obtener todos los turnos del rango (incluyendo completados si el usuario los quiere ver, 
-        # pero para notificar solemos omitir completados/cancelados)
-        # Ampliamos búsqueda de turnos para capturar aquellos cuya NOTIFICACIÓN caiga en el rango
-        # aunque el turno sea futuro.
+        # 1. Fetch Candidates: We need turns that MIGHT produce notifications in this window.
+        # If config.dias_antes = 30, a turn in 30 days might trigger a notification today.
+        # So we look ahead quite a bit (window end + max(dias_antes, 1) + buffer).
+        lookahead = max(config.dias_antes, 1) + 5 
+        
         turnos = Turno.objects.filter(
-            fecha__gte=start_date, 
-            fecha__lte=end_date + timedelta(days=30) # Lookahead generoso para anticipados
-        ).exclude(
-            estado='cancelado' # Quitamos solo los cancelados explícitos
+            fecha__gte=local_today - timedelta(days=1), # Include yesterday just in case of timezone edge cases
+            fecha__lte=end_date + timedelta(days=lookahead), 
+            estado__in=['pendiente', 'asignado']
         ).select_related('responsable').order_by('fecha', 'hora')
 
-        # 2. Obtener lo que ya está en cola para este rango (optimización: una sola consulta)
+        # 2. Get existing queue items to avoid duplicates/status check
         en_cola = NotificacionEncolada.objects.filter(
             turno__in=turnos
         ).values('turno_id', 'tipo', 'estado')
@@ -106,232 +105,181 @@ class NotificationService:
         proyeccion = []
         
         for turno in turnos:
-            if not turno.fecha or not turno.hora or not turno.responsable.email:
+            if not turno.fecha or not turno.hora:
                 continue
-                
+
             try:
                 turno_dt = timezone.make_aware(datetime.combine(turno.fecha, turno.hora))
             except:
                 turno_dt = datetime.combine(turno.fecha, turno.hora)
             
-            # Solo generamos proyección si el turno aún no ha ocurrido O si es hoy
-            if turno_dt < (now - timedelta(hours=2)): # Margen de 2 horas tras el turno
-                continue
-
-            # Regla 1: Anticipado
+            # --- Regla 1: Anticipado ---
             if config.activar_anticipado:
                 fecha_notif = turno_dt - timedelta(days=config.dias_antes)
-                estado_real = memo_cola.get((turno.id, 'anticipado'))
-                ya_procesado = estado_real is not None and estado_real != 'cancelado'
+                local_notif_date = timezone.localdate(fecha_notif)
                 
-                # Mostrar si está en el rango futuro O si es pasado pero no se ha procesado (pendiente)
-                in_range = start_date <= timezone.localdate(fecha_notif) <= end_date
-                is_pending_overdue = timezone.localdate(fecha_notif) < start_date and not ya_procesado
+                # Check strict range [start, end)
+                if start_date <= local_notif_date < end_date:
+                    estado_real = memo_cola.get((turno.id, 'anticipado'))
+                    ya_procesado = estado_real in ['enviado', 'procesando', 'cancelado']
+                    
+                    if not ya_procesado:
+                         # Calculate days remaining for display
+                        days_diff = (local_notif_date - local_today).days
+                        
+                        proyeccion.append({
+                            'turno': turno,
+                            'tipo': 'anticipado',
+                            'tipo_id': f"{turno.id}:anticipado", # Critical for form submission
+                            'tipo_display': 'Recordatorio Anticipado',
+                            'fecha_programada': fecha_notif,
+                            'responsable': turno.responsable,
+                            'ya_procesado': False, 
+                            'estado_actual': estado_real or 'virtual',
+                            'missing_email': not bool(turno.responsable.email),
+                            'days_diff': days_diff,
+                            'sort_date': fecha_notif
+                        })
 
-                if in_range or is_pending_overdue:
-                    proyeccion.append({
-                        'turno': turno,
-                        'tipo': 'anticipado',
-                        'tipo_id': f"{turno.id}:anticipado",
-                        'tipo_display': 'Recordatorio Anticipado',
-                        'fecha_programada': fecha_notif,
-                        'responsable': turno.responsable,
-                        'estado_actual': estado_real,
-                        'ya_procesado': ya_procesado,
-                        'es_retrasado': is_pending_overdue
-                    })
-            
-            # Regla 2: Día del Turno
+            # --- Regla 2: Jornada ---
             if config.activar_jornada:
                 fecha_notif = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
-                estado_real = memo_cola.get((turno.id, 'jornada'))
-                ya_procesado = estado_real is not None and estado_real != 'cancelado'
+                local_notif_date = timezone.localdate(fecha_notif)
                 
-                # Para jornada solemos mostrar si es hoy o mañana
-                in_range = start_date <= timezone.localdate(fecha_notif) <= end_date
-                
-                if in_range:
-                    proyeccion.append({
-                        'turno': turno,
-                        'tipo': 'jornada',
-                        'tipo_id': f"{turno.id}:jornada",
-                        'tipo_display': 'Día del Turno',
-                        'fecha_programada': fecha_notif,
-                        'responsable': turno.responsable,
-                        'estado_actual': estado_real,
-                        'ya_procesado': ya_procesado,
-                        'es_retrasado': False
-                    })
-            
-
+                # Check strict range [start, end)
+                if start_date <= local_notif_date < end_date:
+                    estado_real = memo_cola.get((turno.id, 'jornada'))
+                    ya_procesado = estado_real in ['enviado', 'procesando', 'cancelado']
                     
-        # Ordenar por fecha de notificación
-        proyeccion.sort(key=lambda x: x['fecha_programada'])
+                    if not ya_procesado and fecha_notif > (now - timedelta(hours=2)): # Hide if strictly passed
+                        # Calculate days remaining for display
+                        days_diff = (local_notif_date - local_today).days
+                        
+                        proyeccion.append({
+                            'turno': turno,
+                            'tipo': 'jornada',
+                            'tipo_id': f"{turno.id}:jornada", # Critical for form submission
+                            'tipo_display': 'Día del Turno',
+                            'fecha_programada': fecha_notif,
+                            'responsable': turno.responsable,
+                            'ya_procesado': False,
+                            'estado_actual': estado_real or 'virtual',
+                            'missing_email': not bool(turno.responsable.email),
+                            'days_diff': days_diff,
+                            'sort_date': fecha_notif
+                        })
+        
+        # Sort by the actual notification date
+        proyeccion.sort(key=lambda x: x['sort_date'])
         return proyeccion
 
-    @staticmethod
-    def ejecutar_vigilancia(specific_ids=None):
-        """
-        EL PROCESADOR DE COLA.
-        Busca notificaciones en 'pendiente' o 'error_temporal'.
-        Si specific_ids es proveído, ignora la fecha_programada.
-        """
-        now = timezone.now()
-        
-        if specific_ids:
-            cola = NotificacionEncolada.objects.filter(
-                id__in=specific_ids,
-                estado__in=['pendiente', 'error_temporal', 'enviado', 'fallido', 'cancelado'] # Permitir forzar cualquiera
-            ).select_related('turno', 'turno__responsable')
-        else:
-            cola = NotificacionEncolada.objects.filter(
-                estado__in=['pendiente', 'error_temporal'],
-                fecha_programada__lte=now
-            ).select_related('turno', 'turno__responsable')
-        
-        enviados = 0
-        errores = 0
-        
-        if not cola.exists():
-            return 0, 0
 
-        config = ConfiguracionNotificacion.get_solo()
+    def _procesar_envio_individual(notification_id):
+        """
+        Método worker para ser ejecutado en hilo separado.
+        Realiza el envío de UNA notificación y gestiona su estado.
+        """
+        # Delay aleatorio anti-spam (0.3s - 1.0s)
+        import random
+        time.sleep(random.uniform(0.3, 1.0))
+        
+        # Obtener nueva conexión para este hilo (Thread-Safe)
         connection = get_connection()
-        
-        def check_connection(conn):
+        try:
+            connection.open()
+        except:
+            pass # Si falla open aquí, fallará en send y capturaremos la excepción abajo
+
+        try:
+            # Re-obtener objeto fresco de la BD
             try:
-                if not conn or not conn.connection:
-                    conn.open()
-                else:
-                    conn.connection.noop()
-            except:
-                conn.open()
-            return conn
+                item = NotificacionEncolada.objects.get(id=notification_id)
+            except NotificacionEncolada.DoesNotExist:
+                return False # Ya no existe
+                
+            turno = item.turno
+            if not turno or not turno.responsable or not turno.responsable.email:
+                raise Exception("El responsable no tiene un correo electrónico configurado.")
 
-        # Función para traducir errores técnicos a mensajes amigables
-        def get_friendly_error(error_str):
-            err = error_str.lower()
-            if "connect() first" in err or "broken pipe" in err or "connection reset" in err:
-                return "La conexión con el servidor de correo se interrumpió. El sistema intentará reconectar automáticamente."
-            if "authentication failed" in err or "username and password not accepted" in err:
-                return "Error de autenticación. Por favor, verifique la configuración de correo y la contraseña de aplicación."
-            if "timeout" in err:
-                return "El servidor de correo tardó demasiado en responder. Se reintentará en el siguiente ciclo."
-            if "quota exceeded" in err or "daily sending quota" in err:
-                return "Límite de envíos diarios alcanzado en Gmail. Los correos restantes se enviarán mañana."
-            return "Hubo un problema técnico al entregar el mensaje. Se registrará el detalle para mantenimiento."
+            if not settings.DEFAULT_FROM_EMAIL:
+                raise Exception("El sistema no tiene configurado el correo emisor (DEFAULT_FROM_EMAIL).")
 
-        # Imagen de encabezado
-        header_img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
-        header_img_data = None
-        if os.path.exists(header_img_path):
-            with open(header_img_path, 'rb') as f:
-                header_img_data = f.read()
-        
-        # Logo UNEMI para firma
-        logo_path = os.path.join(settings.BASE_DIR, 'unemi.png')
-        logo_data = None
-        if os.path.exists(logo_path):
-            with open(logo_path, 'rb') as f:
-                logo_data = f.read()
-        
-        for item in cola:
-            item.estado = 'procesando'
-            item.save()
+            config = ConfiguracionNotificacion.get_solo()
+            subject, body_text = NotificationService._preparar_contenido(item, config)
+
+            context = {
+                'turno': turno,
+                'responsable': turno.responsable,
+                'tipo_nombre': item.get_tipo_display(),
+                'cuerpo_personalizado': body_text
+            }
             
-            try:
-                turno = item.turno
-                if not turno or not turno.responsable or not turno.responsable.email:
-                    raise Exception("El responsable no tiene un correo electrónico configurado.")
+            html_message = render_to_string('notifications/email_template.html', context)
+            plain_message = strip_tags(html_message)
+            
+            msg = EmailMultiAlternatives(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [turno.responsable.email],
+                connection=connection # Usar la conexión de este hilo
+            )
+            msg.attach_alternative(html_message, "text/html")
 
-                if not settings.DEFAULT_FROM_EMAIL:
-                    raise Exception("El sistema no tiene configurado el correo emisor (DEFAULT_FROM_EMAIL en settings.py).")
-
-                try:
-                    subject, body_text = NotificationService._preparar_contenido(item, config)
-                except Exception as e:
-                    raise e
-
-                context = {
-                    'turno': turno,
-                    'responsable': turno.responsable,
-                    'tipo_nombre': item.get_tipo_display(),
-                    'cuerpo_personalizado': body_text
-                }
-                
-                html_message = render_to_string('notifications/email_template.html', context)
-                plain_message = strip_tags(html_message)
-                
-                # Asegurar conexión activa antes de cada envío
-                connection = check_connection(connection)
-
-                msg = EmailMultiAlternatives(
-                    subject,
-                    plain_message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [turno.responsable.email],
-                    connection=connection
-                )
-                msg.attach_alternative(html_message, "text/html")
-
-                if header_img_data:
-                    h_img = MIMEImage(header_img_data)
+            # Adjuntar imágenes (Header)
+            header_img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+            if os.path.exists(header_img_path):
+                with open(header_img_path, 'rb') as f:
+                    h_img = MIMEImage(f.read())
                     h_img.add_header('Content-ID', '<header_image>')
                     msg.attach(h_img)
 
-                if logo_data:
-                    l_img = MIMEImage(logo_data)
+            # Adjuntar Logo
+            logo_path = os.path.join(settings.BASE_DIR, 'unemi.png')
+            if os.path.exists(logo_path):
+                with open(logo_path, 'rb') as f:
+                    l_img = MIMEImage(f.read())
                     l_img.add_header('Content-ID', '<unemi_logo>')
                     msg.attach(l_img)
-                
-                # BCC ELIMINADO según requerimiento de simplificación y fiabilidad
 
-                msg.send()
+            msg.send()
 
-                # Pausa de seguridad para evitar bloqueos de Gmail y saturación de conexión
-                time.sleep(1.5)
+            # ÉXITO
+            item.estado = 'enviado'
+            item.intentos += 1
+            item.ultimo_error = ""
+            item.save()
+            
+            # Auditoría
+            HistorialEnvio.objects.create(
+                notificacion=item,
+                turno=turno,
+                tipo=item.tipo,
+                intento_n=item.intentos,
+                estado='enviado',
+                destinatario=turno.responsable.email,
+                asunto=subject,
+                cuerpo=body_text
+            )
+            connection.close()
+            return True
 
-                # ÉXITO
-                item.estado = 'enviado'
+        except Exception as e:
+            # MANEJO DE ERROR
+            connection.close()
+            try:
+                # Recargar por si acaso
+                item = NotificacionEncolada.objects.get(id=notification_id)
                 item.intentos += 1
-                item.ultimo_error = ""
-                item.save()
+                item.ultimo_error = str(e)
                 
-                # Snapshot de auditoría
-                HistorialEnvio.objects.create(
-                    notificacion=item,
-                    turno=turno,
-                    tipo=item.tipo,
-                    intento_n=item.intentos,
-                    estado='enviado',
-                    destinatario=turno.responsable.email,
-                    asunto=subject,
-                    cuerpo=body_text
-                )
-                
-                # Log de auditoría humana (para trazabilidad total)
-                from .models import AuditLogNotificaciones
-                AuditLogNotificaciones.objects.create(
-                    notificacion=item,
-                    accion="Envío Automático / Batch",
-                    detalles=f"Notificación enviada con éxito al funcionario. Intento {item.intentos}."
-                )
-                enviados += 1
-                
-            except Exception as e:
-                error_label = str(e)
-                friendly_msg = get_friendly_error(error_label)
-                
-                item.intentos += 1
-                item.ultimo_error = error_label
-                # Decidir si agotamos intentos o reintentamos luego
+                # Política de Reintentos (Max 3)
                 if item.intentos >= item.max_intentos:
                     item.estado = 'fallido'
                 else:
-                    item.estado = 'error_temporal'
+                    item.estado = 'error_temporal' # Permite reintento en siguiente ciclo
                 item.save()
                 
-                # Registrar en historial con el error real pero detalle amigable
                 HistorialEnvio.objects.create(
                     notificacion=item,
                     turno=item.turno,
@@ -339,20 +287,80 @@ class NotificationService:
                     intento_n=item.intentos,
                     estado='fallido' if item.estado == 'fallido' else 'reintento',
                     destinatario=item.turno.responsable.email if item.turno and item.turno.responsable else "Desconocido",
-                    asunto=f"Error en envío: {item.get_tipo_display()}",
-                    cuerpo=f"Error técnico: {error_label}",
-                    error_log=error_label
+                    asunto=f"Error: {item.get_tipo_display()}",
+                    error_log=str(e)
                 )
+            except:
+                pass # Si falla al guardar error, no podemos hacer mucho más
+            return False
 
-                from .models import AuditLogNotificaciones
-                AuditLogNotificaciones.objects.create(
-                    notificacion=item,
-                    accion="Fallo de Envío",
-                    detalles=f"{friendly_msg} (Intento {item.intentos})"
-                )
-                errores += 1
+    @staticmethod
+    def ejecutar_vigilancia(specific_ids=None):
+        """
+        EL PROCESADOR DE COLA (PARALELO).
+        Usa ThreadPoolExecutor para enviar notificaciones concurrentes.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        
+        now = timezone.now()
+        
+        # 1. Seleccionar candidatos
+        if specific_ids:
+            cola = NotificacionEncolada.objects.filter(
+                id__in=specific_ids,
+                estado__in=['pendiente', 'error_temporal', 'enviado', 'fallido', 'cancelado']
+            )
+        else:
+            cola = NotificacionEncolada.objects.filter(
+                estado__in=['pendiente', 'error_temporal'],
+                fecha_programada__lte=now
+            )
+            
+        if not cola.exists():
+            return 0, 0
 
-        connection.close()
+        # 2. Marcar como 'procesando' (Bloqueo lógico)
+        ids_to_process = []
+        for item in cola:
+            updated = NotificacionEncolada.objects.filter(id=item.id, estado=item.estado).update(estado='procesando')
+            if updated > 0:
+                ids_to_process.append(item.id)
+        
+        if not ids_to_process:
+            return 0, 0
+
+        # 3. Ejecución Paralela
+        enviados = 0
+        errores = 0
+        MAX_WORKERS = 8 # Límite recomendado
+        
+        print(f"Iniciando procesamiento paralelo de {len(ids_to_process)} notificaciones con {MAX_WORKERS} workers...")
+        
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            # Mapear futuros
+            future_to_id = {executor.submit(NotificationService._procesar_envio_individual, nid): nid for nid in ids_to_process}
+            
+            for future in as_completed(future_to_id):
+                nid = future_to_id[future]
+                try:
+                   is_success = future.result()
+                   if is_success:
+                       enviados += 1
+                   else:
+                       errores += 1
+                except Exception as exc:
+                    print(f'Notificación {nid} generó una excepción no manejada: {exc}')
+                    errores += 1
+
+        # Auditoría Batch (Resumen)
+        if enviados > 0 or errores > 0:
+            from .models import AuditLogNotificaciones
+            AuditLogNotificaciones.objects.create(
+                notificacion=None, # Log general
+                accion="Ejecución Masiva (Paralela)",
+                detalles=f"Procesados: {len(ids_to_process)}. Exitosos: {enviados}. Fallidos/Reintentos: {errores}."
+            )
+            
         return enviados, errores
 
 

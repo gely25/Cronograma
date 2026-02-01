@@ -431,3 +431,86 @@ def reset_database(request):
         return JsonResponse({'status': 'ok', 'message': 'Sistema reiniciado correctamente.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@require_POST
+def crear_turno_manual(request):
+    """
+    Crea un nuevo turno manualmente con un nuevo responsable y equipos.
+    """
+    try:
+        data = json.loads(request.body)
+        print("DEBUG: Payload received for crear_turno_manual:", data)
+        nombre = data.get('nombre')
+        email = data.get('email')
+        fecha_str = data.get('fecha')
+        hora_str = data.get('hora')
+        equipos = data.get('equipos', [])
+
+        if not nombre or not fecha_str or not hora_str:
+            return JsonResponse({'status': 'error', 'message': 'Nombre, Fecha y Hora son obligatorios.'}, status=400)
+
+        # Convert strings to objects
+        try:
+            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            hora_obj = datetime.strptime(hora_str, '%H:%M').time()
+        except ValueError as ve:
+            return JsonResponse({'status': 'error', 'message': f'Formato de fecha u hora inválido: {ve}'}, status=400)
+
+        from django.db import transaction
+        import traceback
+        with transaction.atomic():
+            # 1. Verificar si el nombre ya existe
+            existing_responsable = Responsable.objects.filter(nombre=nombre).first()
+            
+            # Si existe y no se ha confirmado explícitamente el duplicado, avisar al usuario
+            force_create = data.get('force_create', False)
+            
+            if existing_responsable and not force_create:
+                return JsonResponse({
+                    'status': 'duplicate',
+                    'message': f'Ya existe un responsable con el nombre "{nombre}". ¿Desea continuar de todos modos?',
+                    'existing_responsable': {
+                        'nombre': existing_responsable.nombre,
+                        'email': existing_responsable.email or 'Sin correo'
+                    }
+                })
+            
+            # 2. Obtener o Crear Responsable
+            responsable, created = Responsable.objects.get_or_create(nombre=nombre)
+            if email:
+                responsable.email = email
+                responsable.save()
+            
+            # 3. Verificar si ya tiene un turno
+            if hasattr(responsable, 'turno'):
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'El responsable "{nombre}" ya tiene un turno asignado en el sistema.'
+                }, status=400)
+            
+            # 3. Crear Turno
+            turno = Turno.objects.create(
+                responsable=responsable,
+                fecha=fecha_obj,
+                hora=hora_obj,
+                estado='asignado'
+            )
+            
+            # 4. Crear Equipos
+            for eq in equipos:
+                Equipo.objects.create(
+                    responsable=responsable,
+                    codigo=eq.get('codigo'),
+                    marca=eq.get('marca'),
+                    modelo=eq.get('modelo'),
+                    descripcion=eq.get('descripcion')
+                )
+            
+        return JsonResponse({
+            'status': 'ok', 
+            'message': 'Turno creado correctamente.',
+            'turno_id': turno.id
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

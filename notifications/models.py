@@ -124,7 +124,7 @@ class AuditLogNotificaciones(models.Model):
     LOG DE AUDITORÍA HUMANA.
     Registra cambios manuales realizados por el usuario.
     """
-    notificacion = models.ForeignKey(NotificacionEncolada, on_delete=models.CASCADE, related_name='auditoria')
+    notificacion = models.ForeignKey(NotificacionEncolada, on_delete=models.CASCADE, related_name='auditoria', null=True, blank=True)
     accion = models.CharField(max_length=100) # ej: "Cancelación manual", "Edición de correo"
     usuario = models.CharField(max_length=255, blank=True) # Si hubiera sistema de perfiles
     detalles = models.TextField(blank=True)

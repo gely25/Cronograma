@@ -7,104 +7,53 @@
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <style>
-    .ql-toolbar {
-        border-top-left-radius: 1rem !important;
-        border-top-right-radius: 1rem !important;
-        border-color: #e5e7eb !important;
-        background: #f9fafb;
-    }
-
-    .ql-container {
-        border-bottom-left-radius: 1rem !important;
-        border-bottom-right-radius: 1rem !important;
-        border-color: #e5e7eb !important;
-        font-family: inherit !important;
-        font-size: 0.875rem !important;
-    }
-
-    .ql-editor {
-        min-height: 100px;
-        font-family: inherit;
-        overflow-y: auto;
-    }
-
-    /* Custom Scrollbar */
-    /* Custom Scrollbar */
-    .custom-scrollbar {
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: #94a3b8 #f1f5f9;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 10px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #94a3b8;
-        border-radius: 10px;
-        border: 2px solid #f1f5f9;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #64748b;
-    }
-    
-    /* Simple utility to ensure flex items don't shrink away */
+    .ql-toolbar { border-top-left-radius: 1rem !important; border-top-right-radius: 1rem !important; border-color: #e5e7eb !important; background: #f9fafb; }
+    .ql-container { border-bottom-left-radius: 1rem !important; border-bottom-right-radius: 1rem !important; border-color: #e5e7eb !important; font-family: inherit !important; font-size: 0.875rem !important; }
+    .ql-editor { min-height: 100px; font-family: inherit; overflow-y: auto; }
+    .custom-scrollbar { overflow-y: auto; scrollbar-width: thin; scrollbar-color: #94a3b8 #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; border: 2px solid #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
     .no-shrink { flex-shrink: 0 !important; }
-
-    /* Absolute visibility control for wizard steps */
-    .wizard-step-node {
-        display: none !important;
-    }
-    .wizard-step-node.active-step {
-        display: flex !important;
-    }
+    .wizard-step-node { display: none !important; }
+    .wizard-step-node.active-step { display: flex !important; }
 </style>
-<div class="min-h-screen bg-gray-50/50 w-full flex flex-col relative">
 
+<div class="min-h-screen bg-gray-50/50 w-full flex flex-col relative">
     <!-- Toast Notifications -->
-    <div id="toastContainer"
-        class="fixed top-6 right-6 z-[100] flex flex-col gap-3 max-w-md w-full pointer-events-none">
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed top-6 right-6 z-[100] flex flex-col gap-3 max-w-md w-full pointer-events-none">
         {% if messages %}
-        {% for message in messages %}
-        <div
-            class="toast-item pointer-events-auto bg-white border-l-4 {% if message.tags == 'success' %}border-l-green-500 text-green-800{% elif message.tags == 'warning' %}border-l-amber-500 text-amber-800{% elif message.tags == 'error' %}border-l-red-500 text-red-800{% else %}border-l-blue-500 text-blue-800{% endif %} p-4 rounded-xl shadow-2xl animate-in slide-in-from-right-full duration-500 flex items-start gap-4 ring-1 ring-black/5">
-            <div
-                class="p-2 rounded-lg {% if message.tags == 'success' %}bg-green-50 text-green-500{% elif message.tags == 'warning' %}bg-amber-50 text-amber-500{% elif message.tags == 'error' %}bg-red-50 text-red-500{% else %}bg-blue-50 text-blue-500{% endif %}">
-                <i data-lucide="{% if message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}alert-triangle{% elif message.tags == 'error' %}x-circle{% else %}info{% endif %}"
-                    class="w-5 h-5"></i>
+            {% for message in messages %}
+            <div class="toast-item pointer-events-auto bg-white border-l-4 {% if message.tags == 'success' %}border-l-green-500 text-green-800{% elif message.tags == 'warning' %}border-l-amber-500 text-amber-800{% elif message.tags == 'error' %}border-l-red-500 text-red-800{% else %}border-l-blue-500 text-blue-800{% endif %} p-4 rounded-xl shadow-2xl animate-in slide-in-from-right-full duration-500 flex items-start gap-4 ring-1 ring-black/5">
+                <div class="p-2 rounded-lg {% if message.tags == 'success' %}bg-green-50 text-green-500{% elif message.tags == 'warning' %}bg-amber-50 text-amber-500{% elif message.tags == 'error' %}bg-red-50 text-red-500{% else %}bg-blue-50 text-blue-500{% endif %}">
+                    <i data-lucide="{% if message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}alert-triangle{% elif message.tags == 'error' %}x-circle{% else %}info{% endif %}" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-bold leading-tight">{{ message }}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
             </div>
-            <div class="flex-1">
-                <p class="text-sm font-bold leading-tight">{{ message }}</p>
-            </div>
-            <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
-        </div>
-        {% endfor %}
+            {% endfor %}
         {% endif %}
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay"
-        class="hidden fixed inset-0 z-[110] bg-gray-900/40 backdrop-blur-sm flex items-center justify-center transition-all duration-300">
-        <div
-            class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95">
+    <div id="loadingOverlay" class="hidden fixed inset-0 z-[110] bg-gray-900/40 backdrop-blur-sm flex items-center justify-center transition-all duration-300">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl border border-gray-100 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95">
             <div class="relative w-20 h-20 mx-auto">
                 <div class="absolute inset-0 border-4 border-blue-50 rounded-full"></div>
-                <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin">
-                </div>
+                <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
                 <div class="absolute inset-0 flex items-center justify-center">
                     <i data-lucide="send" class="w-8 h-8 text-blue-600 animate-pulse"></i>
                 </div>
             </div>
             <div class="space-y-2">
-                <h3 class="text-lg font-black text-gray-900 uppercase tracking-tight">Procesando Envío</h3>
-                <p class="text-sm text-gray-500 font-medium">Estamos conectando con el servidor SMTP. Esto puede tomar
-                    unos segundos...</p>
+                <h3 id="loadingTitle" class="text-lg font-black text-gray-900 uppercase tracking-tight">Procesando</h3>
+                <p id="loadingDesc" class="text-sm text-gray-500 font-medium">Esto puede tomar unos segundos...</p>
             </div>
             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                 <div class="bg-blue-600 h-full w-1/3 rounded-full animate-[loading_2s_infinite_ease-in-out]"></div>
@@ -112,91 +61,81 @@
             <p class="text-[10px] text-gray-400 font-black uppercase">No cierres esta pestaña</p>
         </div>
     </div>
-
     <style>
         @keyframes loading {
-            0% {
-                transform: translateX(-100%);
-                width: 30%;
-            }
-
-            50% {
-                width: 60%;
-            }
-
-            100% {
-                transform: translateX(400%);
-                width: 30%;
-            }
+            0% { transform: translateX(-100%); width: 30%; }
+            50% { width: 60%; }
+            100% { transform: translateX(400%); width: 30%; }
         }
     </style>
     <!-- Header -->
-    <header class="bg-white border-b border-gray-100 px-12 py-4 flex items-center justify-between sticky top-0 z-[50]">
+    <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shadow-sm sticky top-0 z-[50]">
         <div class="flex items-center gap-4">
-            <div class="p-2.5 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100">
-                <i data-lucide="settings" class="w-7 h-7"></i>
-            </div>
-            <div>
-                <h1 class="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">Sistema de Notificaciones</h1>
+            <a href="{% url 'ver_cronograma' %}" class="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition" title="Volver al Cronograma">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            </a>
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100">
+                    <i data-lucide="bell-ring" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-gray-900 tracking-tight leading-none">Notificaciones</h1>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Gestor de Comunicaciones</p>
+                </div>
             </div>
         </div>
-
         <div class="flex items-center gap-3">
-            <button onclick="switchMainTab('dashboard')" id="main-tab-dashboard-btn" 
-                class="hidden px-5 py-2.5 text-slate-500 hover:text-indigo-600 font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 rounded-xl hover:bg-slate-50">
-                <i data-lucide="layout-dashboard" class="w-4 h-4 text-indigo-400"></i> Dashboard
+            <button onclick="switchMainTab('dashboard')" id="main-tab-dashboard-btn" class="{% if active_tab == 'dashboard' %}hidden{% endif %} px-5 py-2.5 text-gray-500 hover:text-blue-600 font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 rounded-xl hover:bg-gray-50">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 text-blue-400"></i> Radar
             </button>
-            <button onclick="switchMainTab('history')" id="main-tab-history-btn" 
-                class="px-5 py-2.5 text-slate-500 hover:text-indigo-600 font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 rounded-xl hover:bg-slate-50">
-                <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i> Historial
+            <button onclick="switchMainTab('history')" id="main-tab-history-btn" class="{% if active_tab == 'history' %}hidden{% endif %} px-5 py-2.5 text-gray-500 hover:text-blue-600 font-bold text-xs uppercase tracking-widest transition flex items-center gap-2 rounded-xl hover:bg-gray-50">
+                <i data-lucide="history" class="w-4 h-4 text-blue-400"></i> Historial
             </button>
-        
-            <button onclick="openWizard()" 
-                class="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-2 ml-2">
+            <button onclick="openWizard()" class="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-2 ml-2">
                 <i data-lucide="plus" class="w-4 h-4"></i> Nueva Notificación
             </button>
         </div>
     </header>
-
     <!-- Main Content Container -->
-    <div id="main-content-dashboard" class="max-w-[1600px] mx-auto w-full px-12 py-10">
+    <div id="main-content-dashboard" class="{% if active_tab == 'history' %}hidden{% endif %} max-w-[1600px] mx-auto w-full px-12 py-10">
         
         <!-- Status Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-indigo-50/50 transition duration-300 relative overflow-hidden group">
-                <div class="absolute top-6 right-6 p-4 bg-indigo-50 text-indigo-500 rounded-[1.25rem] group-hover:bg-indigo-600 group-hover:text-white transition duration-300">
-                    <i data-lucide="send" class="w-6 h-6"></i>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            <!-- Total Enviadas -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-4 right-4 p-3 bg-blue-50 text-blue-500 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="send" class="w-5 h-5"></i>
                 </div>
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Total Enviadas</div>
-                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.total_enviadas }}</h3>
-                <div class="text-[10px] font-bold text-slate-400 uppercase">Esta semana</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Total Enviadas</div>
+                <h3 class="text-5xl font-black text-gray-900 tracking-tight mb-2">{{ metrics.total_enviadas }}</h3>
+                <div class="text-[10px] font-medium text-gray-400 uppercase">Resumen Semanal</div>
             </div>
-
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-green-50/50 transition duration-300 relative overflow-hidden group">
-                <div class="absolute top-6 right-6 p-4 bg-green-50 text-green-500 rounded-[1.25rem] group-hover:bg-green-600 group-hover:text-white transition duration-300">
-                    <i data-lucide="check" class="w-6 h-6"></i>
+            <!-- Exitosas -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-4 right-4 p-3 bg-green-50 text-green-500 rounded-xl group-hover:bg-green-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="check" class="w-5 h-5"></i>
                 </div>
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Exitosas</div>
-                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.exitosas }}</h3>
-                <div class="text-[10px] font-bold text-green-500 uppercase">100% de éxito</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Exitosas</div>
+                <h3 class="text-5xl font-black text-gray-900 tracking-tight mb-2">{{ metrics.exitosas }}</h3>
+                <div class="text-[10px] font-bold text-green-600 uppercase">Sin errores</div>
             </div>
-
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-red-50/50 transition duration-300 relative overflow-hidden group">
-                <div class="absolute top-6 right-6 p-4 bg-red-50 text-red-500 rounded-[1.25rem] group-hover:bg-red-600 group-hover:text-white transition duration-300">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+            <!-- Con Errores -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-4 right-4 p-3 bg-red-50 text-red-500 rounded-xl group-hover:bg-red-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </div>
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Con Errores</div>
-                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.con_errores }}</h3>
-                <div class="text-[10px] font-bold text-slate-400 uppercase">Sin Incidencias</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Con Errores</div>
+                <h3 class="text-5xl font-black text-gray-900 tracking-tight mb-2">{{ metrics.con_errores }}</h3>
+                <div class="text-[10px] font-medium text-gray-400 uppercase">Sistema SMTP</div>
             </div>
-
-            <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-orange-50/50 transition duration-300 relative overflow-hidden group">
-                <div class="absolute top-6 right-6 p-4 bg-orange-50 text-orange-500 rounded-[1.25rem] group-hover:bg-orange-600 group-hover:text-white transition duration-300">
-                    <i data-lucide="calendar" class="w-6 h-6"></i>
+            <!-- Enviadas Hoy -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 relative overflow-hidden group">
+                <div class="absolute top-4 right-4 p-3 bg-amber-50 text-amber-500 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition duration-300">
+                    <i data-lucide="calendar" class="w-5 h-5"></i>
                 </div>
-                <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Enviadas Hoy</div>
-                <h3 class="text-6xl font-black text-slate-900 tracking-tighter mb-2">{{ metrics.enviadas_hoy }}</h3>
-                <div class="text-[10px] font-bold text-slate-400 uppercase">Actualizado hace 5 min</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Enviadas Hoy</div>
+                <h3 class="text-5xl font-black text-gray-900 tracking-tight mb-2">{{ metrics.enviadas_hoy }}</h3>
+                <div class="text-[10px] font-medium text-gray-400 uppercase">Tiempo Real</div>
             </div>
         </div>
 
@@ -205,189 +144,214 @@
             <div class="lg:col-span-2">
 
         <!-- Planificación y Radar (Tabs) - Moved from History -->
-            <!-- Modern Radar Card -->
-            <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col min-h-[650px] relative group hover:shadow-2xl hover:shadow-slate-200/50 transition duration-500">
-                <div class="px-10 py-8 border-b border-slate-50 flex items-center justify-between bg-white">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-indigo-50 text-indigo-500 rounded-2xl">
-                             <i data-lucide="target" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                                Radar de Proyección
-                                <span class="px-3 py-1 bg-indigo-50 text-indigo-500 text-[10px] font-black uppercase tracking-widest rounded-full">7 días</span>
-                            </h2>
-                        </div>
+        <!-- Modern Radar Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-[650px] relative group hover:shadow-lg transition duration-300">
+            <div class="px-8 py-6 border-b border-gray-100 flex items-center justify-between bg-white">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                         <i data-lucide="target" class="w-6 h-6"></i>
                     </div>
+                    <div>
+                        <h2 class="text-xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                            Radar de Proyección
+                            <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-full">Próximos 7 días</span>
+                        </h2>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1 flex items-center gap-1.5">
+                            <i data-lucide="info" class="w-3 h-3 text-blue-400"></i>
+                            Solo se muestran notificaciones pendientes de programación
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="sincronizarRadar()"
+                        class="px-5 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition shadow-sm flex items-center gap-3 group/sync">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 group-hover/sync:rotate-180 transition-transform duration-500"></i> Sincronizar Panel
+                    </button>
                     
-                    <button onclick="document.getElementById('proyeccionForm').submit()"
+                    <button onclick="showLoading(); document.getElementById('proyeccionForm').submit()"
                         class="px-8 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-3">
                         <i data-lucide="send" class="w-4 h-4"></i> Generar y Enviar
                     </button>
                 </div>
-
-                <div class="flex-1 overflow-auto custom-scrollbar p-2">
-                    <form id="proyeccionForm" action="{% url 'generar_desde_proyeccion' %}" method="POST" class="h-full">
-                        {% csrf_token %}
-                        <table class="w-full text-left">
-                            <thead class="sticky top-0 z-10 bg-white">
-                                <tr class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                    <th class="px-10 py-6 w-20">
-                                        <div class="flex items-center justify-center">
-                                            <input type="checkbox" checked onchange="toggleAllProyeccion(this)"
-                                                class="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
-                                        </div>
-                                    </th>
-                                    <th class="px-4 py-6">Planificación</th>
-                                    <th class="px-10 py-6">Responsable</th>
-                                    <th class="px-10 py-6 text-right">Previsualizar</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-50">
-                                {% for item in proyeccion %}
-                                <tr class="group/row hover:bg-slate-50 transition duration-300 {% if item.ya_procesado %}opacity-40 grayscale-[0.5]{% endif %}">
-                                    <td class="px-10 py-8">
-                                        <div class="flex items-center justify-center">
-                                            <input type="checkbox" name="proyeccion_items" value="{{ item.turno.id }}:{{ item.tipo }}" 
-                                                {% if not item.ya_procesado %}checked{% else %}disabled{% endif %} 
-                                                class="proyeccion-check w-6 h-6 rounded-xl border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-8">
-                                        <div class="flex flex-col gap-1">
-                                            <div class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ item.tipo_display }}</div>
-                                            <div class="text-[15px] font-black text-slate-900 group-hover/row:text-indigo-600 transition">{{ item.fecha_programada|date:"d M, H:i" }}</div>
-                                            {% if item.ya_procesado %}
-                                            <div class="flex items-center gap-1.5 mt-1 text-green-500">
-                                                <i data-lucide="check-circle" class="w-3 h-3"></i>
-                                                <span class="text-[9px] font-black uppercase tracking-widest">Funcionando correctamente</span>
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                    </td>
-                                    <td class="px-10 py-8">
-                                        <div class="text-[15px] font-black text-slate-800">{{ item.responsable.nombre }}</div>
-                                        <div class="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Turno: {{ item.turno.fecha|date:"d/m" }} {{ item.turno.hora|time:"H:i" }}</div>
-                                    </td>
-                                    <td class="px-10 py-8">
-                                        <div class="flex items-center justify-end">
-                                            <button type="button" onclick="openRadarPreview('{{ item.turno.id }}', '{{ item.tipo }}')" 
-                                                class="p-3 bg-slate-50 text-slate-400 hover:bg-white hover:text-indigo-600 rounded-xl transition border border-transparent hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/10 group/btn" 
-                                                title="Previsualizar Contenido">
-                                                <i data-lucide="eye" class="w-5 h-5"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="4" class="px-10 py-32">
-                                        <div class="flex flex-col items-center justify-center text-center">
-                                            <div class="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                                                <i data-lucide="sparkles" class="w-10 h-10 text-orange-400"></i>
-                                            </div>
-                                            <h3 class="text-xl font-black text-slate-900 mb-2">¡Todo al día!</h3>
-                                            <p class="text-sm text-slate-400 font-medium max-w-xs mx-auto">
-                                                No hay notificaciones pendientes para los próximos 7 días.
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </form>
-                </div>
-                
-                {% if proyeccion.paginator.num_pages > 1 %}
-                <div class="px-10 py-6 border-t border-slate-50 bg-white flex justify-between items-center">
-                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Página {{ proyeccion.number }} de {{ proyeccion.paginator.num_pages }}
-                    </div>
-                    <div class="flex gap-3">
-                        {% if proyeccion.has_previous %}
-                        <a href="?page_proj={{ proyeccion.previous_page_number }}" class="p-3 bg-slate-50 text-slate-400 hover:bg-indigo-600 hover:text-white rounded-xl transition shadow-sm">
-                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                        </a>
-                        {% else %}
-                        <div class="p-3 bg-slate-50 text-slate-200 rounded-xl">
-                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
-                        </div>
-                        {% endif %}
-
-                        {% if proyeccion.has_next %}
-                        <a href="?page_proj={{ proyeccion.next_page_number }}" class="p-3 bg-slate-50 text-slate-400 hover:bg-indigo-600 hover:text-white rounded-xl transition shadow-sm">
-                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </a>
-                        {% else %}
-                        <div class="p-3 bg-slate-50 text-slate-200 rounded-xl">
-                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
             </div>
+            
+            <div class="flex-1 overflow-auto custom-scrollbar p-2">
+                <form id="proyeccionForm" action="{% url 'generar_desde_proyeccion' %}" method="POST" class="h-full">
+                    {% csrf_token %}
+                    <table class="w-full text-left">
+                        <thead class="sticky top-0 z-10 bg-white">
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                <th class="px-10 py-6 w-20">
+                                    <div class="flex items-center justify-center">
+                                        <input type="checkbox" checked onchange="toggleAllProyeccion(this)"
+                                            class="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
+                                    </div>
+                                </th>
+                                <th class="px-4 py-6">Planificación</th>
+                                <th class="px-10 py-6">Responsable</th>
+                                <th class="px-10 py-6 text-right">Previsualizar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            {% for item in proyeccion %}
+                            <tr class="group/row hover:bg-slate-50 transition duration-300">
+                                <td class="px-10 py-8">
+                                    <div class="flex items-center justify-center">
+                                        <input type="checkbox" name="proyeccion_items" value="{{ item.turno.id }}:{{ item.tipo }}"
+                                             checked
+                                             class="proyeccion-check w-6 h-6 rounded-xl border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
+                                    </div>
+                                </td>
+                                <td class="px-4 py-8">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="text-xs font-black text-slate-400 uppercase tracking-widest">{{ item.tipo_display }}</div>
+                                        <div class="text-[15px] font-black text-slate-900 group-hover/row:text-indigo-600 transition">{{ item.fecha_programada|date:"d M, H:i" }}</div>
+                                        {% if item.ya_procesado %}
+                                        <div class="flex items-center gap-1.5 mt-1 text-green-500">
+                                            <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                            <span class="text-[9px] font-black uppercase tracking-widest">Funcionando correctamente</span>
+                                        </div>
+                                        {% elif item.missing_email %}
+                                        <div class="flex items-center gap-1.5 mt-1 text-red-500">
+                                            <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                            <span class="text-[9px] font-black uppercase tracking-widest">Falta Correo electrónico</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-10 py-8">
+                                    <div class="text-[15px] font-black text-slate-800">{{ item.responsable.nombre }}</div>
+                                    <div class="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-tight">Turno: {{ item.turno.fecha|date:"d/m" }} {{ item.turno.hora|time:"H:i" }}</div>
+                                </td>
+                                <td class="px-10 py-8">
+                                    <div class="flex items-center justify-end">
+                                        <button type="button" onclick="openRadarPreview('{{ item.turno.id }}', '{{ item.tipo }}')"
+                                             class="p-3 bg-slate-50 text-slate-400 hover:bg-white hover:text-indigo-600 rounded-xl transition border border-transparent hover:border-indigo-100 hover:shadow-lg hover:shadow-indigo-500/10 group/btn"
+                                             title="Previsualizar Contenido">
+                                            <i data-lucide="eye" class="w-5 h-5"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-10 py-32">
+                                    <div class="flex flex-col items-center justify-center text-center">
+                                        <div class="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                                            <i data-lucide="sparkles" class="w-10 h-10 text-orange-400"></i>
+                                        </div>
+                                        <h3 class="text-xl font-black text-slate-900 mb-2">¡Todo al día!</h3>
+                                        <p class="text-sm text-slate-400 font-medium max-w-xs mx-auto mb-6">
+                                            No hay notificaciones pendientes para los próximos 7 días con las reglas actuales.
+                                        </p>
+                                        <button type="button" onclick="switchMainTab('history')" class="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 hover:shadow-md transition-all">
+                                            <i data-lucide="history" class="w-4 h-4 text-green-600"></i>
+                                            Ver Historial de Envíos
+                                        </button>
+
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </form>
+            </div>
+            
+            {% if proyeccion.paginator.num_pages > 1 %}
+            <div class="px-10 py-6 border-t border-slate-50 bg-white flex justify-between items-center">
+                <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Página {{ proyeccion.number }} de {{ proyeccion.paginator.num_pages }}
+                </div>
+                <div class="flex gap-2">
+                    {% if proyeccion.has_previous %}
+                    <a href="?page_proj={{ proyeccion.previous_page_number }}{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    </a>
+                    {% endif %}
+                    {% if proyeccion.has_next %}
+                    <a href="?page_proj={{ proyeccion.next_page_number }}{% if request.GET.page %}&page={{ request.GET.page }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
-
-        <!-- Sidebar Area -->
-        <div class="flex flex-col gap-10">
-            <!-- Acciones Rápidas -->
-            <div class="bg-white rounded-[2rem] p-10 border border-slate-100 shadow-sm relative overflow-hidden h-fit">
-                <h2 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8">Acciones Rápidas</h2>
-                <div class="flex flex-col gap-6">
-                    <button onclick="openWizard()" class="group flex items-center gap-6 p-6 bg-slate-50 hover:bg-indigo-50 transition duration-300 rounded-[1.5rem] text-left border border-transparent hover:border-indigo-100">
-                        <div class="p-4 bg-white text-indigo-500 rounded-2xl shadow-sm group-hover:scale-110 transition duration-300">
-                            <i data-lucide="plus" class="w-6 h-6"></i>
+        <!-- End of Radar -->
+        </div>
+        <!-- Sidebar Column -->
+        <div>
+            <!-- Quick Actions Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300 sticky top-12">
+                <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-blue-50">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2.5 bg-purple-600 text-white rounded-xl">
+                            <i data-lucide="zap" class="w-5 h-5"></i>
                         </div>
                         <div>
-                            <div class="text-[13px] font-black text-slate-900 group-hover:text-indigo-600">Nueva Notificación</div>
-                            <div class="text-[10px] text-slate-400 font-bold mt-0.5">Crear alerta</div>
+                            <h3 class="text-base font-black text-gray-900 tracking-tight">Acciones Rápidas</h3>
+                            <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Navegación</p>
                         </div>
-                    </button>
-
-                    <button onclick="switchMainTab('history')" class="group flex items-center gap-6 p-6 bg-slate-50 hover:bg-indigo-50 transition duration-300 rounded-[1.5rem] text-left border border-transparent hover:border-indigo-100">
-                        <div class="p-4 bg-white text-emerald-500 rounded-2xl shadow-sm group-hover:scale-110 transition duration-300">
-                            <i data-lucide="list" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="p-5 space-y-3">
+                    <!-- Regresar al Cronograma -->
+                    <a href="{% url 'ver_cronograma' %}" class="flex items-center gap-3 p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 border border-gray-200 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+                        <div class="p-2.5 bg-gray-700 text-white rounded-lg group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
                         </div>
-                        <div>
-                            <div class="text-[13px] font-black text-slate-900 group-hover:text-indigo-600">Ver Historial</div>
-                            <div class="text-[10px] text-slate-400 font-bold mt-0.5">Revisar enviadas</div>
-                        </div>
-                    </button>
-
-                    <a href="{% url 'ver_cronograma' %}" class="group flex items-center gap-6 p-6 bg-slate-50 hover:bg-orange-50 transition duration-300 rounded-[1.5rem] text-left border border-transparent hover:border-orange-100">
-                        <div class="p-4 bg-white text-orange-500 rounded-2xl shadow-sm group-hover:scale-110 transition duration-300">
-                            <i data-lucide="calendar" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <div class="text-[13px] font-black text-slate-900 group-hover:text-orange-600">Cronograma</div>
-                            <div class="text-[10px] text-slate-400 font-bold mt-0.5">Ver calendario</div>
+                        <div class="flex-1">
+                            <h4 class="text-xs font-black text-gray-900 mb-0.5">Regresar Cronograma</h4>
+                            <p class="text-[9px] text-gray-500 font-medium">Vista principal</p>
                         </div>
                     </a>
-                </div>
+
+                    <!-- Ver Historial -->
+                    <button onclick="switchMainTab('history')" class="w-full flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+                        <div class="p-2.5 bg-green-600 text-white rounded-lg group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="history" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 text-left">
+                            <h4 class="text-xs font-black text-gray-900 mb-0.5">Ver Historial</h4>
+                            <p class="text-[9px] text-gray-500 font-medium">Registro de envíos</p>
+                        </div>
+                    </button>
+
+                    <!-- Nueva Notificación -->
+                    <button onclick="openWizard()" class="w-full flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group">
+                        <div class="p-2.5 bg-blue-600 text-white rounded-lg group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="mail-plus" class="w-4 h-4"></i>
+                        </div>
+                        <div class="flex-1 text-left">
+                            <h4 class="text-xs font-black text-gray-900 mb-0.5">Nueva Notificación</h4>
+                            <p class="text-[9px] text-gray-500 font-medium">Crear envío</p>
+                        </div>
+                    </button>
             </div>
         </div>
     </div>
 </div>
+</div>
 
     <!-- History Tab Content (Hidden by default) -->
-    <div id="main-content-history" class="hidden max-w-[1600px] mx-auto w-full px-12 py-10">
-        <!-- Historial de Notificaciones Card (Design Match) -->
-        <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden group hover:shadow-2xl hover:shadow-slate-200/50 transition duration-500">
+    <div id="main-content-history" class="{% if active_tab != 'history' %}hidden{% endif %} max-w-[1600px] mx-auto w-full px-12 py-10">
+        <!-- Historial de Notificaciones Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-lg transition duration-300">
             <!-- Header -->
-            <div class="flex justify-between items-center px-10 py-8 border-b border-slate-50 bg-white">
+            <div class="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-white">
                 <div class="flex items-center gap-4">
-                    <div class="p-3 bg-emerald-50 text-emerald-500 rounded-2xl">
-                         <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+                    <div class="p-3 bg-green-50 text-green-600 rounded-xl">
+                        <i data-lucide="history" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h3 class="text-xl font-black text-slate-800 tracking-tight">Historial de Notificaciones</h3>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Registro general de envíos</p>
+                        <h3 class="text-xl font-black text-gray-900 tracking-tight">Historial de Notificaciones</h3>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Registro general de envíos</p>
                     </div>
                 </div>
             </div>
-
+            
             <!-- Filters -->
             <div class="p-6 border-b border-gray-100">
                 <form method="GET" class="space-y-4">
@@ -399,6 +363,7 @@
                                 <input type="date" name="fecha_desde" class="w-full pl-4 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition transition-colors" value="{{ request.GET.fecha_desde }}">
                             </div>
                         </div>
+                        
                         <!-- Fecha Hasta -->
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Fecha Turno Hasta</label>
@@ -406,6 +371,7 @@
                                 <input type="date" name="fecha_hasta" class="w-full pl-4 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition transition-colors" value="{{ request.GET.fecha_hasta }}">
                             </div>
                         </div>
+                        
                         <!-- Estado -->
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Estado</label>
@@ -419,6 +385,7 @@
                                 <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
                             </div>
                         </div>
+                        
                         <!-- Buscar -->
                         <div>
                             <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Buscar por Nombre</label>
@@ -435,7 +402,7 @@
                     </div>
                 </form>
             </div>
-
+            
             <!-- Table -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -502,7 +469,7 @@
                 </table>
             </div>
             
-            <!-- Pagination (if needed) -->
+            <!-- Pagination -->
             {% if historial.paginator.num_pages > 1 %}
             <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/30 flex justify-between items-center">
                 <span class="text-xs text-gray-500 font-medium">
@@ -510,43 +477,38 @@
                 </span>
                 <div class="flex gap-2">
                     {% if historial.has_previous %}
-                    <a href="?page={{ historial.previous_page_number }}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
+                    <a href="?page={{ historial.previous_page_number }}{% if request.GET.page_proj %}&page_proj={{ request.GET.page_proj }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
                         <i data-lucide="chevron-left" class="w-4 h-4"></i>
                     </a>
                     {% endif %}
                     {% if historial.has_next %}
-                    <a href="?page={{ historial.next_page_number }}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
+                    <a href="?page={{ historial.next_page_number }}{% if request.GET.page_proj %}&page_proj={{ request.GET.page_proj }}{% endif %}{% if request.GET.fecha_desde %}&fecha_desde={{ request.GET.fecha_desde }}{% endif %}{% if request.GET.fecha_hasta %}&fecha_hasta={{ request.GET.fecha_hasta }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-sm">
                         <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </a>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
-        </div>
-
-    </div>
-
+        </div>    </div>
     <!-- Wizard Modal -->
     <div id="wizardModal" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-[95%] lg:max-w-6xl max-h-[95vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-[95%] lg:max-w-6xl max-h-[95vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
             <!-- Wizard Header -->
-            <div class="px-10 py-6 border-b border-gray-100 flex justify-between items-center bg-white">
-                <div class="flex items-center gap-3">
-                    <div class="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100">
-                        <i data-lucide="bell-ring" class="w-6 h-6"></i>
+            <div class="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-white">
+                <div class="flex items-center gap-4">
+                    <div class="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                        <i data-lucide="mail-plus" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <h3 class="text-xl font-black text-gray-900 tracking-tight">Crear Notificaciones</h3>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Configuración en 3 pasos</p>
+                        <h3 class="text-lg font-black text-gray-900 tracking-tight">Crear Notificaciones</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Asistente de Envío</p>
                     </div>
                 </div>
                 <button onclick="closeWizard()" class="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400">
-                    <i data-lucide="x" class="w-6 h-6"></i>
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
-            </div>
-
-            <!-- Progress Bar -->
-            <div class="px-10 pt-6 pb-2 bg-white">
+            </div>            <!-- Progress Bar -->
+            <div class="px-8 pt-6 pb-2 bg-white">
                 <div class="flex items-center w-full relative">
                     <div class="absolute top-1/2 left-0 w-full h-0.5 bg-gray-100 -translate-y-1/2 z-0"></div>
                     <div id="wizardProgress" class="absolute top-1/2 left-0 w-0 h-0.5 bg-blue-600 -translate-y-1/2 z-0 transition-all duration-500"></div>
@@ -579,27 +541,26 @@
                     <!-- STEP 1: CONFIGURATION -->
                     <div id="wizardStep1" class="wizard-step-node active-step flex-1 flex flex-col overflow-hidden min-h-0">
                         <div class="flex h-full min-h-0 w-full">
-                            <!-- Column 1: Configuration Sidebar (ULTRA-SLIM) -->
-                            <div class="w-32 border-r border-gray-100 bg-gray-50/50 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-4 no-shrink">
-                                <div class="space-y-3">
-                                    <h4 class="text-[7px] font-black text-blue-600 uppercase tracking-widest mb-2 flex items-center gap-1 px-1">
-                                        <i data-lucide="settings-2" class="w-2.5 h-2.5"></i> Reglas
+                            <!-- Column 1: Configuration Sidebar -->
+                            <div class="w-32 border-r border-gray-100 bg-gray-50/50 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-5 no-shrink">
+                                <div class="space-y-4">
+                                    <h4 class="text-[8px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5 px-1">
+                                        <i data-lucide="settings-2" class="w-3 h-3"></i> Reglas
                                     </h4>
                                     <!-- Anticipado -->
-                                    <div class="p-2 bg-white rounded-lg border border-gray-100 shadow-sm space-y-1.5">
+                                    <div class="p-2.5 bg-white rounded-xl border border-gray-100 shadow-sm space-y-2">
                                         <div class="flex items-center justify-between">
                                             <span class="text-[8px] font-black text-gray-700 uppercase">Anticip.</span>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" name="activar_anticipado" class="sr-only peer" {% if config.activar_anticipado %}checked{% endif %}>
-                                                <div class="w-6 h-3 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all"></div>
+                                                <div class="w-7 h-3.5 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all"></div>
                                             </label>
                                         </div>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" name="dias_antes" value="{{ config.dias_antes }}" class="w-full px-1.5 py-0.5 bg-gray-50 border-gray-100 rounded text-[10px] font-bold text-gray-700 focus:ring-0">
-                                            <span class="text-[6px] font-bold text-gray-400 uppercase">D</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input type="number" name="dias_antes" value="{{ config.dias_antes }}" class="w-full px-2 py-1 bg-gray-50 border-gray-100 rounded-lg text-[10px] font-bold text-gray-700 focus:ring-0 focus:border-blue-500">
+                                            <span class="text-[7px] font-bold text-gray-400 uppercase">Días</span>
                                         </div>
                                     </div>
-
                                     <!-- Jornada -->
                                     <div class="p-2 bg-white rounded-lg border border-gray-100 shadow-sm space-y-1.5">
                                         <div class="flex items-center justify-between">
@@ -615,7 +576,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div class="px-1">
                                     <h4 class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
                                         <i data-lucide="hash" class="w-2.5 h-2.5"></i> Tags
@@ -636,10 +596,10 @@
                                         <button type="button" onclick="insertPlaceholderWizard('{equipos_lista}')" class="w-full flex items-center justify-between px-2 py-1.5 bg-white text-[7px] font-black text-gray-500 rounded-lg border border-gray-100 hover:border-blue-400 hover:text-blue-600 transition-all group shadow-sm">
                                             <span>Equipos</span>
                                         </button>
+
                                     </div>
                                 </div>
                             </div>
-
                             <!-- Column 2: Editor Center -->
                             <div class="flex-1 bg-white overflow-y-auto custom-scrollbar p-5 border-r border-gray-100">
                                 <div class="max-w-xl mx-auto space-y-4">
@@ -647,14 +607,11 @@
                                         <h3 class="text-base font-black text-slate-900 tracking-tight">Redacción</h3>
                                         <p class="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Define tu mensaje base</p>
                                     </div>
-
                                     <div class="space-y-4">
                                         <div>
                                             <label class="block text-[9px] font-black text-slate-400 mb-1.5 uppercase tracking-widest">Asunto del Correo</label>
-                                            <input type="text" name="asunto_template" id="asunto_input_wizard" value="{{ config.asunto_template }}"
-                                                class="w-full rounded-xl border-slate-100 font-bold text-slate-700 text-[11px] focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all p-4 outline-none bg-slate-50/50">
+                                            <input type="text" name="asunto_template" id="asunto_input_wizard" value="{{ config.asunto_template }}" class="w-full rounded-xl border-slate-100 font-bold text-slate-700 text-[11px] focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all p-4 outline-none bg-slate-50/50">
                                         </div>
-
                                         <div class="flex flex-col">
                                             <label class="block text-[9px] font-black text-slate-400 mb-1.5 uppercase tracking-widest">Cuerpo del Mensaje</label>
                                             <input type="hidden" name="cuerpo_template" id="hidden_cuerpo_wizard" value="{{ config.cuerpo_template }}">
@@ -663,141 +620,136 @@
                                     </div>
                                 </div>
                             </div>
-
                             <!-- Column 3: Live Preview -->
                             <div class="flex-1 bg-gray-50/50 overflow-y-auto custom-scrollbar p-4 shrink-0 shadow-inner">
                                 <div class="max-w-md mx-auto">
                                     <h4 class="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-4 text-center">Vista Previa Real</h4>
                                     <div class="bg-white rounded-[1.5rem] shadow-xl overflow-hidden w-full border border-gray-100 transform scale-[0.95] origin-top">
-                                    <div class="p-5 space-y-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-1 h-8 bg-orange-400 rounded-full"></div>
-                                            <div class="min-w-0 flex-1">
-                                                <h2 class="text-sm font-black text-gray-900 tracking-tight leading-tight truncate" id="live_preview_subject">{{ config.asunto_template }}</h2>
-                                                <p class="text-[7px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Recordatorio</p>
+                                        <div class="p-5 space-y-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-1 h-8 bg-orange-400 rounded-full"></div>
+                                                <div class="min-w-0 flex-1">
+                                                    <h2 class="text-sm font-black text-gray-900 tracking-tight leading-tight truncate" id="live_preview_subject">{{ config.asunto_template }}</h2>
+                                                    <p class="text-[7px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Recordatorio</p>
+                                                </div>
                                             </div>
-                                        </div>
-
-                                        <div class="flex justify-center py-3 bg-gray-50 rounded-2xl border border-dashed border-gray-200/50">
-                                            <img src="/static/img/mujeru.jpg" alt="Preview" class="h-16 object-contain filter drop-shadow-md">
-                                        </div>
-
-                                        <div class="space-y-3">
-                                            <p class="text-gray-900 text-[11px] font-black tracking-tight leading-none">Estimado/a <span class="text-blue-600" id="live_preview_funcionario">Funcionario</span></p>
-                                            <div id="live_preview_body" class="text-gray-600 text-[9px] italic bg-blue-50/30 p-3 rounded-[1rem] border border-blue-100/20 leading-relaxed font-semibold">
-                                                <!-- Content -->
+                                            <div class="flex justify-center py-3 bg-gray-50 rounded-2xl border border-dashed border-gray-200/50">
+                                                <img src="/static/img/mujeru.jpg" alt="Preview" class="h-16 object-contain filter drop-shadow-md">
                                             </div>
-                                        </div>
-
-                                        <div class="space-y-1.5 pt-3 border-t border-gray-50">
-                                            <div class="flex items-center justify-between text-[8px]">
-                                                <span class="text-gray-400 font-bold uppercase tracking-widest">Fecha:</span>
-                                                <span class="text-gray-900 font-black" id="live_preview_fecha">00/00/0000</span>
+                                            <div class="space-y-3">
+                                                <p class="text-gray-900 text-[11px] font-black tracking-tight leading-none">Estimado/a <span class="text-blue-600" id="live_preview_funcionario">Funcionario</span></p>
+                                                <div id="live_preview_body" class="text-gray-600 text-[9px] italic bg-blue-50/30 p-3 rounded-[1rem] border border-blue-100/20 leading-relaxed font-semibold">
+                                                    <!-- Content -->
+                                                </div>
                                             </div>
-                                            <div class="flex items-center justify-between text-[8px]">
-                                                <span class="text-gray-400 font-bold uppercase tracking-widest">Hora:</span>
-                                                <span class="text-gray-900 font-black" id="live_preview_hora">00:00</span>
+                                            <div class="space-y-1.5 pt-3 border-t border-gray-50">
+                                                <div class="flex items-center justify-between text-[8px]">
+                                                    <span class="text-gray-400 font-bold uppercase tracking-widest">Fecha:</span>
+                                                    <span class="text-gray-900 font-black" id="live_preview_fecha">00/00/0000</span>
+                                                </div>
+                                                <div class="flex items-center justify-between text-[8px]">
+                                                    <span class="text-gray-400 font-bold uppercase tracking-widest">Hora:</span>
+                                                    <span class="text-gray-900 font-black" id="live_preview_hora">00:00</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+            </div>                <!-- STEP 2: RECIPIENTS -->
+                <div id="wizardStep2" class="wizard-step-node flex-1 flex flex-col overflow-hidden p-6 min-h-0">
+                    <div class="flex flex-col h-full gap-5 min-h-0">
+                        <div class="flex justify-between items-center bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+                            <div class="px-2">
+                                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                    <i data-lucide="users" class="w-4 h-4 text-blue-500"></i> Selección de Destinatarios
+                                </h4>
+                                <p class="text-xl font-black text-gray-900 tracking-tight" id="wizardRecipientsTitle">Cargando turnos...</p>
+                            </div>
+                            <div class="flex gap-2 p-1 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                <button type="button" onclick="loadRecipients(3, 0, this)" class="recipient-filter-btn px-4 py-2 rounded-md bg-blue-600 text-white shadow-lg shadow-blue-100 text-[10px] font-black uppercase tracking-widest transition-all">Próx. 3 Días</button>
+                                <button type="button" onclick="loadRecipients(7, 3, this)" class="recipient-filter-btn px-4 py-2 rounded-md bg-white text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-all">Sigu. Semana</button>
+                                <button type="button" onclick="loadRecipients(20, 10, this)" class="recipient-filter-btn px-4 py-2 rounded-md bg-white text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-all">Resto Mes</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 rounded-xl border border-gray-100 overflow-hidden bg-white flex flex-col min-h-0">
+                            <div class="overflow-y-auto custom-scrollbar flex-1">
+                                <table class="w-full text-left text-[11px]">
+                                    <thead class="bg-gray-50/80 text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 z-20 backdrop-blur-md">
+                                        <tr>
+                                            <th class="px-6 py-4 border-b border-gray-100">
+                                                <div class="flex items-center justify-center">
+                                                    <input type="checkbox" id="wizardToggleAll" checked class="w-4 h-4 rounded border-gray-200 text-blue-600 focus:ring-blue-500/20" onchange="toggleAllWizard(this)">
+                                                </div>
+                                            </th>
+                                            <th class="px-4 py-4 border-b border-gray-100">Ejecución</th>
+                                            <th class="px-4 py-4 border-b border-gray-100">Responsable / Compromiso</th>
+                                            <th class="px-4 py-4 border-b border-gray-100">Tipo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="wizardRecipientsBody" class="divide-y divide-gray-50">
+                                        <tr>
+                                            <td colspan="4" class="py-24 text-center">
+                                                <div class="animate-pulse space-y-3">
+                                                    <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto text-blue-300">
+                                                        <i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i>
+                                                    </div>
+                                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Buscando destinatarios...</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- STEP 2: RECIPIENTS -->
-                <div id="wizardStep2" class="wizard-step-node flex-1 flex flex-col overflow-hidden p-5 min-h-0">
-                        <div class="flex flex-col h-full gap-4 min-h-0">
-                            <div class="flex justify-between items-center bg-gray-50/50 p-3 rounded-[1.5rem] border border-gray-100">
-                                <div class="px-3">
-                                    <h4 class="text-[9px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-0.5">
-                                        <i data-lucide="users" class="w-3 h-3 text-blue-500"></i> Selección de Destinatarios
-                                    </h4>
-                                    <p class="text-lg font-black text-gray-800 tracking-tight" id="wizardRecipientsTitle">Cargando turnos...</p>
-                                </div>
-                                <div class="flex gap-1.5 p-1 bg-white rounded-xl border border-gray-100 shadow-sm">
-                                    <button type="button" onclick="loadRecipients(3, 0, this)" class="recipient-filter-btn px-4 py-2 rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-100 border border-blue-600 text-[8px] font-black uppercase tracking-wider transition-all">3 días</button>
-                                    <button type="button" onclick="loadRecipients(4, 3, this)" class="recipient-filter-btn px-4 py-2 rounded-lg bg-white text-[8px] font-black uppercase tracking-wider text-gray-400 hover:text-blue-600 border border-transparent transition-all">Siguiente Sem.</button>
-                                    <button type="button" onclick="loadRecipients(23, 7, this)" class="recipient-filter-btn px-4 py-2 rounded-lg bg-white text-[8px] font-black uppercase tracking-wider text-gray-400 hover:text-blue-600 border border-transparent transition-all">Mes</button>
+                <!-- STEP 3: SUMMARY -->
+                <div id="wizardStep3" class="wizard-step-node flex-1 flex flex-col overflow-hidden p-6 min-h-0">
+                    <div class="min-h-full flex flex-col items-center justify-center text-center space-y-8 py-8">
+                        <div class="max-w-xl w-full space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                            <div class="relative w-28 h-28 mx-auto">
+                                <div class="absolute inset-0 bg-blue-100 rounded-3xl rotate-6 animate-pulse opacity-50"></div>
+                                <div class="absolute inset-0 bg-blue-600 rounded-3xl shadow-xl shadow-blue-200 flex items-center justify-center -rotate-3 transition-transform hover:rotate-0 duration-500">
+                                    <i data-lucide="send" class="w-12 h-12 text-white"></i>
                                 </div>
                             </div>
-
-                            <div class="flex-1 rounded-[2rem] border border-gray-100 overflow-hidden bg-white shadow-inner shadow-gray-50 flex flex-col min-h-0">
-                                <div class="overflow-y-auto custom-scrollbar flex-1">
-                                    <table class="w-full text-left text-[11px] border-separate border-spacing-0">
-                                        <thead class="bg-gray-50/50 text-[9px] font-black text-gray-400 sticky top-0 z-20 backdrop-blur-md">
-                                            <tr>
-                                                <th class="px-4 py-3 border-b border-gray-100">
-                                                    <div class="flex items-center justify-center">
-                                                        <input type="checkbox" id="wizardToggleAll" checked class="w-4 h-4 rounded-md border-gray-200 text-blue-600 focus:ring-blue-500" onchange="toggleAllWizard(this)">
-                                                    </div>
-                                                </th>
-                                                <th class="px-4 py-3 border-b border-gray-100 uppercase tracking-widest text-[8px]">Ejecución</th>
-                                                <th class="px-4 py-3 border-b border-gray-100 uppercase tracking-widest text-[8px]">Responsable / Compromiso</th>
-                                                <th class="px-4 py-3 border-b border-gray-100 uppercase tracking-widest text-[8px]">Tipo</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="wizardRecipientsBody" class="divide-y divide-gray-50">
-                                            <tr>
-                                                <td colspan="4" class="py-20 text-center">
-                                                    <div class="animate-pulse space-y-2">
-                                                        <div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center mx-auto text-blue-200">
-                                                            <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
-                                                        </div>
-                                                        <p class="text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Buscando...</p>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                            
+                            <div class="space-y-3">
+                                <h3 class="text-3xl font-black text-gray-900 tracking-tight">¡Todo Listo!</h3>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Resumen de Programación</p>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="p-8 bg-gray-50 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                                    <p id="summaryCount" class="text-5xl font-black text-blue-600 tabular-nums group-hover:scale-110 transition-transform">0</p>
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Notificaciones<br>a Programar</p>
                                 </div>
+                                <div class="p-8 bg-gray-50 rounded-3xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300">
+                                    <p id="summaryTypes" class="text-xl font-black text-gray-900 mt-2 uppercase tracking-tight">Múltiples</p>
+                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-6">Tipos de Alerta<br>Activos</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest justify-center">
+                                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                <span>Se programarán los envíos según las reglas activas.</span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- STEP 3: SUMMARY -->
-                    <div id="wizardStep3" class="wizard-step-node flex-1 flex flex-col overflow-hidden p-5 min-h-0">
-                        <div class="min-h-full flex flex-col items-center justify-center text-center space-y-8 py-6">
-                            <div class="max-w-xl w-full space-y-8 animate-in slide-in-from-bottom-5 duration-500">
-                                <div class="relative w-24 h-24 mx-auto">
-                                    <div class="absolute inset-0 bg-blue-100 rounded-[2rem] rotate-6 animate-pulse"></div>
-                                    <div class="absolute inset-0 bg-blue-600 rounded-[2rem] shadow-xl flex items-center justify-center -rotate-3 transition-transform hover:rotate-0 duration-500">
-                                        <i data-lucide="send" class="w-10 h-10 text-white"></i>
-                                    </div>
-                                </div>
-                                
-                                <div class="space-y-2">
-                                    <h3 class="text-2xl font-black text-gray-900 tracking-tight leading-tight">¡Todo configurado!</h3>
-                                    <p class="text-gray-500 font-bold uppercase tracking-[0.2em] text-[8px]">Resumen de Programación</p>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
-                                        <p id="summaryCount" class="text-4xl font-black text-blue-600 tabular-nums group-hover:scale-110 transition-transform">0</p>
-                                        <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-2">Notificaciones<br>a Programar</p>
-                                    </div>
-                                    <div class="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
-                                        <p id="summaryTypes" class="text-lg font-black text-gray-900 mt-2 uppercase tracking-tight">Múltiples</p>
-                                        <p class="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-4">Tipos de Alerta<br>Configurados</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-2 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest justify-center">
-                                    <i data-lucide="info" class="w-4 h-4"></i>
-                                    <span>Se programarán los envíos seleccionados.</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Wizard Footer -->
-                <div class="px-10 py-5 border-t border-gray-100 bg-white flex justify-between items-center bg-white shrink-0">
-                    <button type="button" onclick="closeWizard()" class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-gray-600 transition">Cancelar Proceso</button>
+                <!-- Wizard Footer -->
+                <div class="px-8 py-5 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
+                    <button type="button" onclick="closeWizard()" class="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition">Cancelar Proceso</button>
                     <div class="flex gap-3">
-                        <button type="button" id="prevBtn" onclick="moveStep(-1)" class="hidden px-6 py-2.5 bg-gray-100 text-gray-500 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-200 transition">Anterior</button>
-                        <button type="button" id="nextBtn" onclick="moveStep(1)" class="px-7 py-2.5 bg-blue-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-2">Siguiente <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
-                        <button type="submit" id="submitBtn" class="hidden px-8 py-2.5 bg-green-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-green-700 transition shadow-lg shadow-green-100">Finalizar y Programar</button>
+                        <button type="button" id="prevBtn" onclick="moveStep(-1)" class="hidden px-6 py-2.5 bg-gray-100 text-gray-500 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-200 transition">Anterior</button>
+                        <button type="button" id="nextBtn" onclick="moveStep(1)" class="px-7 py-2.5 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center gap-2">Siguiente <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+                        <button type="submit" id="submitBtn" class="hidden px-8 py-2.5 bg-green-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Finalizar Programación</button>
                     </div>
                 </div>
             </form>
@@ -805,7 +757,7 @@
     </div>
 
     <!-- Separate Email Preview Modal -->
-    <div id="emailPreviewModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-6">
+    <div id="emailPreviewModal" class="fixed inset-0 z-[100] hidden bg-black/80 flex items-center justify-center p-6">
         <div class="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all animate-in zoom-in-95 duration-200">
             <div class="px-10 py-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div class="flex items-center gap-4">
@@ -832,19 +784,18 @@
                                 <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Recordatorio Sistema de Gestión</p>
                             </div>
                         </div>
-
+                        
                         <div class="flex justify-center py-8 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200/50">
                             <img src="/static/img/mujeru.jpg" alt="Preview" class="h-48 object-contain filter drop-shadow-xl">
                         </div>
-
+                        
                         <div class="space-y-6">
                             <p class="text-gray-900 text-lg font-black tracking-tight">Estimado/a <span class="text-blue-600">{{ ejemplo_real.funcionario }}</span></p>
-
                             <div id="modal_preview_body" class="text-gray-600 text-sm italic bg-blue-50/30 p-8 rounded-[2rem] border border-blue-100/20 leading-relaxed font-semibold">
                                 [ Contenido ]
                             </div>
                         </div>
-
+                        
                         <div class="space-y-3 pt-10 border-t border-gray-50 px-4">
                             <div class="flex items-center justify-between text-xs">
                                 <span class="text-gray-400 font-bold uppercase tracking-widest">Fecha Evento:</span>
@@ -855,7 +806,6 @@
                                 <span class="text-gray-900 font-black">{{ ejemplo_real.hora }}</span>
                             </div>
                         </div>
-
                         <div class="pt-10 text-center">
                             <p class="text-[10px] text-gray-300 font-black uppercase tracking-[0.2em]">Enviado automáticamente por el Sistema de Turnos</p>
                         </div>
@@ -870,12 +820,12 @@
             </div>
         </div>
     </div>
-
     <!-- Edit Email Modal -->
-    <div id="editEmailModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+    <div id="editEmailModal" class="fixed inset-0 z-[100] hidden bg-black/80 flex items-center justify-center p-6">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all animate-in zoom-in-95 duration-200 overflow-hidden">
             <div class="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-gray-900">Corregir Email y Reenviar</h3>
+                <h3 class="text-lg font-bold text-gray-900">Actualizar Correo</h3>
+
                 <button onclick="hideModal('editEmailModal')" class="text-gray-400 hover:text-gray-600 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
@@ -884,20 +834,19 @@
                 {% csrf_token %}
                 <div class="mb-6">
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nuevo Correo Electrónico</label>
-                    <input type="email" name="email" id="modal_edit_email_input" required
-                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition font-medium">
-                    <p class="text-[10px] text-gray-400 mt-2">Esta acción actualizará el correo del funcionario y reenviará la notificación inmediatamente.</p>
+                    <input type="email" name="email" id="modal_edit_email_input" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition font-medium">
+                    <p class="text-[10px] text-gray-400 mt-2">Esta acción actualizará el correo del funcionario. Podrás reenviar la notificación manualmente después de guardar.</p>
                 </div>
                 <div class="flex justify-end gap-3">
                     <button type="button" onclick="hideModal('editEmailModal')" class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg font-bold text-xs uppercase hover:bg-gray-50 transition">Cancelar</button>
-                    <button type="submit" class="px-6 py-2 bg-orange-500 text-white rounded-lg font-bold text-xs uppercase hover:bg-orange-600 shadow-lg shadow-orange-100 transition">Guardar y Reenviar</button>
+                    <button type="submit" class="px-6 py-2 bg-orange-500 text-white rounded-lg font-bold text-xs uppercase hover:bg-orange-600 shadow-lg shadow-orange-100 transition">Guardar Cambios</button>
+
                 </div>
             </form>
         </div>
     </div>
-
     <!-- Confirm Resend Modal -->
-    <div id="confirmResendModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+    <div id="confirmResendModal" class="fixed inset-0 z-[100] hidden bg-black/80 flex items-center justify-center p-6">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform transition-all animate-in zoom-in-95 duration-200 overflow-hidden">
             <div class="p-8 text-center">
                 <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -907,7 +856,6 @@
                 <p class="text-sm text-gray-500 leading-relaxed mb-6">
                     Estás a punto de enviar nuevamente esta notificación. Esta acción quedará registrada en el historial.
                 </p>
-                
                 <form id="confirmResendForm" method="POST">
                     {% csrf_token %}
                     <div class="flex gap-3">
@@ -920,7 +868,49 @@
     </div>
 
 <script>
-    // Variables para Previsualización Realista (Inyectadas con ejemplo_real)
+    // --- GLOBAL ERROR HANDLER ---
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+        console.error('JS Error:', msg, 'at', url, 'line', lineNo);
+        return false;
+    };
+
+    // --- MODAL UTILS (AT TOP FOR SAFETY) ---
+    window.showModal = function(id) {
+        console.log('DEBUG: showModal called with', id);
+        const modal = document.getElementById(id);
+        if (!modal) {
+            console.error('DEBUG: modal NOT FOUND', id);
+            return;
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    };
+
+    window.hideModal = function(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    };
+
+    // --- ACTION HANDLERS ---
+    window.openConfirmResendModal = function(id) {
+        const form = document.getElementById('confirmResendForm');
+        if (!form) return;
+        form.action = `/notifications/reenviar/${id}/`;
+        window.showModal('confirmResendModal');
+    };
+
+    window.openEditEmailModal = function(id, currentEmail) {
+        const form = document.getElementById('editEmailForm');
+        const input = document.getElementById('modal_edit_email_input');
+        if (!form || !input) return;
+        input.value = currentEmail;
+        form.action = `/notifications/editar-reenviar/${id}/`;
+        window.showModal('editEmailModal');
+    };
+
+    // Variables para Previsualización Realista
     let exampleFuncionario = '{{ ejemplo_real.funcionario|escapejs }}';
     let exampleEvento = 'Mantenimiento Preventivo';
     let exampleFecha = '{{ ejemplo_real.fecha_turno|escapejs }}';
@@ -930,16 +920,13 @@
     let exampleModelo = '{{ ejemplo_real.modelo|escapejs }}';
     let exampleDuracion = '{{ ejemplo_real.duracion|escapejs }}';
 
-
-
-
-    // Main tab switching (Dashboard vs History)
+    // Main tab switching
     window.switchMainTab = function(tab) {
         const dashboardContent = document.getElementById('main-content-dashboard');
         const historyContent = document.getElementById('main-content-history');
         const historyBtn = document.getElementById('main-tab-history-btn');
         const dashboardBtn = document.getElementById('main-tab-dashboard-btn');
-
+        
         if (tab === 'dashboard') {
             dashboardContent.classList.remove('hidden');
             historyContent.classList.add('hidden');
@@ -951,111 +938,83 @@
             if(historyBtn) historyBtn.classList.add('hidden');
             if(dashboardBtn) dashboardBtn.classList.remove('hidden');
         }
-        lucide.createIcons();
+        if (window.lucide) lucide.createIcons();
     };
 
     // --- NEW WIZARD LOGIC ---
     let currentStep = 1;
-
     window.openWizard = function() {
-        showModal('wizardModal');
+        window.showModal('wizardModal');
         currentStep = 1;
         updateWizardUI();
-        // Initialize Quill if not done
         initWizardQuill();
     };
 
     window.closeWizard = function() {
-        hideModal('wizardModal');
+        window.hideModal('wizardModal');
     };
 
     function updateWizardUI() {
-        // Absolute control over step nodes to prevent overlap or leakage
         const stepIds = ['wizardStep1', 'wizardStep2', 'wizardStep3'];
-        
         stepIds.forEach((id, idx) => {
             const el = document.getElementById(id);
             if (!el) return;
-            
             const isActive = (idx + 1 === currentStep);
-            if (isActive) {
-                el.classList.add('active-step');
-            } else {
-                el.classList.remove('active-step');
-            }
+            if (isActive) el.classList.add('active-step');
+            else el.classList.remove('active-step');
         });
 
-        // Progress Bar
         const progress = ((currentStep - 1) / 2) * 100;
         const progressBar = document.getElementById('wizardProgress');
         if (progressBar) progressBar.style.width = `${progress}%`;
 
-        // Indicators
         for (let i = 1; i <= 3; i++) {
             const ind = document.getElementById(`step${i}-indicator`);
             const label = document.getElementById(`step${i}-label`);
             if (!ind || !label) continue;
-
             if (i < currentStep) {
-                ind.classList.remove('bg-blue-600', 'bg-gray-100');
-                ind.classList.add('bg-green-500', 'text-white');
+                ind.className = 'w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ring-4 ring-white bg-green-500 text-white';
                 ind.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i>';
-                label.classList.remove('text-blue-600');
-                label.classList.add('text-gray-400');
+                label.className = 'text-[8px] truncate max-w-full font-black uppercase mt-2 tracking-widest text-gray-400 px-2';
             } else if (i === currentStep) {
-                ind.classList.remove('bg-green-500', 'bg-gray-100');
-                ind.classList.add('bg-blue-600', 'text-white');
+                ind.className = 'w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ring-4 ring-white bg-blue-600 text-white';
                 ind.innerHTML = i;
-                label.classList.remove('text-gray-400');
-                label.classList.add('text-blue-600');
+                label.className = 'text-[8px] truncate max-w-full font-black uppercase mt-2 tracking-widest text-blue-600 px-2';
             } else {
-                ind.classList.remove('bg-blue-600', 'bg-green-500');
-                ind.classList.add('bg-gray-100', 'text-gray-400');
+                ind.className = 'w-8 h-8 rounded-full flex items-center justify-center font-black text-xs transition-all duration-300 ring-4 ring-white bg-gray-100 text-gray-400';
                 ind.innerHTML = i;
-                label.classList.remove('text-blue-600');
-                label.classList.add('text-gray-400');
+                label.className = 'text-[8px] truncate max-w-full font-black uppercase mt-2 tracking-widest text-gray-400 px-2';
             }
         }
 
-        // Buttons
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         const submitBtn = document.getElementById('submitBtn');
-
         if (prevBtn) prevBtn.classList.toggle('hidden', currentStep === 1);
         if (nextBtn) nextBtn.classList.toggle('hidden', currentStep === 3);
         if (submitBtn) submitBtn.classList.toggle('hidden', currentStep !== 3);
-
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     window.moveStep = function(delta) {
-        if (currentStep === 1 && delta === 1) {
-            // Validate step 1 if needed
-            loadRecipients(7, 0); // Load default for step 2
-        }
-        if (currentStep === 2 && delta === 1) {
-            // Prepare step 3
-            updateSummary();
-        }
+        if (currentStep === 1 && delta === 1) loadRecipients(7, 0);
+        if (currentStep === 2 && delta === 1) updateSummary();
         currentStep += delta;
         updateWizardUI();
     };
 
-    // Recipient Loading (AJAX)
     window.loadRecipients = function(dias, offset, btn) {
         const body = document.getElementById('wizardRecipientsBody');
         const title = document.getElementById('wizardRecipientsTitle');
-        body.innerHTML = '<tr><td colspan="4" class="py-32 text-center text-gray-400">Buscando turnos...</td></tr>';
-
-        // Filter buttons UI
+        if (body) body.innerHTML = '<tr><td colspan="4" class="py-32 text-center text-gray-400">Buscando turnos...</td></tr>';
+        
         document.querySelectorAll('.recipient-filter-btn').forEach(b => {
-            b.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100', 'border-blue-600');
-            b.classList.add('bg-white', 'text-gray-600', 'border-gray-100');
+            b.classList.remove('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100');
+            b.classList.add('bg-white', 'text-gray-400');
         });
         if (btn) {
-            btn.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100', 'border-blue-600');
-            btn.classList.remove('bg-white', 'text-gray-600', 'border-gray-100');
+            btn.classList.add('bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-100');
+            btn.classList.remove('bg-white', 'text-gray-400');
         }
 
         fetch(`/notifications/api/proyeccion/?dias=${dias}&offset=${offset}&_=${new Date().getTime()}`)
@@ -1063,145 +1022,73 @@
             .then(data => {
                 if (title) {
                     const options = { day: '2-digit', month: 'short' };
-                    const now = new Date();
-                    const start = new Date();
-                    start.setDate(now.getDate() + offset);
-                    const end = new Date();
-                    end.setDate(start.getDate() + dias);
+                    const start = new Date(); start.setDate(start.getDate() + offset);
+                    const end = new Date(); end.setDate(start.getDate() + dias - 1); // Inclusive Range Display
                     const rangeStr = `${start.toLocaleDateString('es-ES', options)} - ${end.toLocaleDateString('es-ES', options)}`;
-                    
-                    title.innerHTML = `
-                        <span class="text-blue-600 font-black">${data.items.length}</span> 
-                        <span class="text-gray-900 font-black">Notificaciones</span>
-                        <span class="mx-3 text-gray-200">|</span>
-                        <span class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">${rangeStr}</span>
-                    `;
+                    title.innerHTML = `<span class="text-blue-600 font-black">${data.items.length}</span> <span class="text-gray-900 font-black">Notificaciones</span> <span class="mx-3 text-gray-200">|</span> <span class="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em]">${rangeStr}</span>`;
                 }
-                
+                if (!body) return;
                 if (data.items.length === 0) {
                     body.innerHTML = '<tr><td colspan="4" class="py-32 text-center text-gray-400 italic">No se encontraron turnos en este rango.</td></tr>';
                     return;
                 }
-
                 body.innerHTML = data.items.map(item => {
                     const progDate = new Date(item.fecha_programada);
                     const dateStr = progDate.toLocaleString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-                    
-                    // Relative date logic
-                    progDate.setHours(0, 0, 0, 0);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
+                    progDate.setHours(0,0,0,0);
+                    const today = new Date(); today.setHours(0,0,0,0);
                     const diffDays = Math.round((progDate - today) / (1000 * 60 * 60 * 24));
-                    
-                    let badgeClass = "text-gray-400";
-                    let badgeText = `En ${diffDays} días`;
-
-                    if (diffDays === 0) {
-                        badgeClass = "text-orange-500 font-black";
-                        badgeText = "Hoy";
-                    } else if (diffDays === 1) {
-                        badgeClass = "text-blue-500 font-black";
-                        badgeText = "Mañana";
-                    }
-
+                    let bCls = "text-gray-400", bTxt = `En ${diffDays} días`;
+                    if (diffDays === 0) { bCls = "text-orange-500 font-black"; bTxt = "Hoy"; }
+                    else if (diffDays === 1) { bCls = "text-blue-500 font-black"; bTxt = "Mañana"; }
                     return `
-                        <tr class="hover:bg-blue-50/50 transition duration-200 ${item.ya_procesado ? 'opacity-60 bg-gray-50' : ''}">
+                        <tr class="hover:bg-blue-50/50 transition duration-200">
                             <td class="px-4 py-4 text-center">
-                                <input type="checkbox" name="proyeccion_items" value="${item.turno_id}:${item.tipo}" ${item.ya_procesado ? '' : 'checked'} class="wizard-notif-check rounded-lg border-gray-200 text-blue-600">
+                                <input type="checkbox" name="proyeccion_items" value="${item.turno_id}:${item.tipo}" checked class="wizard-notif-check rounded-lg border-gray-200 text-blue-600">
                             </td>
                             <td class="px-4 py-4">
                                 <div class="text-[11px] font-black text-gray-900">${dateStr}</div>
-                                <div class="text-[8px] ${badgeClass} uppercase tracking-widest mt-0.5">${badgeText}</div>
+                                <div class="text-[8px] ${bCls} uppercase tracking-widest mt-0.5">${bTxt}</div>
                             </td>
                             <td class="px-4 py-4">
                                 <div class="text-[11px] font-black text-gray-700 leading-tight">${item.responsable}</div>
                                 <div class="text-[9px] text-blue-500 font-bold mt-0.5">${item.fecha_turno}</div>
+                                ${item.missing_email ? '<div class="flex items-center gap-1 mt-1 text-red-500"><i data-lucide="alert-circle" class="w-2.5 h-2.5"></i><span class="text-[7px] font-black uppercase tracking-tight">Email faltante</span></div>' : ''}
                             </td>
                             <td class="px-4 py-4">
                                 <span class="px-2 py-0.5 bg-white border border-gray-100 rounded-lg text-[8px] font-black uppercase tracking-wider text-gray-500">${item.tipo_display}</span>
                             </td>
-                        </tr>
-                    `;
+                        </tr>`;
                 }).join('');
-
-                // FEEDBACK: No more turns in range logic
-                if (data.items.length > 0) {
-                    const lastItem = data.items[data.items.length - 1];
-                    const lastDate = new Date(lastItem.fecha_programada);
-                    lastDate.setHours(0, 0, 0, 0);
-
-                    const filterEndDate = new Date();
-                    filterEndDate.setHours(0, 0, 0, 0);
-                    filterEndDate.setDate(filterEndDate.getDate() + offset + dias);
-
-                    if (lastDate < filterEndDate) {
-                        const options = { day: '2-digit', month: 'long', year: 'numeric' };
-                        const endDateStr = filterEndDate.toLocaleDateString('es-ES', options);
-
-                        body.innerHTML += `
-                        <tr>
-                            <td colspan="4" class="py-12 bg-gray-50/20 border-t border-gray-100">
-                                <div class="flex flex-col items-center gap-2 text-center">
-                                    <div class="p-2 bg-green-50 text-green-500 rounded-full">
-                                        <i data-lucide="check-circle" class="w-4 h-4"></i>
-                                    </div>
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
-                                        Todo al día. No hay más turnos programados<br>hasta el <span class="text-blue-600 underline decoration-dotted">${endDateStr}</span>.
-                                    </p>
-                                </div>
-                            </td>
-                        </tr>
-                        `;
-                    }
-                }
                 lucide.createIcons();
             });
     };
 
-    window.toggleAllWizard = function(source) {
-        const checks = document.querySelectorAll('.wizard-notif-check');
-        checks.forEach(c => c.checked = source.checked);
-    };
-
     function updateSummary() {
         const checkedCount = document.querySelectorAll('.wizard-notif-check:checked').length;
-        document.getElementById('summaryCount').textContent = checkedCount;
-        
-        // Find if multiple types
+        const countEl = document.getElementById('summaryCount');
+        if (countEl) countEl.textContent = checkedCount;
         const types = new Set();
-        document.querySelectorAll('.wizard-notif-check:checked').forEach(c => {
-            types.add(c.value.split(':')[1]);
-        });
-        document.getElementById('summaryTypes').textContent = types.size > 1 ? 'Múltiples' : (types.size === 1 ? Array.from(types)[0].toUpperCase() : 'Ninguna');
+        document.querySelectorAll('.wizard-notif-check:checked').forEach(c => types.add(c.value.split(':')[1]));
+        const typesEl = document.getElementById('summaryTypes');
+        if (typesEl) typesEl.textContent = types.size > 1 ? 'Múltiples' : (types.size === 1 ? Array.from(types)[0].toUpperCase() : 'Ninguna');
     }
 
-    // --- ENHANCED PREVIEW LOGIC ---
     let wizardQuill;
-
     function initWizardQuill() {
-        if (!wizardQuill) {
+        if (!wizardQuill && document.getElementById('quill-editor-wizard')) {
             wizardQuill = new Quill('#quill-editor-wizard', {
                 theme: 'snow',
-                modules: {
-                    toolbar: [
-                        ['bold', 'italic', 'underline'],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['clean']
-                    ]
-                }
+                modules: { toolbar: [['bold', 'italic', 'underline'], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['clean']] }
             });
-
             const hiddenInput = document.getElementById('hidden_cuerpo_wizard');
-            if (hiddenInput.value) {
-                wizardQuill.root.innerHTML = hiddenInput.value;
-            }
-
+            if (hiddenInput && hiddenInput.value) wizardQuill.root.innerHTML = hiddenInput.value;
             wizardQuill.on('text-change', () => {
-                hiddenInput.value = wizardQuill.root.innerHTML;
+                if (hiddenInput) hiddenInput.value = wizardQuill.root.innerHTML;
                 updateWizardPreview();
             });
-
-            document.getElementById('asunto_input_wizard').addEventListener('input', updateWizardPreview);
+            const asuntoInput = document.getElementById('asunto_input_wizard');
+            if (asuntoInput) asuntoInput.addEventListener('input', updateWizardPreview);
             updateWizardPreview();
         }
     }
@@ -1210,53 +1097,39 @@
         fetch(`/notifications/api/preview/?turno_id=${turnoId}&tipo=${tipo}`)
             .then(r => r.json())
             .then(data => {
-                if (data.error) {
-                    alert('Error: ' + data.error);
-                    return;
-                }
+                if (data.error) { alert('Error: ' + data.error); return; }
                 const modalAsunto = document.getElementById('modal_preview_asunto');
                 const modalBody = document.getElementById('modal_preview_body');
-                
                 if (modalAsunto) modalAsunto.textContent = data.subject;
-                if (modalBody) {
-                    modalBody.innerHTML = data.body;
-                }
-                
-                showModal('emailPreviewModal');
+                if (modalBody) modalBody.innerHTML = data.body;
+                window.showModal('emailPreviewModal');
             });
     };
 
-    function showPreviewModal() {
-        updateWizardPreview();
-        showModal('emailPreviewModal');
-    }
-
     function updateWizardPreview() {
-        const asunto = document.getElementById('asunto_input_wizard').value;
-        const cuerpo = document.getElementById('hidden_cuerpo_wizard').value;
+        const asuntoInput = document.getElementById('asunto_input_wizard');
+        const hiddenInput = document.getElementById('hidden_cuerpo_wizard');
+        const asunto = asuntoInput ? asuntoInput.value : '';
+        const cuerpo = hiddenInput ? hiddenInput.value : '';
         
-        // 1. Target live preview elements in Wizard Step 1
         const liveAsunto = document.getElementById('live_preview_subject');
         const liveBody = document.getElementById('live_preview_body');
         const liveFunc = document.getElementById('live_preview_funcionario');
         const liveFecha = document.getElementById('live_preview_fecha');
         const liveHora = document.getElementById('live_preview_hora');
-        
-        // Populate static-ish fields in live preview
+
         if (liveFunc) liveFunc.textContent = exampleFuncionario;
         if (liveFecha) liveFecha.textContent = exampleFecha;
         if (liveHora) liveHora.textContent = exampleHora;
-        
-        // 2. Target separate Modal preview elements (if still used)
+
         const modalAsunto = document.getElementById('modal_preview_asunto');
         const modalBody = document.getElementById('modal_preview_body');
-        
+
         const previewAsunto = asunto || 'Mantenimiento de equipos tecnológicos';
         if (liveAsunto) liveAsunto.textContent = previewAsunto;
         if (modalAsunto) modalAsunto.textContent = previewAsunto;
-        
+
         let previewHtml = cuerpo || "[ Cargando mensaje... ]";
-        
         const mockData = {
             '{funcionario}': `<strong>${exampleFuncionario}</strong>`,
             '{evento}': `<strong>${exampleEvento}</strong>`,
@@ -1264,133 +1137,82 @@
             '{hora}': `<strong>${exampleHora}</strong>`,
             '{equipos_lista}': `<div class="my-2">${exampleListaEquipos}</div>`
         };
-
         for (const [key, val] of Object.entries(mockData)) {
             previewHtml = previewHtml.replace(new RegExp(key.replace('{', '\\{').replace('}', '\\}'), 'g'), val);
         }
-
         if (liveBody) liveBody.innerHTML = previewHtml;
         if (modalBody) modalBody.innerHTML = previewHtml;
     }
 
     window.insertPlaceholderWizard = function(tag) {
+        if (!wizardQuill) return;
         const range = wizardQuill.getSelection(true);
         wizardQuill.insertText(range.index, tag);
         wizardQuill.setSelection(range.index + tag.length);
     };
 
-    // --- MODAL UTILS ---
-    function showModal(id) {
-        const modal = document.getElementById(id);
-        if (!modal) return;
-        modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-    }
 
-    function hideModal(id) {
-        const modal = document.getElementById(id);
-        if (!modal) return;
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-    }
 
-    window.openEditEmailModal = function(id, currentEmail) {
-        const form = document.getElementById('editEmailForm');
-        const input = document.getElementById('modal_edit_email_input');
-        if (!form || !input) return;
-
-        form.action = `/notifications/editar-reenviar/${id}/`;
-        input.value = currentEmail;
-
-        showModal('editEmailModal');
+    window.showLoading = function(title = "Procesando Envío", desc = "Estamos conectando con el servidor SMTP...") {
+        const overlay = document.getElementById('loadingOverlay');
+        const t = document.getElementById('loadingTitle');
+        const d = document.getElementById('loadingDesc');
+        if (t) t.innerText = title;
+        if (d) d.innerText = desc;
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
     };
 
-    // Initialize UI
+    window.sincronizarRadar = function() {
+        window.showLoading("Sincronizando Radar", "Escaneando nuevos turnos...");
+        fetch("{% url 'sincronizar_cola' %}?ajax=1&_=" + new Date().getTime())
+            .then(r => r.json())
+            .then(() => setTimeout(() => location.reload(), 500))
+            .catch(() => location.reload());
+    };
+
+    window.toggleAllProyeccion = function(master) {
+        document.querySelectorAll('.proyeccion-check').forEach(c => c.checked = master.checked);
+    };
+
+    window.toggleAllWizard = function(master) {
+        document.querySelectorAll('.wizard-notif-check').forEach(c => c.checked = master.checked);
+    };
+
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('proyeccion-check')) {
+            const master = document.querySelector('thead input[onchange^="toggleAllProyeccion"]');
+            if (master) master.checked = (document.querySelectorAll('.proyeccion-check:checked').length === document.querySelectorAll('.proyeccion-check').length);
+        }
+        if (e.target.classList.contains('wizard-notif-check')) {
+            const master = document.getElementById('wizardToggleAll');
+            if (master) master.checked = (document.querySelectorAll('.wizard-notif-check:checked').length === document.querySelectorAll('.wizard-notif-check').length);
+        }
+    });
+
+    // Reset master checkbox on wizard refresh
+    const originalLoadRecipients = window.loadRecipients;
+    window.loadRecipients = function(...args) {
+        const master = document.getElementById('wizardToggleAll');
+        if (master) master.checked = true;
+        return originalLoadRecipients.apply(this, args);
+    };
+    // INIT TAB STATE & FORM HANDLERS
     document.addEventListener('DOMContentLoaded', () => {
-        lucide.createIcons();
-
-        // Restore active tab (History vs Dashboard)
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         const activeTab = "{{ active_tab|default:'dashboard' }}";
-        if (activeTab === 'history') {
-            switchMainTab('history');
-        } else {
-            switchMainTab('dashboard');
-        }
-
-        // Loading overlay for wizard submission
-        const wizardForm = document.getElementById('wizardForm');
-        if (wizardForm) {
-            wizardForm.addEventListener('submit', () => {
-                showLoading();
-            });
-        }
-    });
-
-    // Handle Bulk Actions
-    window.submitBulk = function(accion) {
-        showLoading();
-        const bulkForm = document.getElementById('bulkForm');
-        const bulkAccion = document.getElementById('bulkAccion');
-        bulkAccion.value = accion;
-
-        const checkedItems = document.querySelectorAll('.notif-check:checked');
-        checkedItems.forEach(cb => {
-            const hidden = document.createElement('input');
-            hidden.type = 'hidden';
-            hidden.name = 'notificaciones';
-            hidden.value = cb.value;
-            bulkForm.appendChild(hidden);
-        });
-
-        bulkForm.submit();
-    };
-
-    window.showLoading = function() {
-        document.getElementById('loadingOverlay').classList.remove('hidden');
-        document.getElementById('loadingOverlay').classList.add('flex');
-    };
-
-    // Audit Trail Filter
-    window.filterAuditTrail = function() {
-        const query = document.getElementById('auditSearch').value.toLowerCase();
-        const rows = document.querySelectorAll('.audit-row');
-        let count = 0;
-
-        rows.forEach(row => {
-            const text = row.getAttribute('data-search') || '';
-            if (text.includes(query)) {
-                row.classList.remove('hidden');
-                count++;
-            } else {
-                row.classList.add('hidden');
-            }
-        });
-
-        const countBadge = document.getElementById('auditTrailCount');
-        if (countBadge) countBadge.textContent = query ? `${count} encontrados` : `Últimos ${rows.length}`;
+        switchMainTab(activeTab);
+        initWizardQuill();
         
-        const noResults = document.getElementById('auditNoResults');
-        if (noResults) noResults.classList.toggle('hidden', count > 0 || rows.length === 0);
-    };
+        const wizardForm = document.getElementById('wizardForm');
 
-    // Close on escape
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeWizard();
+        if (wizardForm) {
+            wizardForm.addEventListener('submit', () => showLoading());
+        }
     });
-
-    // Close on backdrop
-    document.getElementById('wizardModal').addEventListener('click', (e) => {
-        if (e.target.id === 'wizardModal') closeWizard();
-    });
-    // Confirm Resend Logic
-    window.openConfirmResendModal = function(id) {
-        const form = document.getElementById('confirmResendForm');
-        if (!form) return;
-        form.action = `/notifications/reenviar/${id}/`;
-        showModal('confirmResendModal');
-    };
 </script>
-
-
+</div>
 {% endblock %}
-```
+
