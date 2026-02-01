@@ -790,7 +790,7 @@
                         </div>
                         
                         <div class="space-y-6">
-                            <p class="text-gray-900 text-lg font-black tracking-tight">Estimado/a <span class="text-blue-600">{{ ejemplo_real.funcionario }}</span></p>
+                            <p class="text-gray-900 text-lg font-black tracking-tight">Estimado/a <span class="text-blue-600" id="modal_preview_funcionario">{{ ejemplo_real.funcionario }}</span></p>
                             <div id="modal_preview_body" class="text-gray-600 text-sm italic bg-blue-50/30 p-8 rounded-[2rem] border border-blue-100/20 leading-relaxed font-semibold">
                                 [ Contenido ]
                             </div>
@@ -799,11 +799,11 @@
                         <div class="space-y-3 pt-10 border-t border-gray-50 px-4">
                             <div class="flex items-center justify-between text-xs">
                                 <span class="text-gray-400 font-bold uppercase tracking-widest">Fecha Evento:</span>
-                                <span class="text-gray-900 font-black">{{ ejemplo_real.fecha_turno }}</span>
+                                <span class="text-gray-900 font-black" id="modal_preview_fecha">{{ ejemplo_real.fecha_turno }}</span>
                             </div>
                             <div class="flex items-center justify-between text-xs">
                                 <span class="text-gray-400 font-bold uppercase tracking-widest">Hora Inicio:</span>
-                                <span class="text-gray-900 font-black">{{ ejemplo_real.hora }}</span>
+                                <span class="text-gray-900 font-black" id="modal_preview_hora">{{ ejemplo_real.hora }}</span>
                             </div>
                         </div>
                         <div class="pt-10 text-center">
@@ -882,6 +882,7 @@
             console.error('DEBUG: modal NOT FOUND', id);
             return;
         }
+        modal.style.display = 'flex';
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     };
@@ -889,8 +890,9 @@
     window.hideModal = function(id) {
         const modal = document.getElementById(id);
         if (!modal) return;
-        modal.classList.add('hidden');
         modal.style.display = 'none';
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     };
 
     // --- ACTION HANDLERS ---
@@ -1100,8 +1102,19 @@
                 if (data.error) { alert('Error: ' + data.error); return; }
                 const modalAsunto = document.getElementById('modal_preview_asunto');
                 const modalBody = document.getElementById('modal_preview_body');
+                
                 if (modalAsunto) modalAsunto.textContent = data.subject;
                 if (modalBody) modalBody.innerHTML = data.body;
+                
+                // Nuevos campos dinámicos
+                const spanFunc = document.getElementById('modal_preview_funcionario');
+                const spanFecha = document.getElementById('modal_preview_fecha');
+                const spanHora = document.getElementById('modal_preview_hora');
+                
+                if (spanFunc) spanFunc.textContent = data.funcionario;
+                if (spanFecha) spanFecha.textContent = data.fecha;
+                if (spanHora) spanHora.textContent = data.hora;
+
                 window.showModal('emailPreviewModal');
             });
     };

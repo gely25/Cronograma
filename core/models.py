@@ -9,7 +9,8 @@ class Responsable(models.Model):
         return self.nombre
 
 class Equipo(models.Model):
-    responsable = models.ForeignKey(Responsable, on_delete=models.CASCADE, related_name='equipos')
+    turno = models.ForeignKey('Turno', on_delete=models.CASCADE, related_name='equipos', null=True, blank=True)
+    responsable = models.ForeignKey(Responsable, on_delete=models.CASCADE, related_name='equipos', null=True, blank=True)
     codigo = models.CharField(max_length=100, blank=True, null=True)
     marca = models.CharField(max_length=100, blank=True, null=True)
     modelo = models.CharField(max_length=100, blank=True, null=True)
@@ -54,7 +55,7 @@ class Turno(models.Model):
         ('completado', 'Completado'),
     ]
 
-    responsable = models.OneToOneField(Responsable, on_delete=models.CASCADE, related_name='turno')
+    responsable = models.ForeignKey(Responsable, on_delete=models.CASCADE, related_name='turnos')
     fecha = models.DateField(null=True, blank=True)
     hora = models.TimeField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')

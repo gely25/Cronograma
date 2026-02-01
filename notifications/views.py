@@ -44,7 +44,7 @@ def dashboard(request):
     primer_turno = Turno.objects.exclude(estado='cancelado').select_related('responsable').first()
     if primer_turno:
         resp = primer_turno.responsable
-        equipos = resp.equipos.all()
+        equipos = primer_turno.equipos.all()
         if equipos.exists():
             lista = "\\n".join([f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})" for e in equipos])
             marca = equipos.first().marca
@@ -341,7 +341,10 @@ def get_render_preview(request):
         return JsonResponse({
             'subject': subject,
             'body': body,
-            'tipo_display': item.get_tipo_display()
+            'tipo_display': item.get_tipo_display(),
+            'funcionario': turno.responsable.nombre,
+            'fecha': turno.fecha.strftime("%d de %B del %Y"),
+            'hora': turno.hora.strftime("%H:%M %p")
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

@@ -33,7 +33,7 @@ def api_get_datos(request):
     Endpoint para obtener todos los datos necesarios para re-renderizar el cronograma.
     """
     config = ConfiguracionCronograma.objects.last()
-    turnos = Turno.objects.select_related('responsable').prefetch_related('responsable__equipos').all()
+    turnos = Turno.objects.select_related('responsable').prefetch_related('equipos').all()
     feriados = Feriado.objects.all()
     
     turnos_data = []
@@ -51,7 +51,7 @@ def api_get_datos(request):
                 'codigo': e.codigo,
                 'descripcion': e.descripcion,
                 'atendido': e.atendido
-            } for e in t.responsable.equipos.all()]
+            } for e in t.equipos.all()]
         })
 
     data = {
@@ -68,7 +68,7 @@ def get_day_shifts(request, date):
     """
     Endpoint para obtener todos los turnos de un día específico.
     """
-    turnos = Turno.objects.filter(fecha=date).select_related('responsable').prefetch_related('responsable__equipos').all()
+    turnos = Turno.objects.filter(fecha=date).select_related('responsable').prefetch_related('equipos').all()
     
     turnos_data = []
     for t in turnos:
@@ -85,14 +85,14 @@ def get_day_shifts(request, date):
                 'codigo': e.codigo,
                 'descripcion': e.descripcion,
                 'atendido': e.atendido
-            } for e in t.responsable.equipos.all()]
+            } for e in t.equipos.all()]
         })
     
     return JsonResponse({'turnos': turnos_data, 'fecha': date})
 
 def ver_cronograma(request):
     config = ConfiguracionCronograma.objects.last()
-    turnos = Turno.objects.select_related('responsable').prefetch_related('responsable__equipos').all()
+    turnos = Turno.objects.select_related('responsable').prefetch_related('equipos').all()
     feriados = Feriado.objects.all()
     
     # Datos para el sidebar
@@ -218,12 +218,12 @@ def toggle_completado(request, turno_id):
     else:
         turno.estado = 'completado'
         # Si se marca como completado, marcar todos sus equipos como atendidos
-        turno.responsable.equipos.update(atendido=True)
+        turno.equipos.update(atendido=True)
         
     turno.save()
     
     # Devolver el estado de los equipos para actualizar el panel lateral
-    equipos_data = list(turno.responsable.equipos.values('id', 'atendido'))
+    equipos_data = list(turno.equipos.values('id', 'atendido'))
     
     return JsonResponse({
         'status': 'ok', 
@@ -237,28 +237,29 @@ def toggle_equipo_atendido(request, equipo_id):
     equipo.atendido = not equipo.atendido
     equipo.save()
     
-    # Calcular estadísticas del responsable
-    responsable = equipo.responsable
-    total_equipos = responsable.equipos.count()
-    equipos_atendidos = responsable.equipos.filter(atendido=True).count()
+    # Calcular estadísticas del TURNO
+    turno = equipo.turno
+    if not turno:
+        return JsonResponse({'status': 'error', 'message': 'Equipo no vinculado a un turno'}, status=400)
+        
+    total_equipos = turno.equipos.count()
+    equipos_atendidos = turno.equipos.filter(atendido=True).count()
     
     # Sincronizar con el estado del Turno
-    turno = getattr(responsable, 'turno', None)
-    if turno:
-        if equipos_atendidos == total_equipos and total_equipos > 0:
-            turno.estado = 'completado'
-        elif equipos_atendidos > 0:
-            turno.estado = 'en_proceso'
-        else:
-            turno.estado = 'asignado'
-        turno.save()
+    if equipos_atendidos == total_equipos and total_equipos > 0:
+        turno.estado = 'completado'
+    elif equipos_atendidos > 0:
+        turno.estado = 'en_proceso'
+    else:
+        turno.estado = 'asignado'
+    turno.save()
     
     return JsonResponse({
         'status': 'ok',
         'atendido': equipo.atendido,
         'equipos_atendidos': equipos_atendidos,
         'total_equipos': total_equipos,
-        'turno_estado': turno.estado if turno else None
+        'turno_estado': turno.estado
     })
 
 @require_POST
@@ -289,7 +290,7 @@ def exportar_excel(request):
     from datetime import datetime
 
     # 1. Obtener Datos (Incluir turnos asignados, en proceso y completados)
-    turnos = Turno.objects.filter(estado__in=['asignado', 'en_proceso', 'completado']).select_related('responsable').prefetch_related('responsable__equipos')
+    turnos = Turno.objects.filter(estado__in=['asignado', 'en_proceso', 'completado']).select_related('responsable').prefetch_related('equipos')
     
     wb = Workbook()
     ws = wb.active
@@ -356,8 +357,8 @@ def exportar_excel(request):
         # Responsable
         ws.cell(row=current_row, column=3, value=t.responsable.nombre).alignment = left_align
         
-        # Equipos (conteo)
-        eq_all = t.responsable.equipos.all()
+        # Equipos (conteo del turno)
+        eq_all = t.equipos.all()
         eq_count = eq_all.count()
         atendidos = eq_all.filter(atendido=True).count()
         ws.cell(row=current_row, column=4, value=f"{atendidos}/{eq_count}").alignment = center_align
@@ -466,9 +467,11 @@ def crear_turno_manual(request):
             force_create = data.get('force_create', False)
             
             if existing_responsable and not force_create:
+                # Buscar si ya tiene un turno HOY o en el futuro para advertir mejor
+                # pero ahora permitimos tener varios históricos. Solo advertimos del nombre duplicado.
                 return JsonResponse({
                     'status': 'duplicate',
-                    'message': f'Ya existe un responsable con el nombre "{nombre}". ¿Desea continuar de todos modos?',
+                    'message': f'Ya existe un perfil grabado para "{nombre}". ¿Desea crear un nuevo turno independiente para esta persona?',
                     'existing_responsable': {
                         'nombre': existing_responsable.nombre,
                         'email': existing_responsable.email or 'Sin correo'
@@ -477,18 +480,14 @@ def crear_turno_manual(request):
             
             # 2. Obtener o Crear Responsable
             responsable, created = Responsable.objects.get_or_create(nombre=nombre)
+            
+            # Ya NO eliminamos el turno existente (force_create simplemente procede a crear uno NUEVO)
+            
             if email:
                 responsable.email = email
                 responsable.save()
             
-            # 3. Verificar si ya tiene un turno
-            if hasattr(responsable, 'turno'):
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': f'El responsable "{nombre}" ya tiene un turno asignado en el sistema.'
-                }, status=400)
-            
-            # 3. Crear Turno
+            # 3. Crear Turno (NUEVO e independiente)
             turno = Turno.objects.create(
                 responsable=responsable,
                 fecha=fecha_obj,
@@ -496,9 +495,10 @@ def crear_turno_manual(request):
                 estado='asignado'
             )
             
-            # 4. Crear Equipos
+            # 4. Crear Equipos vinculados al TURNO
             for eq in equipos:
                 Equipo.objects.create(
+                    turno=turno,
                     responsable=responsable,
                     codigo=eq.get('codigo'),
                     marca=eq.get('marca'),
@@ -506,6 +506,13 @@ def crear_turno_manual(request):
                     descripcion=eq.get('descripcion')
                 )
             
+            # 5. Sincronizar cola de notificaciones
+            try:
+                from notifications.services import NotificationService
+                NotificationService.sincronizar_cola()
+            except:
+                pass
+
         return JsonResponse({
             'status': 'ok', 
             'message': 'Turno creado correctamente.',

@@ -24,16 +24,16 @@ class NotificationService:
         """
         config = ConfiguracionNotificacion.get_solo()
         now = timezone.now()
-        # Escaneamos con un margen razonable (7 días)
-        ventana_dias = 7
-        # Fix: Use localdate
+        # Escaneamos con un margen amplio para capturar turnos manuales lejanos
+        # que podrían disparar notificaciones pronto (ej: días_antes=30)
         local_today = timezone.localdate(now)
-        end_date = local_today + timedelta(days=ventana_dias)
+        lookahead_sync = max(config.dias_antes, 7) + 7
+        end_date = local_today + timedelta(days=lookahead_sync)
         
         turnos = Turno.objects.filter(
             fecha__gte=local_today - timedelta(days=1),
-            fecha__lte=end_date + timedelta(days=config.dias_antes + 1),
-            estado__in=['pendiente', 'asignado']  # Filtrado Estricto: Solo pendientes y asignados
+            fecha__lte=end_date,
+            estado__in=['pendiente', 'asignado']
         ).select_related('responsable')
 
         creadas = 0
@@ -49,26 +49,27 @@ class NotificationService:
             # Regla 1: Anticipado
             if config.activar_anticipado:
                 prog = turno_dt - timedelta(days=config.dias_antes)
-                # Solo planificar si es futuro o muy reciente para ejecutar_vigilancia
-                if prog > (now - timedelta(hours=1)):
-                    obj, created = NotificacionEncolada.objects.get_or_create(
-                        turno=turno,
-                        tipo='anticipado',
-                        defaults={'fecha_programada': prog}
-                    )
-                    if created: creadas += 1
+                # Permitir planificar si es futuro o del pasado reciente (para que el Radar lo muestre)
+                obj, created = NotificacionEncolada.objects.get_or_create(
+                    turno=turno,
+                    tipo='anticipado',
+                    defaults={'fecha_programada': prog}
+                )
+                if created: creadas += 1
 
             # Regla 2: Día del Turno
             if config.activar_jornada:
                 prog = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
-                if prog > (now - timedelta(minutes=30)):
-                    obj, created = NotificacionEncolada.objects.get_or_create(
-                        turno=turno,
-                        tipo='jornada',
-                        defaults={'fecha_programada': prog}
-                    )
-                    if created: creadas += 1
+                obj, created = NotificacionEncolada.objects.get_or_create(
+                    turno=turno,
+                    tipo='jornada',
+                    defaults={'fecha_programada': prog}
+                )
+                if created: creadas += 1
         
+        if creadas == 0 and not config.activar_anticipado and not config.activar_jornada:
+            print("DEBUG: Sincronización terminada - Ninguna regla de notificación está activa en la configuración.")
+
         return creadas
     @staticmethod
     def calcular_proyeccion(dias=7, offset=0):
@@ -85,13 +86,14 @@ class NotificationService:
         start_date = local_today + timedelta(days=offset)
         end_date = start_date + timedelta(days=dias)
         
-        # 1. Fetch Candidates: We need turns that MIGHT produce notifications in this window.
-        # If config.dias_antes = 30, a turn in 30 days might trigger a notification today.
-        # So we look ahead quite a bit (window end + max(dias_antes, 1) + buffer).
-        lookahead = max(config.dias_antes, 1) + 5 
+        # 0. Sincronizar cola antes de calcular para asegurar que lo manual aparezca
+        NotificationService.sincronizar_cola()
+
+        # 1. Fetch Candidates
+        lookahead = max(config.dias_antes, 1) + 15 
         
         turnos = Turno.objects.filter(
-            fecha__gte=local_today - timedelta(days=1), # Include yesterday just in case of timezone edge cases
+            fecha__gte=local_today - timedelta(days=1),
             fecha__lte=end_date + timedelta(days=lookahead), 
             estado__in=['pendiente', 'asignado']
         ).select_related('responsable').order_by('fecha', 'hora')
@@ -502,14 +504,14 @@ class NotificationService:
         evento_desc = ""
         if hasattr(turno, 'descripcion') and turno.descripcion:
             evento_desc = turno.descripcion
-        elif turno.responsable.equipos.exists():
-            evento_desc = turno.responsable.equipos.first().descripcion
+        elif turno.equipos.exists():
+            evento_desc = turno.equipos.first().descripcion
         
         if not evento_desc or str(evento_desc).lower() == 'nan':
             evento_desc = config.actividad_general
 
         # Lógica dinámica avanzada
-        equipos = turno.responsable.equipos.all()
+        equipos = turno.equipos.all()
         if equipos.count() > 1:
             lista_equipos = "\n".join([f"• {e.marca} {e.modelo} (Cód: {e.codigo or 'N/A'})" for e in equipos])
             marca_str = "varios modelos"

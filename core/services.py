@@ -39,22 +39,23 @@ def procesar_archivo_activos(archivo):
                 defaults={'email': email_responsable}
             )
             
-            # Crear equipo asociado
+            # Asegurar que el responsable tenga un turno (estado pendiente por defecto)
+            turno, created_turno = Turno.objects.get_or_create(responsable=responsable)
+            
+            # Crear equipo asociado al TURNO
             # Prioridad: CODIGO INTERNO > CPDOGP GOBIERNO
             codigo = row.get('CODIGO_INTERNO')
             if not codigo or str(codigo).lower() == 'nan':
                 codigo = row.get('CPDOGP_GOBIERNO')
 
             Equipo.objects.create(
+                turno=turno,
                 responsable=responsable,
                 codigo=codigo,
                 marca=row.get('MARCA'),
                 modelo=row.get('MODELO'),
                 descripcion=row.get('DESCRIPCIÓN') or row.get('DESCRIPCION')
             )
-            
-            # Asegurar que el responsable tenga un turno (estado pendiente por defecto)
-            Turno.objects.get_or_create(responsable=responsable)
         
         total_responsables = Responsable.objects.count()
         total_equipos = Equipo.objects.count()
