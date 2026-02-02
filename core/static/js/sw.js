@@ -1,7 +1,9 @@
 const CACHE_NAME = 'cronograma-v1';
 const ASSETS = [
     '/cronograma/',
-    '/static/img/unemi.png'
+    '/static/img/unemi.png',
+    '/static/img/icon-512.png',
+    '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
