@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -159,6 +160,83 @@ def ejecutar_envios(request):
             messages.success(request, f"¡Excelente! Se enviaron {enviados} notificaciones exitosamente.")
     
     return redirect('notifications_dashboard')
+
+
+
+
+@csrf_exempt
+def stream_envio_masivo(request):
+    """
+    Endpoint para streaming de progreso usando Server-Sent Events (SSE) simulado (NDJSON).
+    Recibe IDs de proyección (turno_id:tipo) o IDs de cola (int). 
+    Si son de proyección, primero crea las notificaciones.
+    """
+    ids_raw = request.GET.get('ids', '')
+    if not ids_raw:
+        from django.http import JsonResponse
+        return JsonResponse({'error': 'No IDs provided'}, status=400)
+
+    # Detectar el formato de los IDs: '123:tipo' (proyección) vs '456' (cola)
+    raw_list = ids_raw.split(',')
+    
+    final_queue_ids = []
+    
+    # Lógica de Generación "Just Code" (replicada de generar_desde_proyeccion simplificada)
+    from core.models import Turno 
+    
+    # Separar IDs simples (cola) de complejos (proyección)
+    projection_items = [x for x in raw_list if ':' in x]
+    queue_items = [int(x) for x in raw_list if ':' not in x and x.isdigit()]
+    
+    # Procesar items de proyección -> Crear Notificaciones Encoladas
+    if projection_items:
+        config = ConfiguracionNotificacion.get_solo()
+        for item_str in projection_items:
+            try:
+                t_id, tipo = item_str.split(':')
+                turno = Turno.objects.get(id=t_id)
+                
+                # Buscar si existe o crear nueva
+                notif, created = NotificacionEncolada.objects.get_or_create(
+                    turno=turno,
+                    tipo=tipo,
+                    defaults={
+                        'fecha_programada': timezone.now(), # Inmediata
+                        'estado': 'pendiente'
+                    }
+                )
+                if not created and notif.estado in ['enviado', 'cancelado']:
+                    # Si ya existía y estaba finalizada, y el usuario la pide de nuevo -> Reset
+                    notif.estado = 'pendiente'
+                    notif.fecha_programada = timezone.now()
+                    notif.intentos = 0
+                    notif.save()
+                    
+                final_queue_ids.append(notif.id)
+            except Exception as e:
+                print(f"Error generando notificación para {item_str}: {e}")
+
+    # Agregar los IDs que ya eran de cola
+    final_queue_ids.extend(queue_items)
+    
+    # Remover duplicados y preparar para envío
+    final_queue_ids = list(set(final_queue_ids))
+
+    from django.http import StreamingHttpResponse
+    
+    def event_stream():
+        if not final_queue_ids:
+             import json
+             yield json.dumps({'progress': 0, 'status': 'No se pudieron generar notificaciones válidas.', 'total': 0}) + "\n"
+             return
+
+        # Generador que consume el servicio con los IDs reales de la cola
+        for event_json in NotificationService.ejecutar_vigilancia_generator(final_queue_ids):
+            yield event_json + "\n"
+            
+    response = StreamingHttpResponse(event_stream(), content_type='application/x-ndjson')
+    response['Cache-Control'] = 'no-cache'
+    return response
 
 
 def generar_desde_proyeccion(request):
@@ -737,3 +815,28 @@ def filter_historial(request):
     
     return JsonResponse({'resultados': data})
 
+
+def guardar_configuracion(request):
+    """
+    Vista para guardar la configuración global de notificaciones.
+    """
+    if request.method == 'POST':
+        config = ConfiguracionNotificacion.get_solo()
+        
+        asunto = request.POST.get('asunto_template')
+        cuerpo = request.POST.get('cuerpo_template')
+        activar_ant = request.POST.get('activar_anticipado') == 'on'
+        dias_antes = request.POST.get('dias_antes')
+        
+        if asunto: config.asunto_template = asunto
+        if cuerpo: config.cuerpo_template = cuerpo
+        
+        config.activar_anticipado = activar_ant
+        try:
+            if dias_antes: config.dias_antes = int(dias_antes)
+        except: pass
+        
+        config.save()
+        messages.success(request, "Configuración global actualizada correctamente.")
+        
+    return redirect('notifications_dashboard')

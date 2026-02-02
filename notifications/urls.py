@@ -9,9 +9,11 @@ urlpatterns = [
     path('editar-reenviar/<uuid:pk>/', views.editar_reenviar, name='editar_reenviar'),
     path('cancelar/<uuid:pk>/', views.cancelar_notificacion, name='cancelar_notificacion'),
     path('masivo/', views.notificaciones_masivas, name='notificaciones_masivas'),
+    path('stream-envio-masivo/', views.stream_envio_masivo, name='stream_envio_masivo'),
     path('generar-proyeccion/', views.generar_desde_proyeccion, name='generar_desde_proyeccion'),
     path('api/proyeccion/', views.api_get_proyeccion, name='api_proyeccion'),
     path('api/preview/', views.get_render_preview, name='get_render_preview'),
+    path('config/guardar-global/', views.guardar_configuracion, name='guardar_configuracion_notif'),
     
     # Nuevas rutas para el sistema manual
     path('api/recipient-candidates/', views.get_recipient_candidates, name='get_recipient_candidates'),

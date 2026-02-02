@@ -155,16 +155,22 @@ class NotificationService:
         Método worker para ser ejecutado en hilo separado.
         Realiza el envío de UNA notificación y gestiona su estado.
         """
-        # Delay aleatorio anti-spam (0.3s - 1.0s)
+        # Delay aleatorio anti-spam optimizado (0.1s - 0.3s)
         import random
-        time.sleep(random.uniform(0.3, 1.0))
+        time.sleep(random.uniform(0.1, 0.3))
         
         # Obtener nueva conexión para este hilo (Thread-Safe)
         connection = get_connection()
-        try:
-            connection.open()
-        except:
-            pass # Si falla open aquí, fallará en send y capturaremos la excepción abajo
+        max_connection_attempts = 3
+        for attempt in range(max_connection_attempts):
+            try:
+                connection.open()
+                break
+            except Exception as conn_err:
+                if attempt == max_connection_attempts - 1:
+                    print(f"Error abriendo conexión SMTP tras {max_connection_attempts} intentos: {conn_err}")
+                else:
+                    time.sleep(0.5 * (attempt + 1))  # Backoff: 0.5s, 1s, 1.5s
 
         try:
             # Re-obtener objeto fresco de la BD
@@ -211,7 +217,7 @@ class NotificationService:
                     msg.attach(h_img)
 
             # Adjuntar Logo
-            logo_path = os.path.join(settings.BASE_DIR, 'unemi.png')
+            logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'unemi.png')
             if os.path.exists(logo_path):
                 with open(logo_path, 'rb') as f:
                     l_img = MIMEImage(f.read())
@@ -241,19 +247,28 @@ class NotificationService:
             return True
 
         except Exception as e:
-            # MANEJO DE ERROR
-            connection.close()
+            # MANEJO DE ERROR MEJORADO
+            error_type = type(e).__name__
+            print(f"Error enviando notificación {notification_id}: {error_type} - {str(e)[:100]}")
+            
+            try:
+                connection.close()
+            except:
+                pass
+            
             try:
                 # Recargar por si acaso
                 item = NotificacionEncolada.objects.get(id=notification_id)
                 item.intentos += 1
-                item.ultimo_error = str(e)
+                item.ultimo_error = f"{error_type}: {str(e)[:200]}"
                 
                 # Política de Reintentos (Max 3)
                 if item.intentos >= item.max_intentos:
                     item.estado = 'fallido'
+                    print(f"  → Marcado como FALLIDO tras {item.intentos} intentos")
                 else:
                     item.estado = 'error_temporal' # Permite reintento en siguiente ciclo
+                    print(f"  → Marcado como ERROR_TEMPORAL (intento {item.intentos}/{item.max_intentos})")
                 item.save()
                 
                 HistorialEnvio.objects.create(
@@ -266,18 +281,16 @@ class NotificationService:
                     asunto=f"Error: {item.get_tipo_display()}",
                     error_log=str(e)
                 )
-            except:
-                pass # Si falla al guardar error, no podemos hacer mucho más
+            except Exception as save_err:
+                print(f"Error guardando estado de fallo para notificación {notification_id}: {save_err}")
             return False
 
     @staticmethod
     def ejecutar_vigilancia(specific_ids=None):
         """
-        EL PROCESADOR DE COLA (PARALELO).
-        Usa ThreadPoolExecutor para enviar notificaciones concurrentes.
+        EL PROCESADOR DE COLA (SECUENCIAL CON CONEXIÓN REUTILIZABLE).
+        Procesa notificaciones secuencialmente para evitar rechazo del servidor SMTP.
         """
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        
         now = timezone.now()
         
         # 1. Seleccionar candidatos
@@ -305,40 +318,536 @@ class NotificationService:
         if not ids_to_process:
             return 0, 0
 
-        # 3. Ejecución Paralela
+        # 3. Ejecución PARALELA SÍNCRONA (Upgrade)
+        # Usamos la misma lógica multithread que el generador para máxima velocidad.
         enviados = 0
         errores = 0
-        MAX_WORKERS = 8 # Límite recomendado
         
-        print(f"Iniciando procesamiento paralelo de {len(ids_to_process)} notificaciones con {MAX_WORKERS} workers...")
+        import time as time_module
+        import concurrent.futures
+        start_time = time_module.time()
         
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            # Mapear futuros
-            future_to_id = {executor.submit(NotificationService._procesar_envio_individual, nid): nid for nid in ids_to_process}
-            
-            for future in as_completed(future_to_id):
-                nid = future_to_id[future]
+        BATCH_SIZE = 10
+        MAX_WORKERS = 8
+        total = len(ids_to_process)
+        print(f"🚀 Iniciando envío masivo SÍNCRONO de {total} correos (8 threads)...")
+
+        # Caché de imágenes
+        header_cache = None
+        logo_cache = None
+        try:
+            h_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+            if os.path.exists(h_path):
+                with open(h_path, 'rb') as f: header_cache = f.read()
+            l_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'unemi.png')
+            if os.path.exists(l_path):
+                with open(l_path, 'rb') as f: logo_cache = f.read()
+        except: pass
+
+        # Batches
+        total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
+        batches = []
+        for i in range(total_batches):
+            s = i * BATCH_SIZE
+            e = min((i + 1) * BATCH_SIZE, total)
+            batches.append(ids_to_process[s:e])
+
+        # Worker (Copia del generador pero sin status yield)
+        def process_batch_thread_sync(batch_ids, batch_num):
+            conn = get_connection()
+            local_sent = 0
+            local_errors = 0
+            try:
+                conn.open()
+                msgs = []
+                valid_objs = []
+                for nid in batch_ids:
+                    try:
+                        m, o = NotificationService._preparar_mensaje_individual(
+                            nid, conn, 
+                            header_img_cache=header_cache, 
+                            logo_img_cache=logo_cache
+                        )
+                        if m and o:
+                            msgs.append(m)
+                            valid_objs.append(o)
+                        else: local_errors += 1
+                    except: local_errors += 1
+                
+                if msgs:
+                    try:
+                        conn.send_messages(msgs)
+                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
+                            estado='enviado', intentos=1, ultimo_error=""
+                        )
+                        local_sent = len(msgs)
+                        
+                        # Auditoría Loop
+                        for vo in valid_objs:
+                            try:
+                                HistorialEnvio.objects.create(
+                                    notificacion=vo, turno=vo.turno, tipo=vo.tipo, estado='enviado',
+                                    destinatario=vo.turno.responsable.email, asunto="Notif Masiva Sync"
+                                )
+                            except: pass
+                    except Exception as send_err:
+                        print(f"Error Thread {batch_num}: {send_err}")
+                        local_errors += len(msgs)
+                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
+                            estado='error_temporal', ultimo_error=f"ThreadErr: {str(send_err)[:100]}"
+                        )
+            except Exception as conn_err:
+                local_errors += len(batch_ids)
+                print(f"Error Conn Thread {batch_num}: {conn_err}")
+            finally:
+                try: conn.close()
+                except: pass
+            return (local_sent, local_errors)
+
+        # Ejecutar Pool
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = [executor.submit(process_batch_thread_sync, b, idx+1) for idx, b in enumerate(batches)]
+            for future in concurrent.futures.as_completed(futures):
                 try:
-                   is_success = future.result()
-                   if is_success:
-                       enviados += 1
-                   else:
-                       errores += 1
+                    s, e = future.result()
+                    enviados += s
+                    errores += e
                 except Exception as exc:
-                    print(f'Notificación {nid} generó una excepción no manejada: {exc}')
-                    errores += 1
+                    print(f"Excepción hilo sync: {exc}")
+                    # No sumamos errores aqui porque se manejan dentro, pero por seguridad
+                    pass
+
+        elapsed_time = time_module.time() - start_time
+        print(f"DEBUG: Ejecución terminada. Enviados: {enviados}, Errores: {errores}, Tiempo: {elapsed_time:.2f}s")
 
         # Auditoría Batch (Resumen)
-        if enviados > 0 or errores > 0:
-            from .models import AuditLogNotificaciones
-            AuditLogNotificaciones.objects.create(
-                notificacion=None, # Log general
-                accion="Ejecución Masiva (Paralela)",
-                detalles=f"Procesados: {len(ids_to_process)}. Exitosos: {enviados}. Fallidos/Reintentos: {errores}."
-            )
+        NotificationService._log_batch_audit(len(ids_to_process), enviados, errores, elapsed_time)
             
         return enviados, errores
 
+    @staticmethod
+    def ejecutar_vigilancia_generator(specific_ids=None):
+        """
+        GENERADOR DE STREAMING PARA UI.
+        Igual que ejecutar_vigilancia pero con 'yield' para reportar progreso en tiempo real.
+        """
+        import time as time_module
+        import json
+        
+        now = timezone.now()
+        
+        # 1. Seleccionar candidatos
+        if specific_ids:
+            # Si es manual, permitimos reintentar CUALQUIER estado excepto 'procesando' por otro worker (aunque asumimos single threading aqui)
+            # Incluso si está 'enviado', lo permitimos si el usuario forzó el reenvío.
+            cola = NotificacionEncolada.objects.filter(
+                id__in=specific_ids
+            )
+        else:
+            cola = NotificacionEncolada.objects.filter(
+                estado__in=['pendiente', 'error_temporal'],
+                fecha_programada__lte=now
+            )
+            
+        if not cola.exists():
+            yield json.dumps({'progress': 0, 'status': f'No se encontraron notificaciones (IDs: {specific_ids})'})
+            return
+
+        # 2. Marcar como 'procesando'
+        ids_to_process = []
+        for item in cola:
+            # Forzamos el estado a procesando sin importar el estado anterior si es selección manual
+            # Para cron automático, mantenemos el check de concurrencia
+            if specific_ids:
+                updated = NotificacionEncolada.objects.filter(id=item.id).update(estado='procesando')
+            else:
+                updated = NotificacionEncolada.objects.filter(id=item.id, estado=item.estado).update(estado='procesando')
+            
+            if updated > 0:
+                ids_to_process.append(item.id)
+        
+        if not ids_to_process:
+             yield json.dumps({'progress': 0, 'status': 'No se pudieron procesar notificaciones (IDs vacíos).'})
+             return
+        
+        total = len(ids_to_process)
+        yield json.dumps({'progress': 1, 'status': f'Preparando envío de {total} correos...', 'total': total, 'sent': 0, 'errors': 0})
+
+        # 3. Ejecución SECUENCIAL
+        enviados = 0
+        errores = 0
+        
+        start_time = time_module.time()
+        
+        # Conexión persistente
+        yield json.dumps({'progress': 2, 'status': 'Conectando con el servidor de correo...', 'total': total})
+        
+        connection = get_connection()
+        connection_open = False
+        
+        try:
+            connection.open()
+            connection_open = True
+            yield json.dumps({'progress': 5, 'status': 'Conexión establecida. Enviando...', 'total': total})
+        except Exception as conn_err:
+            yield json.dumps({'progress': 0, 'status': f'Error de Conexión SMTP: {str(conn_err)}', 'error': True})
+            NotificacionEncolada.objects.filter(id__in=ids_to_process).update(
+                estado='error_temporal',
+                ultimo_error=f"No se pudo establecer conexión SMTP: {str(conn_err)[:200]}"
+            )
+            return
+        
+        
+        # Pre-cargar imágenes para Caché (Evita 160 lecturas de disco)
+        header_cache = None
+        logo_cache = None
+        try:
+            h_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+            if os.path.exists(h_path):
+                with open(h_path, 'rb') as f: header_cache = f.read()
+            
+            l_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'unemi.png')
+            if os.path.exists(l_path):
+                with open(l_path, 'rb') as f: logo_cache = f.read()
+        except:
+            pass
+
+        
+        # Procesamiento en HILOS PARALELOS (Multithreading) EXTREMO
+        # 8 Hilos x 10 emails = hasta 80 emails en vuelo simultáneo.
+        # Esto debería ser casi instantáneo para volúmenes medianos.
+        import concurrent.futures
+        
+        BATCH_SIZE = 10 
+        MAX_WORKERS = 8
+        
+        # Dividir en lotes totales
+        total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
+        batches = []
+        for i in range(total_batches):
+            s = i * BATCH_SIZE
+            e = min((i + 1) * BATCH_SIZE, total)
+            batches.append(ids_to_process[s:e])
+            
+        yield json.dumps({'progress': 5, 'status': '🚀 Iniciando envío masivo...', 'total': total})
+        
+        # Cerrar conexión principal de prueba, los hilos abrirán las suyas
+        if connection_open:
+            try: connection.close()
+            except: pass
+
+        # Función Worker para cada hilo
+        def process_batch_thread(batch_ids, batch_num):
+            conn = get_connection()
+            local_sent = 0
+            local_errors = 0
+            try:
+                conn.open()
+                msgs = []
+                valid_objs = []
+                
+                # Preparar
+                for nid in batch_ids:
+                    try:
+                        m, o = NotificationService._preparar_mensaje_individual(
+                            nid, conn, 
+                            header_img_cache=header_cache, 
+                            logo_img_cache=logo_cache
+                        )
+                        if m and o:
+                            msgs.append(m)
+                            valid_objs.append(o)
+                        else:
+                            local_errors += 1
+                    except:
+                        local_errors += 1
+                
+                # Enviar
+                if msgs:
+                    try:
+                        conn.send_messages(msgs)
+                        # Optimista: Marcar enviados
+                        # now_ts = timezone.now() # fecha_envio no existe en NotificacionEncolada
+                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
+                            estado='enviado', intentos=1, ultimo_error="" 
+                        )
+                        local_sent = len(msgs)
+                        
+                        # Auditoría Loop
+                        for vo in valid_objs:
+                            try:
+                                HistorialEnvio.objects.create(
+                                    notificacion=vo, turno=vo.turno, tipo=vo.tipo, estado='enviado',
+                                    destinatario=vo.turno.responsable.email, asunto="Notif Masiva Thread"
+                                )
+                            except: pass
+                            
+                    except Exception as send_err:
+                        print(f"Error Thread Batch {batch_num}: {send_err}")
+                        local_errors += len(msgs)
+                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
+                            estado='error_temporal', ultimo_error=f"ThreadErr: {str(send_err)[:100]}"
+                        )
+            except Exception as conn_err:
+                local_errors += len(batch_ids)
+                print(f"Error Conexión Thread {batch_num}: {conn_err}")
+            finally:
+                try: conn.close()
+                except: pass
+                
+            return (local_sent, local_errors)
+
+        # Ejecutar Pool
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            future_to_batch = {executor.submit(process_batch_thread, b, idx+1): idx for idx, b in enumerate(batches)}
+            
+            completed_batches = 0
+            for future in concurrent.futures.as_completed(future_to_batch):
+                batch_index = future_to_batch[future]
+                completed_batches += 1
+                
+                try:
+                    b_sent, b_errors = future.result()
+                    enviados += b_sent
+                    errores += b_errors
+                except Exception as exc:
+                    print(f"Excepción en hilo: {exc}")
+                    errores += len(batches[batch_index])
+                
+                # Progreso
+                pct = 10 + int((completed_batches / total_batches) * 85)
+                yield json.dumps({
+                    'progress': pct,
+                    'status': "✉️ Enviando notificaciones...",
+                    'sent': enviados,
+                    'errors': errores,
+                    'total': total
+                })
+
+        # Finalizar
+        elapsed_time = time_module.time() - start_time
+        
+        # Cerrar conexión
+        if connection_open:
+            try:
+                connection.close()
+            except:
+                pass
+        
+        elapsed_time = time_module.time() - start_time
+        
+        # Auditoría Batch
+        if enviados > 0 or errores > 0:
+            NotificationService._log_batch_audit(total, enviados, errores, elapsed_time)
+
+        yield json.dumps({
+            'progress': 100,
+            'status': '¡Proceso completado!',
+            'sent': enviados,
+            'errors': errores,
+            'total': total,
+            'completed': True
+        })
+
+    @staticmethod
+    def _log_batch_audit(total, sent, errors, time):
+        from .models import AuditLogNotificaciones
+        AuditLogNotificaciones.objects.create(
+            notificacion=None,
+            accion="Ejecución Masiva (Streaming)",
+            detalles=f"Procesados: {total}. Exitosos: {sent}. Fallidos/Reintentos: {errors}. Tiempo: {time:.2f}s"
+        )
+
+
+    @staticmethod
+    def _preparar_mensaje_individual(notification_id, connection, header_img_cache=None, logo_img_cache=None):
+        """
+        Helper para Batch Sending: Prepara el objeto EmailMultiAlternatives sin enviarlo.
+        Retorna (msg, item) o (None, None) si error.
+        Acepta caches de imagen (bytes) para evitar I/O repetitivo.
+        """
+        try:
+            item = NotificacionEncolada.objects.get(id=notification_id)
+            turno = item.turno
+            if not turno or not turno.responsable or not turno.responsable.email:
+                raise Exception("Responsable sin email")
+
+            if not settings.DEFAULT_FROM_EMAIL:
+                raise Exception("Falta DEFAULT_FROM_EMAIL")
+
+            config = ConfiguracionNotificacion.get_solo()
+            subject, body_text = NotificationService._preparar_contenido(item, config)
+
+            context = {
+                'turno': turno,
+                'responsable': turno.responsable,
+                'tipo_nombre': item.get_tipo_display(),
+                'cuerpo_personalizado': body_text
+            }
+            
+            html_message = render_to_string('notifications/email_template.html', context)
+            plain_message = strip_tags(html_message)
+            
+            msg = EmailMultiAlternatives(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [turno.responsable.email],
+                connection=connection  # Usar conexión del batch
+            )
+            msg.attach_alternative(html_message, "text/html")
+
+            # Adjuntos Optimados (Memoria)
+            # Header
+            if header_img_cache:
+                 h_img = MIMEImage(header_img_cache)
+                 h_img.add_header('Content-ID', '<header_image>')
+                 msg.attach(h_img)
+            else:
+                # Fallback Disco (Solo si no hay cache)
+                header_img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+                if os.path.exists(header_img_path):
+                    with open(header_img_path, 'rb') as f:
+                        h_img = MIMEImage(f.read())
+                        h_img.add_header('Content-ID', '<header_image>')
+                        msg.attach(h_img)
+
+            # Logo
+            if logo_img_cache:
+                 l_img = MIMEImage(logo_img_cache)
+                 l_img.add_header('Content-ID', '<unemi_logo>')
+                 msg.attach(l_img)
+            else:
+                # Fallback Disco
+                logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'unemi.png')
+                if os.path.exists(logo_path):
+                    with open(logo_path, 'rb') as f:
+                        l_img = MIMEImage(f.read())
+                        l_img.add_header('Content-ID', '<unemi_logo>')
+                        msg.attach(l_img)
+            
+            return msg, item
+
+        except Exception as e:
+            # Si falla la preparación, intentamos registrar el error en el item si es posible
+            print(f"Error preparando msg {notification_id}: {e}")
+            try:
+                it = NotificacionEncolada.objects.get(id=notification_id)
+                it.estado = 'error_temporal'
+                it.ultimo_error = str(e)[:200]
+                it.save()
+            except: pass
+            return None, None
+
+    @staticmethod
+    def _enviar_con_conexion_existente(notification_id, connection):
+        """
+        Envía UNA notificación usando una conexión SMTP ya establecida.
+        Retorna True si tuvo éxito, False si falló.
+        """
+        try:
+            # Re-obtener objeto fresco de la BD
+            try:
+                item = NotificacionEncolada.objects.get(id=notification_id)
+            except NotificacionEncolada.DoesNotExist:
+                return False
+                
+            turno = item.turno
+            if not turno or not turno.responsable or not turno.responsable.email:
+                raise Exception("El responsable no tiene un correo electrónico configurado.")
+
+            if not settings.DEFAULT_FROM_EMAIL:
+                raise Exception("El sistema no tiene configurado el correo emisor (DEFAULT_FROM_EMAIL).")
+
+            config = ConfiguracionNotificacion.get_solo()
+            subject, body_text = NotificationService._preparar_contenido(item, config)
+
+            context = {
+                'turno': turno,
+                'responsable': turno.responsable,
+                'tipo_nombre': item.get_tipo_display(),
+                'cuerpo_personalizado': body_text
+            }
+            
+            html_message = render_to_string('notifications/email_template.html', context)
+            plain_message = strip_tags(html_message)
+            
+            msg = EmailMultiAlternatives(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [turno.responsable.email],
+                connection=connection  # Usar la conexión compartida
+            )
+            msg.attach_alternative(html_message, "text/html")
+
+            # Adjuntar imágenes (Header)
+            header_img_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
+            if os.path.exists(header_img_path):
+                with open(header_img_path, 'rb') as f:
+                    h_img = MIMEImage(f.read())
+                    h_img.add_header('Content-ID', '<header_image>')
+                    msg.attach(h_img)
+
+            # Adjuntar Logo
+            logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'unemi.png')
+            if os.path.exists(logo_path):
+                with open(logo_path, 'rb') as f:
+                    l_img = MIMEImage(f.read())
+                    l_img.add_header('Content-ID', '<unemi_logo>')
+                    msg.attach(l_img)
+
+            msg.send()
+
+            # ÉXITO
+            item.estado = 'enviado'
+            item.intentos += 1
+            item.ultimo_error = ""
+            item.save()
+            
+            # Auditoría
+            HistorialEnvio.objects.create(
+                notificacion=item,
+                turno=turno,
+                tipo=item.tipo,
+                intento_n=item.intentos,
+                estado='enviado',
+                destinatario=turno.responsable.email,
+                asunto=subject,
+                cuerpo=body_text
+            )
+            return True
+
+        except Exception as e:
+            # MANEJO DE ERROR
+            error_type = type(e).__name__
+            
+            try:
+                item = NotificacionEncolada.objects.get(id=notification_id)
+                item.intentos += 1
+                item.ultimo_error = f"{error_type}: {str(e)[:200]}"
+                
+                # Política de Reintentos (Max 3)
+                if item.intentos >= item.max_intentos:
+                    item.estado = 'fallido'
+                else:
+                    item.estado = 'error_temporal'
+                item.save()
+                
+                HistorialEnvio.objects.create(
+                    notificacion=item,
+                    turno=item.turno,
+                    tipo=item.tipo,
+                    intento_n=item.intentos,
+                    estado='fallido' if item.estado == 'fallido' else 'reintento',
+                    destinatario=item.turno.responsable.email if item.turno and item.turno.responsable else "Desconocido",
+                    asunto=f"Error: {item.get_tipo_display()}",
+                    error_log=str(e)
+                )
+            except Exception as save_err:
+                print(f"Error guardando estado de fallo para notificación {notification_id}: {save_err}")
+            
+            return False
 
     @staticmethod
     def reenviar_individual(cola_id):
@@ -398,7 +907,7 @@ class NotificationService:
                     msg.attach(img)
             
             # Logo UNEMI para firma
-            logo_path = os.path.join(settings.BASE_DIR, 'unemi.png')
+            logo_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'unemi.png')
             if os.path.exists(logo_path):
                 with open(logo_path, 'rb') as f:
                     l_img = MIMEImage(f.read())

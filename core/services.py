@@ -13,7 +13,16 @@ def procesar_archivo_activos(archivo):
     # Normalizar nombres de columnas (MAYÚSCULAS y cambiar espacios por _)
     df.columns = [str(c).strip().upper().replace(' ', '_') for c in df.columns]
     
-    # Columnas esperadas: RESPONSABLE, CPDOGP_GOBIERNO, MARCA, MODELO, DESCRIPCION
+    # Columnas obligatorias
+    required_cols = ['RESPONSABLE', 'EMAIL', 'MARCA', 'MODELO']
+    # 'DESCRIPCIÓN' o 'DESCRIPCION' es obligatoria, validamos aparte por la tilde
+    missing = [col for col in required_cols if col not in df.columns]
+    
+    if 'DESCRIPCIÓN' not in df.columns and 'DESCRIPCION' not in df.columns:
+        missing.append('DESCRIPCIÓN')
+    
+    if missing:
+        raise ValueError(f"El archivo Excel no tiene el formato correcto. Faltan las siguientes columnas: {', '.join(missing)}. Por favor, usa los encabezados exactos.")
 
     with transaction.atomic():
         # Limpiar datos existentes para evitar duplicados

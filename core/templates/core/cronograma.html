@@ -159,7 +159,7 @@
         <div class="flex-1 overflow-y-auto custom-scrollbar">
             
             <!-- STEP 1: IMPORTAR DATOS -->
-            <div class="p-6 border-b border-gray-50">
+            <div id="step1Container" class="p-6 border-b border-gray-50">
                 <div class="flex items-center gap-3 mb-6">
                     <div id="step1Indicator" class="size-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-black text-sm">1</div>
                     <h3 class="text-xs font-black text-indigo-800 uppercase tracking-widest">Importar Datos</h3>
@@ -180,10 +180,16 @@
                         <p id="fileName" class="text-[10px] text-indigo-600 font-black mt-2 truncate hidden"></p>
                     </div>
                 </form>
+
+                <!-- BOTÓN GUÍA DE FORMATO -->
+                <button onclick="openExcelFormatModal()" class="w-full mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-[10px] font-black uppercase text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2 group shadow-sm">
+                    <i data-lucide="help-circle" class="w-4 h-4 group-hover:rotate-12 transition-transform"></i>
+                    Ver Guía de Formato Excel
+                </button>
             </div>
 
             <!-- STEP 2: CONFIGURAR PARÁMETROS -->
-            <div class="p-6 border-b border-gray-50 bg-slate-50/30">
+            <div id="step2Container" class="p-6 border-b border-gray-50 bg-slate-50/30 transition-all duration-500">
                 <div class="flex items-center gap-3 mb-6">
                     <div id="step2Indicator" class="size-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center font-black text-sm">2</div>
                     <h3 class="text-xs font-black text-gray-500 uppercase tracking-widest">Configurar Parámetros</h3>
@@ -616,6 +622,88 @@
                 <button onclick="submitManualTurn()" id="btnSubmitManualTurn"
                     class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
                     <i data-lucide="save" class="w-4 h-4"></i> Crear Turno
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXCEL FORMAT GUIDELINE MODAL -->
+    <div id="excelFormatModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-[10010] backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl transform transition-all scale-95 opacity-0" id="excelFormatModalContainer">
+            <div class="bg-amber-500 p-6 flex items-center justify-between text-white">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-white/20 rounded-xl">
+                        <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black uppercase tracking-tight">Guía de Formato Excel</h3>
+                        <p class="text-xs font-bold opacity-80">Estructura obligatoria para la importación</p>
+                    </div>
+                </div>
+                <button onclick="closeExcelFormatModal()" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <div class="p-8 space-y-6">
+                <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                    <p class="text-xs text-blue-800 font-medium leading-relaxed">
+                        Para que el sistema procese correctamente tus datos, el archivo debe tener exactamente estos encabezados en la primera fila. El orden no importa, pero los nombres deben ser idénticos.
+                    </p>
+                </div>
+
+                <!-- EXCEL SIMULATION -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden shadow-inner bg-gray-100">
+                    <!-- Column Letters -->
+                    <div class="flex bg-gray-200 border-b border-gray-300">
+                        <div class="w-10 h-6"></div>
+                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">A</div>
+                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">B</div>
+                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">C</div>
+                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">D</div>
+                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center">E</div>
+                    </div>
+                    
+                    <!-- Header Row -->
+                    <div class="flex bg-white border-b border-gray-200">
+                        <div class="w-10 bg-gray-100 border-r border-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-400">1</div>
+                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">RESPONSABLE</div>
+                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">EMAIL</div>
+                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">MARCA</div>
+                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">MODELO</div>
+                        <div class="flex-1 p-2 text-[10px] font-black text-indigo-700 bg-indigo-50/50">DESCRIPCIÓN</div>
+                    </div>
+
+                    <!-- Example Rows -->
+                    <div class="flex bg-white border-b border-gray-100">
+                        <div class="w-10 bg-gray-100 border-r border-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-400">2</div>
+                        <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">Juan Pérez</div>
+                        <div class="flex-1 p-2 border-r border-gray-200 text-[9px] text-gray-500 italic">juan@mail.com</div>
+                        <div class="flex-1 p-2 border-r border-gray-200 text-[9px] text-gray-500">Lenovo</div>
+                        <div class="flex-1 p-2 border-r border-gray-200 text-[9px] text-gray-500">ThinkPad</div>
+                        <div class="flex-1 p-2 text-[9px] text-gray-500 text-xs text-truncate">Portátil i7...</div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest">💡 Tips Importantes</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2 text-[11px] text-gray-600 font-medium">
+                            <span class="size-1.5 rounded-full bg-amber-500"></span>
+                            Asegúrate de que no haya celdas combinadas en el encabezado.
+                        </li>
+                        <li class="flex items-center gap-2 text-[11px] text-gray-600 font-medium">
+                            <span class="size-1.5 rounded-full bg-amber-500"></span>
+                            La columna <strong class="text-gray-900">EMAIL</strong> es crucial para las notificaciones automáticas.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="p-6 bg-gray-50 border-t border-gray-100">
+                <button onclick="closeExcelFormatModal()" class="w-full py-3 bg-gray-800 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95">
+                    Entendido, Corregiré mi Excel
                 </button>
             </div>
         </div>
@@ -1760,19 +1848,78 @@
                     if (resp.ok) {
                         showToast(data.message || 'Archivo cargado con éxito');
                         await refreshAllData();
-                        // Sidebar is always visible now, no need to toggle
-                        if (data.message) {
-                           console.log('Upload success');
-                        }
                     } else {
                         showToast(data.message || 'Error al cargar archivo', 'error');
+                        // AUTOMATIC MODAL ON FORMAT ERROR
+                        if (data.message && data.message.includes('formato')) {
+                            setTimeout(openExcelFormatModal, 1500);
+                        }
                     }
                 } catch (err) {
-                    showToast('Error de conexión', 'error');
+                    console.error('Upload error:', err);
+                    showToast('Ocurrió un error inesperado al procesar el archivo.', 'error');
                 } finally {
-                    uploadText.textContent = "Arraste su Excel aquí o haga clic";
+                    uploadText.textContent = "Subir Excel de Mantenimientos";
                     input.value = '';
+                    updateStepStatus();
                 }
+            }
+        }
+
+        function updateStepStatus() {
+            const hasData = turnos && turnos.length > 0;
+            const step2 = document.getElementById('step2Container');
+            const step3 = document.getElementById('step3Container');
+            const step2Indicator = document.getElementById('step2Indicator');
+            const step3Indicator = document.getElementById('step3Indicator');
+            const btnGenerarTodo = document.getElementById('btnGenerarTodo');
+
+            if (!step2 || !step3) return;
+
+            if (hasData) {
+                // ENABLED STATE
+                step2.classList.remove('opacity-40', 'pointer-events-none', 'grayscale');
+                step3.classList.remove('opacity-40', 'pointer-events-none', 'grayscale');
+                step2Indicator.classList.replace('bg-gray-200', 'bg-indigo-600');
+                step2Indicator.classList.replace('text-gray-500', 'text-white');
+                step3Indicator.classList.replace('bg-gray-200', 'bg-indigo-600');
+                step3Indicator.classList.replace('text-gray-500', 'text-white');
+                if (btnGenerarTodo) btnGenerarTodo.disabled = false;
+            } else {
+                // DISABLED STATE
+                step2.classList.add('opacity-40', 'pointer-events-none', 'grayscale');
+                step3.classList.add('opacity-40', 'pointer-events-none', 'grayscale');
+                step2Indicator.classList.replace('bg-indigo-600', 'bg-gray-200');
+                step2Indicator.classList.replace('text-white', 'text-gray-500');
+                step3Indicator.classList.replace('bg-indigo-600', 'bg-gray-200');
+                step3Indicator.classList.replace('text-white', 'text-gray-500');
+                if (btnGenerarTodo) btnGenerarTodo.disabled = true;
+            }
+        }
+
+        function openExcelFormatModal() {
+            const modal = document.getElementById('excelFormatModal');
+            const container = document.getElementById('excelFormatModalContainer');
+            if (modal && container) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => {
+                    container.classList.remove('scale-95', 'opacity-0');
+                    container.classList.add('scale-100', 'opacity-100');
+                }, 10);
+            }
+        }
+
+        function closeExcelFormatModal() {
+            const modal = document.getElementById('excelFormatModal');
+            const container = document.getElementById('excelFormatModalContainer');
+            if (modal && container) {
+                container.classList.remove('scale-100', 'opacity-100');
+                container.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    modal.classList.remove('flex');
+                    modal.classList.add('hidden');
+                }, 300);
             }
         }
 
@@ -1795,6 +1942,7 @@
                 updateCalendarView();
                 updateStats();
                 renderPendingAssets();
+                updateStepStatus();
 
                 // Activar indicadores de progreso y botón de generar
                 const btn = document.getElementById('btnGenerarTodo');
@@ -2057,15 +2205,17 @@
                             if (result.data && result.data.error_type === 'insufficient_slots') {
                                 showErrorModal(result.data);
                             } else if (result.data && result.data.error_type === 'no_pending_turns') {
-                                showNoPendingModal();
+                                // Redirect to help modal if no data
+                                openExcelFormatModal();
+                                showToast('Asegúrate de importar un archivo Excel válido primero.', 'info');
                             } else {
-                                showToast(result.data ? result.data.message : 'Error desconocido', 'error');
+                                showToast(result.data ? result.data.message : 'Error al procesar datos', 'error');
                             }
                         }
                     } catch (error) {
                         console.error('Error:', error);
                         closeConfirmModal();
-                        showToast('Error de conexión', 'error');
+                        showToast('Error de comunicación con el servidor. Verifica tu conexión.', 'error');
                     }
                 },
                 {
@@ -2148,14 +2298,9 @@
         }
 
         function showNoPendingModal() {
-            const modal = document.getElementById('noPendingModal');
-            const container = document.getElementById('noPendingModalContainer');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => {
-                container.classList.remove('scale-95', 'opacity-0');
-                container.classList.add('scale-100', 'opacity-100');
-            }, 10);
+            // Simplified: Just show the format guide as it's the most likely solution
+            openExcelFormatModal();
+            showToast('No se encontraron datos pendientes para procesar.', 'warning');
         }
 
         function closeNoPendingModal() {
@@ -2531,6 +2676,7 @@
             initCalendar();
             updateStats();
             renderPendingAssets();
+            updateStepStatus();
         };
     </script>
     {% endblock %}
