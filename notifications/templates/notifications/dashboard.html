@@ -897,12 +897,38 @@
                             <div>
                                 <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Asunto del Correo</label>
                                 <input type="text" name="asunto_template" id="config_asunto" value="{{ config.asunto_template }}" oninput="updateConfigPreview()" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 font-medium focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none transition">
-                                <p class="text-[10px] text-gray-400 mt-1.5">Tags: <span class="font-mono text-purple-600">{funcionario}</span>, <span class="font-mono text-purple-600">{fecha_turno}</span></p>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    <button type="button" onclick="document.getElementById('config_asunto').value += '{funcionario}'; updateConfigPreview()" class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-[9px] font-black text-gray-500 hover:border-purple-400 hover:text-purple-600 transition shadow-sm">
+                                        + {funcionario}
+                                    </button>
+                                    <button type="button" onclick="document.getElementById('config_asunto').value += '{fecha_turno}'; updateConfigPreview()" class="px-2 py-1 bg-white border border-gray-200 rounded-lg text-[9px] font-black text-gray-500 hover:border-purple-400 hover:text-purple-600 transition shadow-sm">
+                                        + {fecha_turno}
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Cuerpo (Quill Editor) -->
                             <div class="flex-1 flex flex-col min-h-[300px]">
-                                <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Plantilla del Mensaje</label>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Plantilla del Mensaje</label>
+                                    <div class="flex gap-1.5">
+                                        <button type="button" onclick="insertPlaceholderConfig('{funcionario}')" title="Insertar Funcionario" class="px-2 py-1 bg-purple-50 text-[9px] font-black text-purple-600 rounded-lg border border-purple-100 hover:bg-purple-100 transition shadow-sm">
+                                            {funcionario}
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderConfig('{evento}')" title="Insertar Evento" class="px-2 py-1 bg-purple-50 text-[9px] font-black text-purple-600 rounded-lg border border-purple-100 hover:bg-purple-100 transition shadow-sm">
+                                            {evento}
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderConfig('{fecha_turno}')" title="Insertar Fecha" class="px-2 py-1 bg-purple-50 text-[9px] font-black text-purple-600 rounded-lg border border-purple-100 hover:bg-purple-100 transition shadow-sm">
+                                            {fecha_turno}
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderConfig('{hora}')" title="Insertar Hora" class="px-2 py-1 bg-purple-50 text-[9px] font-black text-purple-600 rounded-lg border border-purple-100 hover:bg-purple-100 transition shadow-sm">
+                                            {hora}
+                                        </button>
+                                        <button type="button" onclick="insertPlaceholderConfig('{equipos_lista}')" title="Insertar Lista de Equipos" class="px-2 py-1 bg-purple-50 text-[9px] font-black text-purple-600 rounded-lg border border-purple-100 hover:bg-purple-100 transition shadow-sm">
+                                            {equipos_lista}
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden flex flex-col flex-1 focus-within:ring-2 focus-within:ring-purple-500/20 focus-within:border-purple-500 transition">
                                     <div id="quill-editor-config" class="flex-1 bg-white"></div>
                                 </div>
@@ -1446,6 +1472,14 @@
     // --- CONFIG QUILL & PREVIEW LOGIC ---
     let configQuill;
     
+    window.insertPlaceholderConfig = function(tag) {
+        if (configQuill) {
+            const range = configQuill.getSelection(true);
+            configQuill.insertText(range.index, tag);
+            updateConfigPreview();
+        }
+    };
+
     function initConfigQuill() {
         if (!configQuill && document.getElementById('quill-editor-config')) {
             configQuill = new Quill('#quill-editor-config', {
@@ -1483,7 +1517,16 @@
 
         if (asuntoInput && previewAsunto) {
             let val = asuntoInput.value || "Asunto predeterminado";
-            val = val.replace(/{funcionario}/g, exampleFuncionario).replace(/{fecha_turno}/g, exampleFecha);
+            const mockText = {
+                '{funcionario}': exampleFuncionario,
+                '{evento}': exampleEvento,
+                '{fecha_turno}': exampleFecha,
+                '{hora}': exampleHora,
+                '{equipos_lista}': 'Lista de Equipos'
+            };
+            for (const [key, text] of Object.entries(mockText)) {
+                val = val.replace(new RegExp(key.replace('{', '\\\\{').replace('}', '\\\\}'), 'g'), text);
+            }
             previewAsunto.textContent = val;
         }
 
