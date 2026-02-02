@@ -7,7 +7,7 @@
     <title>{% block title %}Sistema de Cronograma Dinámico{% endblock %}</title>
     
     <!-- PWA Settings -->
-    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#4f46e5">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -80,7 +80,7 @@
         // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/js/sw.js')
+                navigator.serviceWorker.register('/sw.js')
                     .then(reg => console.log('PWA Service Worker registrado', reg))
                     .catch(err => console.log('Error registrando PWA SW', err));
             });

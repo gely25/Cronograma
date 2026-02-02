@@ -539,3 +539,29 @@ def crear_turno_manual(request):
     except Exception as e:
         traceback.print_exc()
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+from django.http import HttpResponse
+from django.conf import settings
+import os
+
+def service_worker(request):
+    """
+    Sirve el Service Worker desde la raíz para que tenga alcance sobre todo el sitio.
+    """
+    path = os.path.join(settings.BASE_DIR, 'core', 'static', 'js', 'sw.js')
+    try:
+        with open(path, 'rb') as f:
+            return HttpResponse(f.read(), content_type="application/javascript")
+    except FileNotFoundError:
+        return HttpResponse("// SW not found", content_type="application/javascript", status=404)
+
+def manifest_view(request):
+    """
+    Sirve el manifiesto desde la raíz.
+    """
+    path = os.path.join(settings.BASE_DIR, 'core', 'static', 'manifest.json')
+    try:
+        with open(path, 'rb') as f:
+            return HttpResponse(f.read(), content_type="application/json")
+    except FileNotFoundError:
+        return HttpResponse("{}", content_type="application/json", status=404)

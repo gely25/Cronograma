@@ -20,4 +20,8 @@ urlpatterns = [
     path('api/day/<str:date>/shifts/', views.get_day_shifts, name='get_day_shifts'),
     path('reset-database/', views.reset_database, name='reset_database'),
     path('api/turnos/crear-manual/', views.crear_turno_manual, name='crear_turno_manual'),
+    
+    # PWA Support at root
+    path('sw.js', views.service_worker, name='sw.js'),
+    path('manifest.json', views.manifest_view, name='manifest.json'),
 ]
