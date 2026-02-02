@@ -184,7 +184,7 @@
                             <tr class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                                 <th class="px-10 py-6 w-20">
                                     <div class="flex items-center justify-center">
-                                        <input type="checkbox" checked onchange="toggleAllProyeccion(this)"
+                                        <input type="checkbox" onchange="toggleAllProyeccion(this)"
                                             class="w-5 h-5 rounded-lg border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
                                     </div>
                                 </th>
@@ -199,7 +199,6 @@
                                 <td class="px-10 py-8">
                                     <div class="flex items-center justify-center">
                                         <input type="checkbox" name="proyeccion_items" value="{{ item.turno.id }}:{{ item.tipo }}"
-                                             checked
                                              class="proyeccion-check w-6 h-6 rounded-xl border-slate-200 text-indigo-600 focus:ring-indigo-500/20 transition cursor-pointer">
                                     </div>
                                 </td>
@@ -426,8 +425,18 @@
                             <td class="px-6 py-6 font-medium text-gray-700">
                                 {{ h.turno.responsable.nombre }}
                             </td>
-                            <td class="px-6 py-6 text-gray-600">
-                                {{ h.destinatario }}
+                            <td class="px-6 py-6">
+                                <div class="flex flex-col">
+                                    {% if h.destinatario != h.turno.responsable.email %}
+                                        <span class="text-blue-600 font-bold text-xs" title="Correo vigente actualizado">{{ h.turno.responsable.email }}</span>
+                                        <div class="flex items-center gap-1 mt-1">
+                                            <span class="px-1 py-0.5 bg-gray-100 text-gray-400 text-[8px] font-black uppercase rounded tracking-tighter border border-gray-200/50">Anterior:</span>
+                                            <span class="text-[9px] text-gray-400 line-through decoration-red-200/50">{{ h.destinatario }}</span>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-gray-600">{{ h.destinatario }}</span>
+                                    {% endif %}
+                                </div>
                             </td>
                             <td class="px-6 py-6 text-gray-600">
                                 {{ h.turno.fecha|date:"d M" }} {{ h.turno.hora|time:"H:i" }}
@@ -453,7 +462,7 @@
                                     <button onclick="openConfirmResendModal('{{ h.notificacion.id }}')" class="p-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition shadow-sm" title="Reenviar ahora">
                                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                                     </button>
-                                    <button onclick="openEditEmailModal('{{ h.notificacion.id }}', '{{ h.destinatario }}')" type="button" class="p-2 bg-white border border-orange-200 text-orange-500 rounded-md hover:bg-orange-50 transition shadow-sm" title="Editar Email y Reenviar">
+                                    <button onclick="openEditEmailModal('{{ h.notificacion.id }}', '{{ h.turno.responsable.email }}')" type="button" class="p-2 bg-white border border-orange-200 text-orange-500 rounded-md hover:bg-orange-50 transition shadow-sm" title="Editar Email y Reenviar">
                                         <i data-lucide="pencil" class="w-4 h-4"></i>
                                     </button>
                                     {% endif %}
@@ -537,6 +546,7 @@
             <div class="flex-1 overflow-hidden flex flex-col min-h-0">
                 <form id="wizardForm" method="POST" action="{% url 'generar_desde_proyeccion' %}" class="flex-1 flex flex-col overflow-hidden min-h-0">
                     {% csrf_token %}
+                    <input type="hidden" name="wizard_config_update" value="1">
                     
                     <!-- STEP 1: CONFIGURATION -->
                     <div id="wizardStep1" class="wizard-step-node active-step flex-1 flex flex-col overflow-hidden min-h-0">
@@ -561,20 +571,7 @@
                                             <span class="text-[7px] font-bold text-gray-400 uppercase">Días</span>
                                         </div>
                                     </div>
-                                    <!-- Jornada -->
-                                    <div class="p-2 bg-white rounded-lg border border-gray-100 shadow-sm space-y-1.5">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-[8px] font-black text-gray-700 uppercase">Hoy</span>
-                                            <label class="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" name="activar_jornada" class="sr-only peer" {% if config.activar_jornada %}checked{% endif %}>
-                                                <div class="w-6 h-3 bg-gray-200 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:rounded-full after:h-2.5 after:w-2.5 after:transition-all"></div>
-                                            </label>
-                                        </div>
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" name="minutos_antes_jornada" value="{{ config.minutos_antes_jornada }}" class="w-full px-1.5 py-0.5 bg-gray-50 border-gray-100 rounded text-[10px] font-bold text-gray-700 focus:ring-0">
-                                            <span class="text-[6px] font-bold text-gray-400 uppercase">Min</span>
-                                        </div>
-                                    </div>
+                                    <!-- Jornada (ELIMINADA) -->
                                 </div>
                                 <div class="px-1">
                                     <h4 class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
@@ -658,8 +655,6 @@
                             </div>
                         </div>
                     </div>
-
-            </div>                <!-- STEP 2: RECIPIENTS -->
                 <div id="wizardStep2" class="wizard-step-node flex-1 flex flex-col overflow-hidden p-6 min-h-0">
                     <div class="flex flex-col h-full gap-5 min-h-0">
                         <div class="flex justify-between items-center bg-gray-50/50 p-4 rounded-xl border border-gray-100">
@@ -754,6 +749,7 @@
                 </div>
             </form>
         </div>
+    </div>
     </div>
 
     <!-- Separate Email Preview Modal -->
@@ -1019,7 +1015,19 @@
             btn.classList.remove('bg-white', 'text-gray-400');
         }
 
-        fetch(`/notifications/api/proyeccion/?dias=${dias}&offset=${offset}&_=${new Date().getTime()}`)
+        // Obtener valores actuales del Paso 1 (Overrides para la proyección)
+        const antInput = document.querySelector('input[name="activar_anticipado"]');
+        const dAntInput = document.querySelector('input[name="dias_antes"]');
+        
+        const params = new URLSearchParams({
+            dias: dias,
+            offset: offset,
+            activar_anticipado: antInput ? antInput.checked : true,
+            dias_antes: dAntInput ? dAntInput.value : 7,
+            _: new Date().getTime()
+        });
+
+        fetch(`/notifications/api/proyeccion/?${params.toString()}`)
             .then(r => r.json())
             .then(data => {
                 if (title) {
@@ -1222,7 +1230,26 @@
         const wizardForm = document.getElementById('wizardForm');
 
         if (wizardForm) {
-            wizardForm.addEventListener('submit', () => showLoading());
+            wizardForm.addEventListener('submit', (e) => {
+                const checks = document.querySelectorAll('.wizard-notif-check:checked');
+                console.log('DEBUG: [wizardForm] Submitting with checks:', checks.length);
+                
+                if (checks.length === 0) {
+                    const isConfirmed = confirm('No has seleccionado destinatarios en el Paso 2. ¿Deseas enviar solo la actualización de la configuración?');
+                    if (!isConfirmed) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+                
+                // Asegurar que Quill asigne el valor al hidden input
+                if (wizardQuill) {
+                    const hiddenCuerpo = document.getElementById('hidden_cuerpo_wizard');
+                    if (hiddenCuerpo) hiddenCuerpo.value = wizardQuill.root.innerHTML;
+                }
+                
+                showLoading("Enviando Notificaciones", "Esto puede demorar unos segundos...");
+            });
         }
     });
 </script>

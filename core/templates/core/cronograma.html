@@ -138,181 +138,205 @@
         <!-- Sidebar Header -->
         <div class="p-6 border-b border-gray-100 flex justify-between items-start">
             <div>
-                <h2 class="text-xl font-black tracking-tight text-gray-900">TechScheduler</h2>
-                <p class="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">Gestión de Cronogramas</p>
+                <h2 class="text-xl font-black tracking-tight text-indigo-900">SistemaTurnos</h2>
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">GESTIÓN DE CRONOGRAMAS</p>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden text-gray-400 hover:text-gray-600">
                 <i data-lucide="chevrons-left" class="w-5 h-5"></i>
+            </button>
+        </div>
+        
+        <!-- RESET BUTTON -->
+        <div class="px-6 py-4 bg-rose-50/30 border-b border-rose-50">
+            <button onclick="resetEverything()" 
+                class="w-full py-2.5 px-4 rounded-xl border border-rose-100 bg-white text-rose-600 text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2 group shadow-sm">
+                <i data-lucide="refresh-ccw" class="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500"></i>
+                Reiniciar Cronograma
             </button>
         </div>
 
         <!-- Scrollable Content -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
             
-            <!-- Upload Section -->
-            <div class="p-4 border-b border-gray-100">
+            <!-- STEP 1: IMPORTAR DATOS -->
+            <div class="p-6 border-b border-gray-50">
+                <div class="flex items-center gap-3 mb-6">
+                    <div id="step1Indicator" class="size-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-black text-sm">1</div>
+                    <h3 class="text-xs font-black text-indigo-800 uppercase tracking-widest">Importar Datos</h3>
+                </div>
+
                 <form action="{% url 'upload_excel' %}" method="POST" enctype="multipart/form-data" id="uploadForm"
-                    class="relative border-2 border-dashed border-blue-100 rounded-xl p-6 transition-all hover:bg-blue-50/50 hover:border-blue-400 group text-center"
+                    class="relative border-2 border-dashed border-gray-100 rounded-2xl p-8 transition-all hover:bg-indigo-50/30 hover:border-indigo-200 group text-center"
                     ondragover="handleUploadDragOver(event)" ondragleave="handleUploadDragLeave(event)"
                     ondrop="handleUploadDrop(event)">
                     {% csrf_token %}
                     <input type="file" name="archivo" id="fileInput" class="hidden" onchange="submitUpload()">
                     <div class="cursor-pointer" onclick="document.getElementById('fileInput').click()">
-                        <div class="mb-3 group-hover:scale-110 transition-transform inline-block p-3 rounded-full bg-blue-50 text-blue-500">
-                            <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                        <div class="mb-4 group-hover:scale-110 transition-transform inline-block">
+                            <i data-lucide="folder" class="w-10 h-10 text-amber-400 fill-amber-400/20"></i>
                         </div>
-                        <p id="uploadText" class="text-xs font-bold text-gray-600">Subir archivo Excel</p>
-                        <p class="text-[10px] text-gray-400 mt-1">Arrastre o haga clic</p>
-                        <p id="fileName" class="text-[10px] text-blue-600 font-black mt-2 truncate hidden"></p>
+                        <p id="uploadText" class="text-xs font-bold text-slate-700">Subir Excel de Mantenimientos</p>
+                        <p class="text-[10px] text-slate-400 mt-1">Arrastra tu archivo o haz clic para seleccionar</p>
+                        <p id="fileName" class="text-[10px] text-indigo-600 font-black mt-2 truncate hidden"></p>
                     </div>
                 </form>
-                <div class="mt-3 flex justify-end">
-                    <button onclick="resetSystem()"
-                        class="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 flex items-center gap-1.5 py-2 px-3 hover:bg-red-50 rounded-lg transition-colors">
-                        <i data-lucide="trash-2" class="w-3 h-3"></i> Reiniciar
-                    </button>
-                </div>
             </div>
 
-            <!-- Configuration Section -->
-            <div class="p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2">
-                        <i data-lucide="settings-2" class="w-3 h-3 text-gray-400"></i> Configuración
-                    </h3>
+            <!-- STEP 2: CONFIGURAR PARÁMETROS -->
+            <div class="p-6 border-b border-gray-50 bg-slate-50/30">
+                <div class="flex items-center gap-3 mb-6">
+                    <div id="step2Indicator" class="size-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center font-black text-sm">2</div>
+                    <h3 class="text-xs font-black text-gray-500 uppercase tracking-widest">Configurar Parámetros</h3>
                 </div>
-                
-                <form id="configForm" class="space-y-4">
-                    <!-- Periodo -->
-                    <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                        <span class="text-[10px] font-bold text-gray-500 uppercase block mb-2">Período del Cronograma</span>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label for="fechaInicio" class="sr-only">Inicio</label>
-                                <input type="date" name="fecha_inicio" id="fechaInicio"
-                                    value="{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}"
-                                    class="w-full text-xs font-medium text-gray-700 bg-white border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0">
+
+                <form id="configForm" class="space-y-3">
+                    <!-- ACCORDION 1: PERIODO -->
+                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300">
+                        <button type="button" onclick="toggleAccordion('periodoContent')" class="w-full p-4 flex items-center justify-between group">
+                            <div class="flex items-center gap-2.5">
+                                <span class="size-5 bg-indigo-50 text-indigo-500 rounded flex items-center justify-center">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Período del Cronograma</span>
                             </div>
-                            <div>
-                                <label for="fechaFin" class="sr-only">Fin</label>
-                                <input type="date" name="fecha_fin" id="fechaFin"
-                                    value="{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}"
-                                    class="w-full text-xs font-medium text-gray-700 bg-white border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0">
+                            <i data-lucide="chevron-up" class="w-4 h-4 text-slate-400 transition-transform" id="periodoArrow"></i>
+                        </button>
+                        <div id="periodoContent" class="p-4 pt-0 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1.5">
+                                    <label for="fechaInicio" class="text-[10px] font-bold text-slate-400 uppercase ml-1">Fecha Inicio</label>
+                                    <input type="date" name="fecha_inicio" id="fechaInicio"
+                                        value="{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}"
+                                        class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label for="fechaFin" class="text-[10px] font-bold text-slate-400 uppercase ml-1">Fecha Fin</label>
+                                    <input type="date" name="fecha_fin" id="fechaFin"
+                                        value="{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}"
+                                        class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all">
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Horario -->
-                    <div class="space-y-3">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Inicio Jornada</label>
-                                <input type="time" name="hora_inicio" id="horaInicio"
-                                    value="{% if config %}{{ config.hora_inicio|time:'H:i' }}{% else %}08:00{% endif %}"
-                                    class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
+                    <!-- ACCORDION 2: HORARIOS -->
+                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300">
+                        <button type="button" onclick="toggleAccordion('horariosContent')" class="w-full p-4 flex items-center justify-between group">
+                            <div class="flex items-center gap-2.5">
+                                <span class="size-5 bg-amber-50 text-amber-500 rounded flex items-center justify-center">
+                                    <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Horarios de Trabajo</span>
                             </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Fin Jornada</label>
-                                <input type="time" name="hora_fin" id="horaFin"
-                                    value="{% if config %}{{ config.hora_fin|time:'H:i' }}{% else %}17:00{% endif %}"
-                                    class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
+                            <i data-lucide="chevron-up" class="w-4 h-4 text-slate-400 transition-transform rotate-0" id="horariosArrow"></i>
+                        </button>
+                        <div id="horariosContent" class="p-4 pt-0 space-y-4">
+                            <div class="grid grid-cols-1 gap-4">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Inicio Jornada</label>
+                                    <input type="time" name="hora_inicio" id="horaInicio"
+                                        value="{% if config %}{{ config.hora_inicio|time:'H:i' }}{% else %}08:00{% endif %}"
+                                        class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all">
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Fin Jornada</label>
+                                    <input type="time" name="hora_fin" id="horaFin"
+                                        value="{% if config %}{{ config.hora_fin|time:'H:i' }}{% else %}17:00{% endif %}"
+                                        class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all">
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Duración Turno</label>
-                                <div class="relative">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Turno (min)</label>
                                     <input type="number" name="duracion_turno" id="duracionTurno"
                                         value="{% if config %}{{ config.duracion_turno }}{% else %}30{% endif %}"
-                                        class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg pr-8">
-                                    <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 font-bold">min</span>
+                                        class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all">
                                 </div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Almuerzo</label>
-                                <div class="relative">
+                                <div class="space-y-1.5">
+                                    <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Almuerzo (min)</label>
                                     <input type="number" name="duracion_almuerzo" id="duracionAlmuerzo"
                                         value="{% if config %}{{ config.duracion_almuerzo }}{% else %}60{% endif %}"
-                                        class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg pr-8">
-                                    <span class="absolute right-2 top-1.5 text-[10px] text-gray-400 font-bold">min</span>
+                                        class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all">
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Inicio Almuerzo</label>
-                            <input type="time" name="hora_almuerzo" id="horaAlmuerzo"
-                                value="{% if config %}{{ config.hora_almuerzo|time:'H:i' }}{% else %}12:00{% endif %}"
-                                class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
-                        </div>
-                    </div>
-
-                    <!-- Exclusion -->
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Días Laborables</label>
-                        <select name="modo_exclusion" id="modoExclusion" class="w-full text-xs font-bold text-gray-700 bg-white border-gray-200 rounded-lg">
-                            <option value="none" {% if config and config.modo_exclusion == 'none' %}selected{% endif %}>Todos los días</option>
-                            <option value="sundays" {% if config and config.modo_exclusion == 'sundays' %}selected{% endif %}>Lun a Sáb (Excluir Dom)</option>
-                            <option value="weekends" {% if not config or config.modo_exclusion == 'weekends' %}selected{% endif %}>Lun a Vie (Excluir Fines)</option>
-                        </select>
-                    </div>
-
-                    <!-- Holidays -->
-                    <div class="bg-yellow-50/50 rounded-xl p-3 border border-yellow-100">
-                        <label class="text-[10px] font-bold text-yellow-600 uppercase block mb-2">Feriados</label>
-                        <div class="flex gap-2 mb-2">
-                            <input type="date" id="newHolidayDate" class="flex-1 text-xs rounded-lg border-gray-200" aria-label="Fecha feriado">
-                            <button type="button" onclick="addFeriado()" class="bg-yellow-400 text-yellow-900 rounded-lg px-3 font-bold hover:bg-yellow-500 transition">+</button>
-                        </div>
-                        <div class="flex flex-wrap gap-1.5" id="holidaysList">
-                            {% for f in feriados %}
-                            <span class="bg-white border border-yellow-200 text-yellow-700 text-[10px] px-2 py-1 rounded-md font-bold flex items-center gap-1.5 shadow-sm">
-                                {{ f.fecha|date:"d/m" }}
-                                <button onclick="removeFeriado('{{ f.fecha|date:'Y-m-d' }}')" class="hover:text-red-500 transition">×</button>
-                            </span>
-                            {% endfor %}
+                            <div class="space-y-1.5">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase ml-1">Inicio Almuerzo</label>
+                                <input type="time" name="hora_almuerzo" id="horaAlmuerzo"
+                                    value="{% if config %}{{ config.hora_almuerzo|time:'H:i' }}{% else %}12:00{% endif %}"
+                                    class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all">
+                            </div>
                         </div>
                     </div>
 
-                    <button type="button" onclick="guardarConfig()"
-                        class="w-full py-2 bg-gray-900 text-white rounded-lg font-bold text-xs hover:bg-black transition flex items-center justify-center gap-2 shadow-lg shadow-gray-200">
-                        <i data-lucide="save" class="w-3 h-3"></i> Guardar Configuración
-                    </button>
+                    <!-- ACCORDION 3: DIAS LABORABLES -->
+                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300">
+                        <button type="button" onclick="toggleAccordion('diasContent')" class="w-full p-4 flex items-center justify-between group">
+                            <div class="flex items-center gap-2.5">
+                                <span class="size-5 bg-indigo-50 text-indigo-500 rounded flex items-center justify-center">
+                                    <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Días Laborables</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform" id="diasArrow"></i>
+                        </button>
+                        <div id="diasContent" class="p-4 pt-0 hidden">
+                            <select name="modo_exclusion" id="modoExclusion" class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20">
+                                <option value="none" {% if config and config.modo_exclusion == 'none' %}selected{% endif %}>Todos los días</option>
+                                <option value="sundays" {% if config and config.modo_exclusion == 'sundays' %}selected{% endif %}>Lun a Sáb (Excluir Dom)</option>
+                                <option value="weekends" {% if not config or config.modo_exclusion == 'weekends' %}selected{% endif %}>Lun a Vie (Excluir Fines)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ACCORDION 4: FERIADOS -->
+                    <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden transition-all duration-300">
+                        <button type="button" onclick="toggleAccordion('feriadosContent')" class="w-full p-4 flex items-center justify-between group">
+                            <div class="flex items-center gap-2.5">
+                                <span class="size-5 bg-rose-50 text-rose-500 rounded flex items-center justify-center">
+                                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                </span>
+                                <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wide">Feriados</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform" id="feriadosArrow"></i>
+                        </button>
+                        <div id="feriadosContent" class="p-4 pt-0 hidden space-y-3">
+                            <div class="flex gap-2">
+                                <input type="date" id="newHolidayDate" class="flex-1 text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg" aria-label="Fecha feriado">
+                                <button type="button" onclick="addFeriado()" class="bg-indigo-600 text-white rounded-lg px-3 font-bold hover:bg-indigo-700 transition">+</button>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5" id="holidaysList">
+                                {% for f in feriados %}
+                                <span class="bg-slate-50 border border-slate-100 text-slate-600 text-[10px] px-2 py-1.5 rounded-lg font-bold flex items-center gap-1.5">
+                                    {{ f.fecha|date:"d/m" }}
+                                    <button onclick="removeFeriado('{{ f.fecha|date:'Y-m-d' }}')" class="hover:text-rose-500 transition">×</button>
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
 
-
-
-            <!-- Notifications Link -->
-            <div class="p-4 border-t border-gray-100">
-                 <a href="{% url 'notifications_dashboard' %}" class="flex items-center justify-between group p-2 hover:bg-gray-50 rounded-lg transition-all">
-                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-widest flex items-center gap-2 group-hover:text-indigo-600">
-                        <i data-lucide="brain-circuit" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500"></i> Smart Notificaciones 
-                    </h3>
-                    <i data-lucide="arrow-right" class="w-3 h-3 text-gray-400 group-hover:text-indigo-500"></i>
-                </a>
-            </div>
-
-            <!-- Pending Teams (Compact) -->
-            <div class="p-4 border-t border-gray-100">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-xs font-black text-gray-900 uppercase tracking-widest">Pendientes</h3>
-                    <span class="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full" id="statPendingCountSidebar">0</span>
+            <!-- STEP 3: GENERAR CRONOGRAMA -->
+            <div class="p-6 bg-slate-50/50">
+                <div class="flex items-center gap-3 mb-6">
+                    <div id="step3Indicator" class="size-8 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center font-black text-sm">3</div>
+                    <h3 class="text-xs font-black text-gray-500 uppercase tracking-widest">Generar Cronograma</h3>
                 </div>
-                <div id="pendingAssetsPanelSidebar" class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    <!-- JS Rendered -->
+
+                <div class="space-y-4 text-center">
+                    <button onclick="generarCronograma()"
+                        class="w-full py-4 bg-slate-200 text-gray-400 rounded-2xl font-black text-sm uppercase tracking-widest cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-sm" id="btnGenerarTodo">
+                        <i data-lucide="rocket" class="w-5 h-5 opacity-40"></i> Crear Calendario
+                    </button>
+                    <p class="text-[10px] text-slate-400 font-bold leading-relaxed px-4">
+                        Se guardará la configuración y generará el cronograma automáticamente
+                    </p>
                 </div>
             </div>
+
         </div>
 
-        <!-- Regenerate Button (Stick to bottom) -->
-        <div class="p-4 border-t border-gray-100 bg-white">
-            <button onclick="generarCronograma()"
-                class="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-xl font-black text-xs shadow-lg shadow-amber-200 hover:shadow-xl hover:from-amber-500 hover:to-amber-600 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                <i data-lucide="zap" class="w-4 h-4 fill-current"></i> REGENERAR TODO
-            </button>
-        </div>
     </aside>
 
     <!-- 2. MAIN CALENDAR AREA -->
@@ -375,15 +399,6 @@
         <div class="flex-1 overflow-auto p-6 relative" id="mainViewsContainer">
             <!-- Monthly View -->
             <div id="monthView" class="h-full flex flex-col">
-                <div class="grid grid-cols-7 gap-4 mb-4">
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Dom</div>
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Lun</div>
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Mar</div>
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Mié</div>
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Jue</div>
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Vie</div>
-                    <div class="text-center text-[10px] font-black text-gray-400 uppercase">Sáb</div>
-                </div>
                 <div id="calendarContainer" class="flex-1">
                     <!-- JS Rendered Month Grid -->
                 </div>
@@ -620,7 +635,7 @@
             <div id="confirmExtraContent" class="mt-4 hidden"></div>
         </div>
         <div class="mt-6 flex gap-3">
-            <button onclick="closeConfirmModal()"
+            <button id="confirmCancelBtn" onclick="closeConfirmModal()"
                 class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors">
                 Cancelar
             </button>
@@ -722,7 +737,7 @@
 
             ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(day => {
                 const h = document.createElement('div');
-                h.className = 'text-center font-bold text-gray-400 text-xs uppercase mb-2';
+                h.className = 'text-center text-[10px] font-black text-gray-400 uppercase mb-4';
                 h.textContent = day;
                 grid.appendChild(h);
             });
@@ -1764,14 +1779,15 @@
         async function refreshAllData() {
             try {
                 const resp = await fetch('{% url "api_get_datos" %}');
+                if (!resp.ok) throw new Error('Network response was not ok');
                 const data = await resp.json();
 
-                // Actualizar variables globales
-                turnos = data.turnos;
-                feriados = data.feriados;
-                config = data.config;
+                // Actualizar variables globales con seguridad
+                turnos = data.turnos || [];
+                feriados = data.feriados || [];
+                config = data.config || {};
 
-                if (config.inicio) {
+                if (config && config.inicio) {
                     currentMonth = new Date(config.inicio + 'T00:00:00');
                 }
 
@@ -1779,21 +1795,48 @@
                 updateCalendarView();
                 updateStats();
                 renderPendingAssets();
+
+                // Activar indicadores de progreso y botón de generar
+                const btn = document.getElementById('btnGenerarTodo');
+                const step2 = document.getElementById('step2Indicator');
+                const step3 = document.getElementById('step3Indicator');
+
+                if (step2) {
+                    step2.classList.remove('bg-gray-200', 'text-gray-500');
+                    step2.classList.add('bg-indigo-600', 'text-white');
+                }
+
+                if (turnos && turnos.length > 0) {
+                    if (btn) {
+                        btn.classList.remove('bg-slate-200', 'text-gray-400', 'cursor-not-allowed');
+                        btn.classList.add('bg-gradient-to-r', 'from-indigo-600', 'to-indigo-700', 'text-white', 'shadow-indigo-200', 'hover:shadow-indigo-400', 'hover:-translate-y-0.5');
+                        const icon = btn.querySelector('i, svg');
+                        if (icon) icon.classList.remove('opacity-40');
+                    }
+                    if (step3) {
+                        step3.classList.remove('bg-gray-200', 'text-gray-500');
+                        step3.classList.add('bg-indigo-600', 'text-white');
+                    }
+                }
             } catch (err) {
                 console.error('Error refreshing data:', err);
             }
         }
-        function toggleConfig() {
-            const container = document.getElementById('configContainer');
-            const btnText = document.getElementById('toggleText');
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            const arrow = document.getElementById(id.replace('Content', 'Arrow'));
+            const isHidden = content.classList.contains('hidden');
+            
+            // Cerrar otros acordeones (opcional, pero mejora UX)
+            // document.querySelectorAll('[id$="Content"]').forEach(c => c.classList.add('hidden'));
+            // document.querySelectorAll('[id$="Arrow"]').forEach(a => a.classList.remove('rotate-180'));
 
-            const isHidden = container.classList.contains('hidden');
             if (isHidden) {
-                container.classList.remove('hidden');
-                btnText.textContent = 'Cerrar';
+                content.classList.remove('hidden');
+                if (arrow) arrow.classList.add('rotate-180');
             } else {
-                container.classList.add('hidden');
-                btnText.textContent = 'Reconfigurar';
+                content.classList.add('hidden');
+                if (arrow) arrow.classList.remove('rotate-180');
             }
         }
 
@@ -1831,6 +1874,29 @@
         }
 
         async function guardarConfig(silent = false) {
+            const f_inicio = document.getElementById('fechaInicio').value;
+            const f_fin = document.getElementById('fechaFin').value;
+            const h_inicio = document.getElementById('horaInicio').value;
+            const h_fin = document.getElementById('horaFin').value;
+
+            // Validar campos obligatorios
+            if (!f_inicio || !f_fin) {
+                await showAlertModal('Datos Faltantes', 'Tanto la fecha de inicio como la de fin son obligatorias para el cronograma.');
+                return false;
+            }
+
+            // Validar rango de fechas
+            if (f_inicio > f_fin) {
+                await showAlertModal('Rango de Fechas Inválido', 'La fecha de inicio no puede ser posterior a la fecha de fin.');
+                return false;
+            }
+
+            // Validar rango de horas
+            if (h_inicio && h_fin && h_inicio >= h_fin) {
+                await showAlertModal('Rango Horario Inválido', 'La hora de inicio de la jornada debe ser anterior a la hora de finalización.');
+                return false;
+            }
+
             const formData = new FormData(document.getElementById('configForm'));
             try {
                 const resp = await fetch('{% url "guardar_configuracion" %}', {
@@ -1840,7 +1906,9 @@
                 });
                 const data = await resp.json();
                 if (resp.ok) {
-                    if (!silent) showToast(data.message || 'Configuración guardada');
+                    if (!silent) {
+                        await showAlertModal('¡Éxito!', data.message || 'La configuración se ha guardado correctamente.', 'success');
+                    }
                     return true;
                 } else {
                     showToast(data.message || 'Error al guardar la configuración', 'error');
@@ -1858,7 +1926,7 @@
                 showConfirmModal(title, message, () => {
                     resolve();
                 }, {
-                    type: type === 'error' ? 'warning' : 'info',
+                    type: type === 'error' ? 'warning' : (type === 'success' ? 'info' : 'info'),
                     hideCancel: true,
                     confirmText: 'Entendido',
                     btnClass: type === 'error' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'
@@ -1869,13 +1937,14 @@
         function showConfirmModal(title, message, onConfirm, options = {}) {
             const modal = document.getElementById('confirmationModal');
             const container = document.getElementById('confirmModalContent');
-            const iconContainer = container.querySelector('.rounded-full');
-            const icon = iconContainer.querySelector('i') || iconContainer.querySelector('svg');
             const titleEl = document.getElementById('confirmTitle');
             const msgEl = document.getElementById('confirmMessage');
             const extraEl = document.getElementById('confirmExtraContent');
             const confirmBtn = document.getElementById('confirmActionBtn');
-            const cancelBtn = container.querySelector('button[onclick="closeConfirmModal()"]');
+            const cancelBtn = document.getElementById('confirmCancelBtn') || (container ? container.querySelector('button[onclick="closeConfirmModal()"]') : null);
+            const iconContainer = container ? container.querySelector('.rounded-full') : null;
+
+            if (!modal || !confirmBtn || !container) return;
 
             // Reset state
             titleEl.textContent = title;
@@ -1883,75 +1952,63 @@
             msgEl.classList.remove('text-green-600', 'font-bold');
             extraEl.innerHTML = '';
             extraEl.classList.add('hidden');
-            iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4";
+            confirmBtn.style.display = 'block';
+            confirmBtn.disabled = false;
+            if (cancelBtn) cancelBtn.style.display = options.hideCancel ? 'none' : 'block';
+
+            // Icon handling
+            const icon = iconContainer ? iconContainer.querySelector('i, svg') : null;
+            const type = options.type || 'info';
+            if (iconContainer) {
+                iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${type === 'warning' ? 'bg-red-100' : 'bg-blue-100'}`;
+            }
             
             if (icon) {
-                icon.setAttribute('data-lucide', 'help-circle');
-                icon.className = "w-6 h-6 text-blue-600";
+                icon.setAttribute('data-lucide', type === 'warning' ? 'alert-triangle' : (type === 'info' ? 'check-circle-2' : 'help-circle'));
+                icon.className = `w-6 h-6 ${type === 'warning' ? 'text-red-600' : 'text-blue-600'}`;
             }
-            
-            cancelBtn.style.display = options.hideCancel ? 'none' : 'block';
+
             confirmBtn.innerHTML = options.confirmText || 'Confirmar';
-            // Reset style before applying custom one
-            confirmBtn.className = "flex-1 py-2 text-white rounded-xl text-xs font-bold transition-colors shadow-lg";
-            if (options.btnClass) {
-                confirmBtn.classList.add(...options.btnClass.split(' '));
-            } else {
-                confirmBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'shadow-blue-500/30');
-            }
+            confirmBtn.className = "flex-1 py-2 text-white rounded-xl text-xs font-bold transition-colors shadow-lg " + 
+                (options.btnClass || (type === 'warning' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'));
 
             if (options.extraHTML) {
                 extraEl.innerHTML = options.extraHTML;
                 extraEl.classList.remove('hidden');
             }
 
-            if (options.type === 'warning') {
-                iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 mb-4";
-                if (icon) {
-                    icon.setAttribute('data-lucide', 'alert-triangle');
-                    icon.className = "w-6 h-6 text-amber-600";
-                }
-            }
-
-            // Remove old listeners to prevent multiple firings by cloning
-            const newBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
-
-            newBtn.onclick = async () => {
+            // Assign handler directly
+            confirmBtn.onclick = async () => {
                 if (options.noCloseOnConfirm) {
-                    newBtn.disabled = true;
-                    newBtn.innerHTML = '<i class="w-3 h-3 animate-spin border-2 border-white/30 border-t-white rounded-full"></i>';
+                    confirmBtn.disabled = true;
+                    confirmBtn.innerHTML = '<i class="w-3 h-3 animate-spin border-2 border-white/30 border-t-white rounded-full"></i>';
                     await onConfirm(async (successMsg) => {
-                        // Success state
-                        iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4 animate-bounce";
-                        const finalIcon = iconContainer.querySelector('i') || iconContainer.querySelector('svg');
-                        if (finalIcon) {
-                            finalIcon.setAttribute('data-lucide', 'check-circle-2');
-                            finalIcon.className = "w-6 h-6 text-green-600";
+                        if (iconContainer) {
+                            iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4 animate-bounce";
+                            const finalIcon = iconContainer.querySelector('i, svg');
+                            if (finalIcon) {
+                                finalIcon.setAttribute('data-lucide', 'check-circle-2');
+                                finalIcon.className = "w-6 h-6 text-green-600";
+                            }
                         }
                         titleEl.textContent = '¡Éxito!';
                         msgEl.textContent = successMsg || 'Acción completada con éxito.';
                         msgEl.classList.add('text-green-600', 'font-bold');
                         extraEl.classList.add('hidden');
-                        newBtn.style.display = 'none';
-                        cancelBtn.style.display = 'none';
+                        confirmBtn.style.display = 'none';
+                        if (cancelBtn) cancelBtn.style.display = 'none';
                         lucide.createIcons();
-                        
-                        setTimeout(() => {
-                            closeConfirmModal();
-                        }, 2000);
+                        setTimeout(() => closeConfirmModal(), 2000);
                     });
                 } else {
                     closeConfirmModal();
-                    onConfirm();
+                    if (typeof onConfirm === 'function') onConfirm();
                 }
             };
             
             lucide.createIcons();
-
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 container.classList.remove('scale-95');
@@ -1962,6 +2019,7 @@
         function closeConfirmModal() {
             const modal = document.getElementById('confirmationModal');
             const container = document.getElementById('confirmModalContent');
+            if (!modal || !container) return;
 
             modal.classList.add('opacity-0');
             container.classList.remove('scale-100');
@@ -1977,7 +2035,7 @@
             showConfirmModal(
                 'Confirmar Generación',
                 'Esto guardará la configuración actual y redistribuirá todos los turnos. ¿Deseas continuar?',
-                async () => {
+                async (showSuccess) => {
                     try {
                         // 1. Save Config First
                         const saved = await guardarConfig(true); // silent save
@@ -1991,9 +2049,11 @@
                         const result = await resp.json();
 
                         if (resp.ok) {
-                            showToast(result.message || 'Cronograma generado correctamente');
+                            showSuccess(result.message || 'Cronograma generado correctamente');
                             await refreshAllData();
                         } else {
+                            // If we failed, we close the "loading" modal to show the error modal or toast
+                            closeConfirmModal();
                             if (result.data && result.data.error_type === 'insufficient_slots') {
                                 showErrorModal(result.data);
                             } else if (result.data && result.data.error_type === 'no_pending_turns') {
@@ -2004,8 +2064,44 @@
                         }
                     } catch (error) {
                         console.error('Error:', error);
+                        closeConfirmModal();
                         showToast('Error de conexión', 'error');
                     }
+                },
+                {
+                    noCloseOnConfirm: true,
+                    confirmText: 'Sí, Generar Ahora'
+                }
+            );
+        }
+
+        async function resetEverything() {
+            showConfirmModal(
+                '¿Reiniciar Sistema?',
+                'Esta acción eliminará TODOS los turnos, responsables y configuraciones actuales. No se puede deshacer.',
+                async () => {
+                    try {
+                        const resp = await fetch('{% url "reset_database" %}', {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': CSRF_TOKEN }
+                        });
+                        const data = await resp.json();
+                        if (resp.ok) {
+                            showToast(data.message, 'success');
+                            // Actualizar UI
+                            await refreshAllData();
+                        } else {
+                            showToast(data.message, 'error');
+                        }
+                    } catch (err) {
+                        console.error('Error resetting database:', err);
+                        showToast('Error al conectar con el servidor', 'error');
+                    }
+                },
+                {
+                    type: 'warning',
+                    confirmText: 'Sí, Reiniciar Todo',
+                    btnClass: 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/30'
                 }
             );
         }
@@ -2182,30 +2278,41 @@
         function switchView(view) {
             currentView = view;
             
-            // Buttons state
-            ['month', 'week', 'day'].forEach(v => {
-                const btn = document.getElementById(`btnView${v.charAt(0).toUpperCase() + v.slice(1)}`);
-                if (v === view) {
-                    btn.classList.remove('text-gray-500', 'bg-transparent');
-                    btn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
-                } else {
-                    btn.classList.add('text-gray-500', 'bg-transparent');
+            // View Buttons
+            const btnMonth = document.getElementById('btnViewMonth');
+            const btnWeek = document.getElementById('btnViewWeek');
+            const btnDay = document.getElementById('btnViewDay');
+            
+            [btnMonth, btnWeek, btnDay].forEach(btn => {
+                if (btn) {
                     btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+                    btn.classList.add('text-gray-500');
                 }
             });
 
-            // Containers visibility
-            document.getElementById('monthView').classList.add('hidden');
-            document.getElementById('weekView').classList.add('hidden');
-            document.getElementById('dayView').classList.add('hidden');
+            const activeBtn = { 'month': btnMonth, 'week': btnWeek, 'day': btnDay }[view];
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-500');
+                activeBtn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
+            }
+
+            // View Containers
+            const monthV = document.getElementById('monthView');
+            const weekV = document.getElementById('weekView');
+            const dayV = document.getElementById('dayView');
             
-            document.getElementById(`${view}View`).classList.remove('hidden');
+            if (monthV) monthV.classList.add('hidden');
+            if (weekV) weekV.classList.add('hidden');
+            if (dayV) dayV.classList.add('hidden');
 
-            // Header text
-            const labels = { 'month': 'Vista Mensual', 'week': 'Vista Semanal', 'day': 'Vista Diaria' };
-            document.getElementById('currentViewLabel').textContent = labels[view];
+            const activeView = { 'month': monthV, 'week': weekV, 'day': dayV }[view];
+            if (activeView) activeView.classList.remove('hidden');
 
-            // Render
+            const label = document.getElementById('currentViewLabel');
+            if (label) {
+                label.textContent = `Vista ${view === 'month' ? 'Mensual' : (view === 'week' ? 'Semanal' : 'Diaria')}`;
+            }
+
             updateCalendarView();
         }
 
@@ -2215,7 +2322,7 @@
             
             if (currentView === 'month') {
                 const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                dateDisplay.textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+                if (dateDisplay) dateDisplay.textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
                 initCalendar(); // Existing render logic
             } else if (currentView === 'week') {
                 renderWeekView();
@@ -2225,6 +2332,7 @@
         }
 
         function navigateCalendar(dir) {
+            const dateDisplay = document.getElementById('calendarDateDisplay');
             if (currentView === 'month') {
                 currentMonth.setMonth(currentMonth.getMonth() + dir);
             } else if (currentView === 'week') {

@@ -57,34 +57,33 @@ class NotificationService:
                 )
                 if created: creadas += 1
 
-            # Regla 2: Día del Turno
-            if config.activar_jornada:
-                prog = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
-                obj, created = NotificacionEncolada.objects.get_or_create(
-                    turno=turno,
-                    tipo='jornada',
-                    defaults={'fecha_programada': prog}
-                )
-                if created: creadas += 1
+            # Regla 2: Día del Turno (ELIMINADA por redundancia)
         
-        if creadas == 0 and not config.activar_anticipado and not config.activar_jornada:
-            print("DEBUG: Sincronización terminada - Ninguna regla de notificación está activa en la configuración.")
+        if creadas == 0 and not config.activar_anticipado:
+            print("DEBUG: Sincronización terminada - Regla de notificación desactivada.")
 
         return creadas
     @staticmethod
-    def calcular_proyeccion(dias=7, offset=0):
+    def calcular_proyeccion(dias=7, offset=0, overrides=None):
         """
         Calcula qué notificaciones corresponden a los turnos en el rango [offset, offset+dias].
-        AHORA FILTRA POR FECHA DE PROGRAMACIÓN (No fecha de turno).
-        Range is [start_date, end_date) -> Exclusive end to avoid overlaps.
+        Permite overrides de configuración para previsualizar cambios en el Wizard.
         """
         config = ConfiguracionNotificacion.get_solo()
+        
+        if overrides:
+            if 'dias_antes' in overrides: config.dias_antes = int(overrides['dias_antes'])
+            if 'minutos_antes_jornada' in overrides: config.minutos_antes_jornada = int(overrides['minutos_antes_jornada'])
+            if 'activar_anticipado' in overrides: config.activar_anticipado = overrides['activar_anticipado']
+            if 'activar_jornada' in overrides: config.activar_jornada = overrides['activar_jornada']
+
         now = timezone.now()
         local_today = timezone.localdate(now)
         
         # Define window based on Notification Date
-        start_date = local_today + timedelta(days=offset)
-        end_date = start_date + timedelta(days=dias)
+        # AHORA BUSCAMOS DESDE HACE 30 DÍAS (p/atrapar lo no enviado) solo si offset es 0
+        radar_start = local_today - timedelta(days=30) if offset == 0 else (local_today + timedelta(days=offset))
+        end_date = (local_today + timedelta(days=offset)) + timedelta(days=dias)
         
         # 0. Sincronizar cola antes de calcular para asegurar que lo manual aparezca
         NotificationService.sincronizar_cola()
@@ -93,9 +92,9 @@ class NotificationService:
         lookahead = max(config.dias_antes, 1) + 15 
         
         turnos = Turno.objects.filter(
-            fecha__gte=local_today - timedelta(days=1),
+            fecha__gte=radar_start - timedelta(days=lookahead), 
             fecha__lte=end_date + timedelta(days=lookahead), 
-            estado__in=['pendiente', 'asignado']
+            estado__in=['pendiente', 'asignado', 'en_proceso']
         ).select_related('responsable').order_by('fecha', 'hora')
 
         # 2. Get existing queue items to avoid duplicates/status check
@@ -121,7 +120,7 @@ class NotificationService:
                 local_notif_date = timezone.localdate(fecha_notif)
                 
                 # Check strict range [start, end)
-                if start_date <= local_notif_date < end_date:
+                if radar_start <= local_notif_date < end_date:
                     estado_real = memo_cola.get((turno.id, 'anticipado'))
                     ya_procesado = estado_real in ['enviado', 'procesando', 'cancelado']
                     
@@ -143,33 +142,8 @@ class NotificationService:
                             'sort_date': fecha_notif
                         })
 
-            # --- Regla 2: Jornada ---
-            if config.activar_jornada:
-                fecha_notif = turno_dt - timedelta(minutes=config.minutos_antes_jornada)
-                local_notif_date = timezone.localdate(fecha_notif)
-                
-                # Check strict range [start, end)
-                if start_date <= local_notif_date < end_date:
-                    estado_real = memo_cola.get((turno.id, 'jornada'))
-                    ya_procesado = estado_real in ['enviado', 'procesando', 'cancelado']
-                    
-                    if not ya_procesado and fecha_notif > (now - timedelta(hours=2)): # Hide if strictly passed
-                        # Calculate days remaining for display
-                        days_diff = (local_notif_date - local_today).days
-                        
-                        proyeccion.append({
-                            'turno': turno,
-                            'tipo': 'jornada',
-                            'tipo_id': f"{turno.id}:jornada", # Critical for form submission
-                            'tipo_display': 'Día del Turno',
-                            'fecha_programada': fecha_notif,
-                            'responsable': turno.responsable,
-                            'ya_procesado': False,
-                            'estado_actual': estado_real or 'virtual',
-                            'missing_email': not bool(turno.responsable.email),
-                            'days_diff': days_diff,
-                            'sort_date': fecha_notif
-                        })
+            # --- Regla 2: Jornada (ELIMINADA) ---
+            # Se elimina por redundancia con envío manual.
         
         # Sort by the actual notification date
         proyeccion.sort(key=lambda x: x['sort_date'])

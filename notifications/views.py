@@ -106,7 +106,10 @@ def dashboard(request):
     
     # Determine Active Tab
     active_tab = 'dashboard'
-    if any(k in request.GET for k in ['fecha_desde', 'fecha_hasta', 'estado', 'search', 'page']):
+    tab_param = request.GET.get('tab')
+    if tab_param == 'history':
+        active_tab = 'history'
+    elif any(k in request.GET for k in ['fecha_desde', 'fecha_hasta', 'estado', 'search', 'page']):
          active_tab = 'history'
     
     context = {
@@ -117,7 +120,6 @@ def dashboard(request):
         'historial': historial, # Usamos el objeto paginado
         'ejemplo_real': ejemplo_data,
         'proyeccion': proyeccion, # Ahora es un Page object
-        'active_tab': 'history' if any(k in request.GET for k in ['fecha_desde', 'fecha_hasta', 'estado', 'search', 'page']) else 'dashboard'
     }
     return render(request, 'notifications/dashboard.html', context)
 
@@ -165,45 +167,36 @@ def generar_desde_proyeccion(request):
     Ahora también actualiza la configuración base si se envía desde el Wizard.
     """
     if request.method == 'POST':
-        # --- NUEVA LÓGICA: ACTUALIZAR CONFIGURACIÓN DESDE EL WIZARD ---
+        # --- ACTUALIZAR CONFIGURACIÓN SOLO SI VIENE DEL WIZARD ---
         config = ConfiguracionNotificacion.get_solo()
         
-        # Leemos campos del wizard (si vienen)
-        asunto = request.POST.get('asunto_template')
-        cuerpo = request.POST.get('cuerpo_template')
-        
-        # Nuevos campos de la barra lateral
-        activar_ant = request.POST.get('activar_anticipado') == 'on'
-        dias_antes = request.POST.get('dias_antes')
-        activar_jor = request.POST.get('activar_jornada') == 'on'
-        minutos_jor = request.POST.get('minutos_antes_jornada')
+        if request.POST.get('wizard_config_update') == '1':
+            asunto = request.POST.get('asunto_template')
+            cuerpo = request.POST.get('cuerpo_template')
+            activar_ant = request.POST.get('activar_anticipado') == 'on'
+            dias_antes = request.POST.get('dias_antes')
 
-        if asunto:
-            config.asunto_template = asunto
-        if cuerpo:
-            config.cuerpo_template = cuerpo
-        
-        config.activar_anticipado = activar_ant
-        try:
-            if dias_antes:
-                config.dias_antes = int(dias_antes)
-        except (ValueError, TypeError):
-            pass
+            if asunto: config.asunto_template = asunto
+            if cuerpo: config.cuerpo_template = cuerpo
+            
+            config.activar_anticipado = activar_ant
+            try:
+                if dias_antes: config.dias_antes = int(dias_antes)
+            except: pass
 
-        config.activar_jornada = activar_jor
-        try:
-            if minutos_jor:
-                config.minutos_antes_jornada = int(minutos_jor)
-        except (ValueError, TypeError):
-            pass
-        
-        config.save()
-        # -------------------------------------------------------------
+            # La regla 'Jornada/Hoy' ha sido eliminada por redundancia.
+            config.activar_jornada = False 
+            
+            config.save()
+            print("DEBUG: Configuración actualizada desde el Wizard (Regla Hoy desactivada).")
+        else:
+            print("DEBUG: Saltando actualización de config (envío desde Radar).")
 
         items = request.POST.getlist('proyeccion_items')
         print(f"DEBUG: Items recibidos ({len(items)}): {items}")
         ids_a_procesar = []
         creadas = 0
+        ya_estaban = 0
         
         for val in items:
             try:
@@ -228,7 +221,7 @@ def generar_desde_proyeccion(request):
                     print(f"DEBUG: Tipo desconocido: {tipo}")
                     continue
                 
-                # reactivar si ya existe
+                # Buscar si ya existe la notificación para este turno y tipo
                 obj, created = NotificacionEncolada.objects.get_or_create(
                     turno=turno,
                     tipo=tipo,
@@ -236,14 +229,15 @@ def generar_desde_proyeccion(request):
                 )
                 
                 if not created:
-                    # BLOQUEO: Si ya se está procesando o se envió hace muy poco (menos de 30s), saltar
-                    # para evitar duplicados por doble click o refresco de página.
-                    ahora = timezone.now()
-                    # Si el estado es 'enviado' pero fue hace más de 5 minutos, permitimos re-envío (forzado)
-                    # Si el estado es 'procesando', no tocamos nada.
+                    # Si ya existe, comprobamos si podemos volver a enviarla
                     if obj.estado == 'procesando':
                         print(f"DEBUG: Item {obj.id} ya está en proceso. Saltando.")
+                        ya_estaban += 1
                         continue
+                    
+                    # Si ya se envió, permitimos reactivarla si el usuario lo forzó desde el radar
+                    if obj.estado == 'enviado':
+                        ya_estaban += 1
                     
                     obj.estado = 'pendiente'
                     obj.intentos = 0
@@ -264,16 +258,23 @@ def generar_desde_proyeccion(request):
             try:
                 enviados, errores = NotificationService.ejecutar_vigilancia(specific_ids=ids_a_procesar)
                 print(f"DEBUG: Ejecución vigilancia terminada. Enviados: {enviados}, Errores: {errores}")
+                
                 if errores == 0:
-                    messages.success(request, f"¡Logrado! Se enviaron {enviados} notificaciones exitosamente.")
+                    if enviados == 1:
+                        messages.success(request, "¡Éxito! Se envió la notificación correctamente.")
+                    else:
+                        messages.success(request, f"¡Logrado! Se enviaron {enviados} notificaciones exitosamente.")
                 else:
-                    messages.warning(request, f"Se procesaron las notificaciones. Se enviaron {enviados} con éxito, pero {errores} fallaron.")
+                    messages.warning(request, f"Proceso finalizado: {enviados} enviados con éxito, {errores} con errores.")
             except Exception as e:
                 import traceback
                 traceback.print_exc()
                 messages.error(request, f"Error crítico al procesar envíos: {str(e)}")
         else:
-            messages.info(request, "Wizard finalizado. No se seleccionaron turnos nuevos para procesar.")
+            if items:
+                messages.info(request, f"Los {len(items)} elementos seleccionados ya estaban procesados o en cola.")
+            else:
+                messages.info(request, "No se seleccionaron turnos para procesar.")
             
     return redirect('notifications_dashboard')
 
@@ -292,7 +293,14 @@ def api_get_proyeccion(request):
     except:
         offset = 0
         
-    proyeccion = NotificationService.calcular_proyeccion(dias, offset)
+    # Overrides opcionales desde el Wizard
+    overrides = {}
+    if 'dias_antes' in request.GET: overrides['dias_antes'] = request.GET.get('dias_antes')
+    if 'minutos_antes_jornada' in request.GET: overrides['minutos_antes_jornada'] = request.GET.get('minutos_antes_jornada')
+    if 'activar_anticipado' in request.GET: overrides['activar_anticipado'] = request.GET.get('activar_anticipado').lower() == 'true'
+    if 'activar_jornada' in request.GET: overrides['activar_jornada'] = request.GET.get('activar_jornada').lower() == 'true'
+
+    proyeccion = NotificationService.calcular_proyeccion(dias, offset, overrides=overrides if overrides else None)
     
     data = [{
         'turno_id': item['turno'].id,
@@ -394,7 +402,7 @@ def editar_reenviar(request, pk):
         except Exception as e:
             messages.error(request, f"Error al procesar: {str(e)}")
             
-    return redirect('notifications_dashboard')
+    return redirect('/notifications/dashboard/?tab=history')
 
 def cancelar_notificacion(request, pk):
     """

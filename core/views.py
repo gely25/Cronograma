@@ -132,11 +132,29 @@ def guardar_configuracion(request):
         if data.get('modo_exclusion'):
             config.modo_exclusion = data.get('modo_exclusion')
         
-        if data.get('fecha_inicio') and data.get('fecha_fin'):
-            if data.get('fecha_inicio') > data.get('fecha_fin'):
+        f_inicio = data.get('fecha_inicio')
+        f_fin = data.get('fecha_fin')
+
+        if not f_inicio or not f_fin:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Las fechas de inicio y fin son obligatorias.'
+            }, status=400)
+
+        if f_inicio > f_fin:
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'La fecha de inicio no puede ser posterior a la fecha de fin.'
+            }, status=400)
+
+        # Validación de rango de horas
+        h_inicio = data.get('hora_inicio')
+        h_fin = data.get('hora_fin')
+        if h_inicio and h_fin:
+            if h_inicio >= h_fin:
                 return JsonResponse({
-                    'status': 'error', 
-                    'message': 'La fecha de inicio no puede ser posterior a la fecha de fin.'
+                    'status': 'error',
+                    'message': 'La hora de inicio debe ser anterior a la hora de fin.'
                 }, status=400)
 
         config.save()
