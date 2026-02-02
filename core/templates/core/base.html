@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Cronograma Dinámico{% endblock %}</title>
-    <link rel="icon" href="data:,">
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/static/img/unemi.png">
+    
+    <link rel="icon" href="/static/img/unemi.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -67,6 +75,15 @@
 
     <script>
         lucide.createIcons();
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/js/sw.js')
+                    .then(reg => console.log('PWA Service Worker registrado', reg))
+                    .catch(err => console.log('Error registrando PWA SW', err));
+            });
+        }
     </script>
     {% block extra_js %}{% endblock %}
 </body>

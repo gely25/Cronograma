@@ -1,0 +1,21 @@
+{
+  "name": "Cronograma de Turnos UNEMI",
+  "short_name": "Cronograma",
+  "description": "Sistema de gestión de turnos y notificaciones automáticas",
+  "start_url": "/cronograma/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/static/img/unemi.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/img/unemi.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
