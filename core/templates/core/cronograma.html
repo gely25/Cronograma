@@ -3252,39 +3252,38 @@
         listContainer.innerHTML = '<div class="text-center py-8"><i class="animate-spin" data-lucide="loader-2"></i> Cargando...</div>';
         lucide.createIcons();
 
-        // FILTER TURNOS FOR VISIBLE WEEK or MONTH
-        let startOfWeek, endOfWeek;
+        // CONTEXTUAL FILTERING BASED ON CALENDAR VIEW
+        let startDate, endDate;
+        const now = new Date();
 
         if (currentView === 'week') {
-            startOfWeek = new Date(currentMonth);
-            startOfWeek.setDate(currentMonth.getDate() - currentMonth.getDay());
-            startOfWeek.setHours(0, 0, 0, 0);
+            startDate = new Date(currentMonth);
+            startDate.setDate(currentMonth.getDate() - currentMonth.getDay());
+            startDate.setHours(0, 0, 0, 0);
 
-            endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23, 59, 59, 999);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
+        } else if (currentView === 'day') {
+            startDate = new Date(currentMonth);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(currentMonth);
+            endDate.setHours(23, 59, 59, 999);
         } else {
-            // If in Month view, take current week relative to today
-            const today = new Date();
-            const dayOfWeek = today.getDay() || 7;
-            startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - dayOfWeek + 1);
-            startOfWeek.setHours(0, 0, 0, 0);
-
-            endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23, 59, 59, 999);
+            // Month view: All days in the current month
+            startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1, 0, 0, 0);
+            endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999);
         }
 
-        // Filter
-        const weekTurnos = turnos.filter(t => {
+        // Filter turnos
+        const filteredTurnos = turnos.filter(t => {
             const tDate = new Date(t.fecha + 'T00:00:00');
-            return tDate >= startOfWeek && tDate <= endOfWeek && t.estado !== 'completado';
+            return tDate >= startDate && tDate <= endDate && t.estado !== 'completado';
         });
 
         // Group by Date for Accordion
         groupedRecipients = {};
-        weekTurnos.forEach(t => {
+        filteredTurnos.forEach(t => {
             if (!groupedRecipients[t.fecha]) groupedRecipients[t.fecha] = [];
             groupedRecipients[t.fecha].push(t);
         });
@@ -3294,19 +3293,28 @@
             listContainer.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-12 text-gray-400">
                     <i data-lucide="calendar-off" class="w-12 h-12 mb-3 opacity-20"></i>
-                    <p class="text-xs font-medium">No hay mantenimientos pendientes para esta semana.</p>
+                    <p class="text-xs font-medium">Para esta semana no hay turnos asignados.</p>
                 </div>`;
             lucide.createIcons();
             return;
         }
 
         let html = '';
-        // Sort dates
         const sortedDates = Object.keys(groupedRecipients).sort();
 
         sortedDates.forEach(dateStr => {
             const dayTurnos = groupedRecipients[dateStr];
-            const allSelectedForDay = dayTurnos.every(t => selectedRecipients.has(`${t.id}:anticipado`));
+            
+            // Logic to check if any turn is NOT expired and thus selectable
+            const daySelectableTurnos = dayTurnos.filter(t => {
+                const turnDateTime = new Date(`${t.fecha}T${t.hora}:00`);
+                return turnDateTime > now;
+            });
+
+            const allSelectedForDay = dayTurnos.length > 0 && dayTurnos.every(t => {
+                const turnDateTime = new Date(`${t.fecha}T${t.hora}:00`);
+                return turnDateTime <= now || selectedRecipients.has(`${t.id}:anticipado`);
+            });
 
             // Accordion Item
             html += `
@@ -3314,8 +3322,10 @@
                     <div class="w-full bg-gray-50/50 p-4 flex justify-between items-center hover:bg-gray-100 transition group cursor-pointer" onclick="toggleWizardAccordion('${dateStr}', event)">
                            <div class="flex items-center gap-3">
                                 <input type="checkbox" onchange="toggleDayWizardSelection('${dateStr}', this.checked, event)" 
-                                    class="size-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300" 
-                                    ${allSelectedForDay ? 'checked' : ''} onclick="event.stopPropagation()">
+                                    class="size-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 disabled:opacity-30" 
+                                    ${allSelectedForDay ? 'checked' : ''} 
+                                    ${daySelectableTurnos.length === 0 ? 'disabled' : ''}
+                                    onclick="event.stopPropagation()">
                                 <span class="size-2 rounded-full bg-blue-500"></span>
                                 <span class="font-bold text-xs uppercase text-gray-700">${formatDateFriendly(dateStr)}</span>
                                 <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black">${dayTurnos.length}</span>
@@ -3329,14 +3339,23 @@
             dayTurnos.forEach(t => {
                 const itemKey = `${t.id}:anticipado`;
                 const isSelected = selectedRecipients.has(itemKey);
+                
+                // Expiration Check
+                const turnDateTime = new Date(`${t.fecha}T${t.hora}:00`);
+                const isExpired = turnDateTime <= now;
+
                 html += `
-                    <label class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg cursor-pointer transition border border-transparent hover:border-blue-100">
-                        <input type="checkbox" value="${itemKey}" ${isSelected ? 'checked' : ''} onchange="toggleWizardSelection('${itemKey}')" 
-                            class="size-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300">
+                    <label class="flex items-center gap-3 p-3 rounded-lg transition border border-transparent ${isExpired ? 'bg-gray-50 opacity-60 cursor-not-allowed' : 'hover:bg-blue-50 cursor-pointer hover:border-blue-100'}">
+                        <input type="checkbox" value="${itemKey}" ${isSelected ? 'checked' : ''} 
+                            ${isExpired ? 'disabled' : `onchange="toggleWizardSelection('${itemKey}')"`} 
+                            class="size-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 disabled:bg-gray-200">
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-baseline mb-1">
                                  <span class="font-black text-xs text-gray-800 uppercase truncate pr-2">${t.responsable}</span>
-                                 <span class="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">${t.hora}</span>
+                                 ${isExpired ? 
+                                    `<span class="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded animate-pulse">EXPIRADO</span>` :
+                                    `<span class="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">${t.hora}</span>`
+                                 }
                             </div>
                             <div class="text-[10px] text-gray-500 truncate flex items-center gap-1.5">
                                 <i data-lucide="monitor" class="w-3 h-3 opacity-50"></i>
@@ -3526,13 +3545,19 @@
                             progressText.textContent = `${data.sent} de ${data.total}`;
                         }
                         if (data.completed) {
-                            statusText.textContent = '¡Proceso completado!';
+                            statusText.textContent = '¡ENVÍO EXITOSO!';
                             statusText.classList.remove('text-gray-500');
-                            statusText.classList.add('text-green-600');
-                            closeBtn.classList.remove('hidden');
-
-                            showToast(`Envío finalizado: ${data.sent} éxitos, ${data.errors} fallos.`);
-                            refreshAllData();
+                            statusText.classList.add('text-green-600', 'font-black', 'text-lg', 'animate-bounce');
+                            progressBar.classList.add('bg-green-500');
+                            
+                            showToast(`Envío finalizado: ${data.sent} éxitos, ${data.errors} fallos.`, 'success');
+                            
+                            // Auto-close after delay
+                            setTimeout(() => {
+                                modal.classList.add('hidden');
+                                closeWizard(); // Close the main wizard too
+                                refreshAllData();
+                            }, 2000);
                         }
                         if (data.error) {
                             statusText.textContent = data.status;

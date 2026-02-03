@@ -364,7 +364,7 @@ class NotificationService:
         import concurrent.futures
         start_time = time_module.time()
         
-        BATCH_SIZE = 10
+        BATCH_SIZE = 1 # Reducido para mayor feedback en Step 1
         MAX_WORKERS = 8
         total = len(ids_to_process)
         print(f"🚀 Iniciando envío masivo SÍNCRONO de {total} correos (8 threads)...")
@@ -391,7 +391,8 @@ class NotificationService:
 
         # Worker (Copia del generador pero sin status yield)
         def process_batch_thread_sync(batch_ids, batch_num):
-            conn = get_connection()
+            from django.db import connection as db_connection
+            conn = get_connection(timeout=15)
             local_sent = 0
             local_errors = 0
             try:
@@ -461,6 +462,7 @@ class NotificationService:
             finally:
                 try: conn.close()
                 except: pass
+                db_connection.close() # Importante para evitar fugas en multithreading
             return (local_sent, local_errors)
 
         # Ejecutar Pool
@@ -577,7 +579,7 @@ class NotificationService:
         # Esto debería ser casi instantáneo para volúmenes medianos.
         import concurrent.futures
         
-        BATCH_SIZE = 10 
+        BATCH_SIZE = 1 
         MAX_WORKERS = 8
         
         # Dividir en lotes totales
@@ -597,7 +599,8 @@ class NotificationService:
 
         # Función Worker para cada hilo
         def process_batch_thread(batch_ids, batch_num):
-            conn = get_connection()
+            from django.db import connection as db_connection
+            conn = get_connection(timeout=15)
             local_sent = 0
             local_errors = 0
             try:
@@ -673,6 +676,7 @@ class NotificationService:
             finally:
                 try: conn.close()
                 except: pass
+                db_connection.close()
                 
             return (local_sent, local_errors)
 
