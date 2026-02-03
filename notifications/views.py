@@ -129,20 +129,23 @@ def sincronizar_cola_view(request):
     Controlador para forzar la sincronización de la cola con los turnos.
     """
     creadas = NotificationService.sincronizar_cola()
+    synced, stuck = NotificationService.fix_turno_sync()
     
     # Si es AJAX (fetch), retornamos JSON
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
         return JsonResponse({
             'status': 'ok',
             'creadas': creadas,
-            'message': f"Se han programado {creadas} nuevas notificaciones."
+            'synced': synced,
+            'stuck_fixed': stuck,
+            'message': f"Programadas: {creadas}, Sincronizadas: {synced}, Huérfanas: {stuck}"
         })
 
-    if creadas > 0:
-        messages.success(request, f"Se han programado {creadas} nuevas notificaciones en la cola.")
-    else:
-        messages.info(request, "La cola ya está sincronizada con los turnos actuales.")
+    msg = f"Se han programado {creadas} nuevas notificaciones. "
+    if synced > 0:
+        msg += f"Se han sincronizado {synced} estados de turnos."
     
+    messages.success(request, msg)
     return redirect('notifications_dashboard')
 
 def ejecutar_envios(request):

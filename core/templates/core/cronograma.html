@@ -158,6 +158,7 @@
         <!-- Scrollable Content -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
             
+            
             <!-- STEP 1: IMPORTAR DATOS -->
             <div id="step1Container" class="p-6 border-b border-gray-50">
                 <div class="flex items-center gap-3 mb-6">
@@ -403,6 +404,44 @@
 
         <!-- Views Container -->
         <div class="flex-1 overflow-auto p-6 relative" id="mainViewsContainer">
+            <!-- Compact Legend -->
+            <div class="mb-6 flex flex-wrap justify-between items-center bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <!-- Left Section: Notifications -->
+                <div class="flex items-center gap-6">
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-r border-gray-100 pr-6 mr-2">Notificación</div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">📧</span>
+                        <span class="text-[11px] font-bold text-gray-700">Enviada</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">⏳</span>
+                        <span class="text-[11px] font-bold text-gray-700">Pendiente</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">⚠️</span>
+                        <span class="text-[11px] font-bold text-gray-700">Error de Envío</span>
+                    </div>
+                </div>
+
+                <!-- Right Section: Turn Status -->
+                <div class="flex items-center gap-6">
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest border-r border-gray-100 pr-6 mr-2">Turno</div>
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-200"></div>
+                            <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Listo</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-amber-500 shadow-sm shadow-amber-200"></div>
+                            <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">En Proceso</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-200"></div>
+                            <span class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Asignado</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Monthly View -->
             <div id="monthView" class="h-full flex flex-col">
                 <div id="calendarContainer" class="flex-1">
@@ -749,6 +788,8 @@
             fecha: "{{ t.fecha|date:'Y-m-d'|default:'' }}",
             hora: "{{ t.hora|time:'H:i'|default:'' }}",
             estado: "{{ t.estado }}",
+            notificado: {{ t.notificacion_enviada|yesno:"true,false" }},
+            error_notificacion: {{ t.notificacion_error|yesno:"true,false" }},
             equipos: [
                 {% for e in t.equipos.all %}
                 {
@@ -878,12 +919,24 @@
                     }
                 }
 
+                // Determine day-level notification status counts
+                let statusHTML = '';
+                if (turnosCount > 0) {
+                    const errors = dayTurnos.filter(t => t.error_notificacion).length;
+                    const sent = dayTurnos.filter(t => t.notificado && !t.error_notificacion).length;
+                    const pending = dayTurnos.filter(t => !t.notificado && !t.error_notificacion).length;
+
+                    if (errors > 0) statusHTML += `<span class="ml-1">${errors}⚠️</span>`;
+                    if (sent > 0) statusHTML += `<span class="ml-1">${sent}📧</span>`;
+                    if (pending > 0) statusHTML += `<span class="ml-1">${pending}⏳</span>`;
+                }
+
                 cell.innerHTML = `
                 <div class="flex justify-between items-start mb-3">
                     <span class="day-number font-bold text-lg">${d}</span>
                     <div class="flex flex-col items-end gap-1">
                         ${isHoliday ? '<span class="text-[8px] bg-yellow-400 text-yellow-900 px-1.5 py-0.5 rounded-full font-black">🎉 FERIADO</span>' : ''}
-                        ${!isHoliday && turnosCount > 0 ? `<span class="${badgeClass}">${turnosCount}</span>` : ''}
+                        ${!isHoliday && turnosCount > 0 ? `<span class="${badgeClass} flex items-center gap-0.5">${statusHTML || turnosCount}</span>` : ''}
                     </div>
                 </div>
                 <div class="flex-1 flex items-center justify-center">
@@ -927,6 +980,80 @@
             return 'pc-case';
         }
 
+        function getTurnoCardHTML(t, isCompact = true) {
+            const deviceIcon = getDeviceIcon(t.equipos);
+            const atendidos = t.equipos.filter(e => e.atendido).length;
+            const total = t.equipos.length;
+            const progressStr = `${atendidos}/${total}`;
+            
+            const notifEmoji = t.error_notificacion ? '⚠️' : (t.notificado ? '📧' : '⏳');
+            const notifTitle = t.error_notificacion ? 'Error en notificación' : (t.notificado ? 'Notificación Enviada' : 'Pendiente de Envío');
+            
+            const statusIcon = t.estado === 'completado' ? 'check-circle-2' : (t.estado === 'en_proceso' ? 'clock' : 'circle');
+
+            if (isCompact) {
+                // For Weekly View or small slots
+                return `
+                    <div class="flex justify-between text-[10px] font-bold opacity-90 mb-1">
+                        <span class="flex items-center gap-1">
+                            <i data-lucide="${deviceIcon}" class="w-3 h-3"></i> ${t.hora}
+                            <span class="text-xs ml-0.5" title="${notifTitle}">${notifEmoji}</span>
+                        </span>
+                        <button onclick="showDetails(${t.id}, event)" class="hover:scale-110 transition-transform" 
+                                title="Ver detalles para confirmar equipos">
+                            <i data-lucide="${statusIcon}" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="font-bold leading-tight mb-1 truncate text-xs uppercase">${t.responsable}</div>
+                    <div class="flex justify-between items-baseline text-[9px] opacity-90">
+                        <span>${progressStr} EQ.</span>
+                        <button onclick="showDetails(${t.id}, event)" class="hover:opacity-70 font-bold flex items-center gap-0.5">
+                            <i data-lucide="eye" class="w-2.5 h-2.5"></i> VER
+                        </button>
+                    </div>
+                `;
+            } else {
+                // For Daily View or Panels
+                return `
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="${deviceIcon}" class="w-4 h-4"></i>
+                                <span class="font-black text-base uppercase">${t.responsable}</span>
+                                <span class="text-xs ml-1" title="${notifTitle}">${notifEmoji}</span>
+                            </div>
+                            <div class="text-xs opacity-80 font-bold">
+                                <i data-lucide="clock" class="w-3 h-3 inline"></i> ${t.hora}
+                            </div>
+                        </div>
+                        <button onclick="showDetails(${t.id}, event)"
+                                class="hover:scale-110 transition-transform p-2 rounded-lg hover:bg-black/5"
+                                title="Ver detalles para confirmar equipos">
+                            <i data-lucide="${statusIcon}" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="bg-black/5 rounded-lg p-3 mb-3">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase mb-2">Equipos (${progressStr})</p>
+                        <div class="space-y-1">
+                            ${t.equipos.map(e => `
+                                <div class="flex items-center justify-between text-xs py-1">
+                                    <span class="${e.atendido ? 'opacity-60' : 'font-medium'}">${e.marca} ${e.modelo}</span>
+                                    <i data-lucide="${e.atendido ? 'check-circle-2' : 'circle'}"
+                                       class="w-3 h-3 ${e.atendido ? 'text-green-600' : 'text-gray-400'}"></i>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="showDetails(${t.id}, event)"
+                                class="flex-1 py-2 bg-white/70 hover:bg-white rounded-lg text-xs font-bold transition-all border border-gray-100 flex items-center justify-center gap-1.5 shadow-sm">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i> Ver Detalles
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
         function createCard(t) {
             let cardClass = "appointment-card transition-all";
             if (t.estado === 'completado') cardClass += " completed";
@@ -942,22 +1069,7 @@
             const total = t.equipos.length;
             const progressStr = `${atendidos}/${total}`;
 
-            card.innerHTML = `
-            <div class="flex justify-between text-[10px] font-bold opacity-90 mb-1">
-                <span class="flex items-center gap-1"><i data-lucide="${getDeviceIcon(t.equipos)}" class="w-3 h-3"></i> ${t.hora}</span>
-                <button onclick="toggleCompletado(${t.id}, event)" class="hover:scale-110 transition-transform" 
-                        title="${t.estado === 'completado' ? 'Marcar pendiente' : 'Marcar listo'}">
-                    <i data-lucide="${t.estado === 'completado' ? 'check-circle-2' : (t.estado === 'en_proceso' ? 'clock' : 'circle')}" class="w-4 h-4"></i>
-                </button>
-            </div>
-            <div class="font-bold leading-tight mb-1 truncate text-xs uppercase">${t.responsable}</div>
-            <div class="flex justify-between items-baseline text-[9px] opacity-90">
-                <span>${progressStr} EQUIPOS</span>
-                <button onclick="showDetails(${t.id}, event)" class="hover:underline font-bold flex items-center gap-0.5">
-                    <i data-lucide="eye" class="w-2.5 h-2.5"></i> VER
-                </button>
-            </div>
-        `;
+            card.innerHTML = getTurnoCardHTML(t, true);
             card.ondragstart = (e) => {
                 e.dataTransfer.setData('text/plain', t.id);
                 card.classList.add('dragging');
@@ -1113,32 +1225,7 @@
                     dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
 
                     dayTurnos.forEach(t => {
-                        const card = document.createElement('div');
-                        card.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-all";
-                        card.innerHTML = `
-                            <div class="flex justify-between items-start mb-2">
-                                <span class="font-black text-gray-900">${t.hora}</span>
-                                ${getStatusBadgeHTML(t.estado)}
-                            </div>
-                            <h4 class="font-bold text-gray-800 mb-1">${t.responsable}</h4>
-                            <div class="text-xs text-gray-500 mb-3 flex items-center gap-2">
-                                <i data-lucide="monitor" class="w-3 h-3"></i> ${t.equipos.length} Equipos
-                            </div>
-                            <div class="flex gap-2">
-                                ${t.equipos.length > 1 ? `
-                                <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="flex-1 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition">
-                                    <i data-lucide="list-checks" class="w-3 h-3 inline"></i> Ver Equipos
-                                </button>
-                                ` : `
-                                <button onclick="event.stopPropagation(); event.preventDefault(); toggleCompletado(${t.id}, event)" class="flex-1 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-bold transition">
-                                    ${t.estado === 'completado' ? 'Reabrir' : 'Completar'}
-                                </button>
-                                <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition" title="Ver detalles">
-                                    <i data-lucide="eye" class="w-4 h-4"></i>
-                                </button>
-                                `}
-                            </div>
-                        `;
+                        const card = createShiftCardForPanel(t);
                         list.appendChild(card);
                     });
                 }
@@ -1183,45 +1270,7 @@
             const total = t.equipos.length;
             const progressStr = `${atendidos}/${total}`;
 
-            card.innerHTML = `
-            <div class="flex justify-between items-start mb-3">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <i data-lucide="${getDeviceIcon(t.equipos)}" class="w-4 h-4"></i>
-                        <span class="font-black text-base uppercase">${t.responsable}</span>
-                    </div>
-                    <div class="text-xs opacity-80">
-                        <i data-lucide="clock" class="w-3 h-3 inline"></i> ${t.hora}
-                    </div>
-                </div>
-                <button onclick="toggleCompletado(${t.id}, event)"
-                        class="hover:scale-110 transition-transform p-2 rounded-lg hover:bg-white/50"
-                        title="${t.estado === 'completado' ? 'Marcar pendiente' : 'Marcar listo'}">
-                    <i data-lucide="${t.estado === 'completado' ? 'check-circle-2' : (t.estado === 'en_proceso' ? 'clock' : 'circle')}"
-                       class="w-5 h-5"></i>
-                </button>
-            </div>
-
-            <div class="bg-white/50 rounded-lg p-3 mb-3">
-                <p class="text-[10px] font-bold text-gray-500 uppercase mb-2">Equipos (${progressStr})</p>
-                <div class="space-y-1">
-                    ${t.equipos.map(e => `
-                        <div class="flex items-center justify-between text-xs py-1">
-                            <span class="${e.atendido ? 'line-through opacity-60' : 'font-medium'}">${e.marca} ${e.modelo}</span>
-                            <i data-lucide="${e.atendido ? 'check-circle-2' : 'circle'}"
-                               class="w-3 h-3 ${e.atendido ? 'text-green-600' : 'text-gray-400'}"></i>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-
-            <div class="flex gap-2">
-                <button onclick="showDetails(${t.id}, event)"
-                        class="flex-1 py-2 bg-white/70 hover:bg-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
-                    <i data-lucide="eye" class="w-3 h-3"></i> Ver Detalles
-                </button>
-            </div>
-        `;
+            card.innerHTML = getTurnoCardHTML(t, false);
 
             // Drag handlers
             card.ondragstart = (e) => {
@@ -1389,32 +1438,7 @@
                 dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
 
                 dayTurnos.forEach(t => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-all";
-                    card.innerHTML = `
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="font-black text-gray-900">${t.hora}</span>
-                            ${getStatusBadgeHTML(t.estado)}
-                        </div>
-                        <h4 class="font-bold text-gray-800 mb-1">${t.responsable}</h4>
-                        <div class="text-xs text-gray-500 mb-3 flex items-center gap-2">
-                            <i data-lucide="monitor" class="w-3 h-3"></i> ${t.equipos.length} Equipos
-                        </div>
-                        <div class="flex gap-2">
-                            ${t.equipos.length > 1 ? `
-                            <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="flex-1 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition">
-                                <i data-lucide="list-checks" class="w-3 h-3 inline"></i> Ver Equipos
-                            </button>
-                            ` : `
-                            <button onclick="event.stopPropagation(); event.preventDefault(); toggleCompletado(${t.id}, event)" class="flex-1 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-bold transition">
-                                ${t.estado === 'completado' ? 'Reabrir' : 'Completar'}
-                            </button>
-                            <button onclick="event.stopPropagation(); event.preventDefault(); showDetails(${t.id}, event)" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition" title="Ver detalles">
-                                <i data-lucide="eye" class="w-4 h-4"></i>
-                            </button>
-                            `}
-                        </div>
-                    `;
+                    const card = createShiftCardForPanel(t);
                     list.appendChild(card);
                 });
             }
@@ -1439,7 +1463,10 @@
 
             console.log('Opening modal with content for:', t.responsable);
             content.innerHTML = `
-            <h3 class="text-2xl font-bold mb-4">${t.responsable}</h3>
+            <h3 class="text-2xl font-bold mb-1">${t.responsable}</h3>
+            <p class="text-[10px] font-bold text-gray-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
+                Estado Comunicación: ${t.error_notificacion ? '<span class="text-rose-600">⚠️ ERROR</span>' : (t.notificado ? '<span class="text-green-600">📧 ENVIADA</span>' : '<span class="text-amber-600">⏳ PENDIENTE</span>')}
+            </p>
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="p-3 bg-gray-50 rounded">
                     <p class="text-[10px] font-bold text-gray-400 uppercase">Fecha</p>
@@ -2542,59 +2569,11 @@
                     gridHTML += `<div class="p-1 border-r border-gray-100 relative group transition-colors ${cellClass}"
                                      ${interactionHandlers} title="${isExcluded ? 'Día no laborable' : 'Haga clic para añadir turno en esta hora'}">`;
                     
-                    slotTurnos.forEach(t => {
-                        const icon = getDeviceIcon(t.equipos);
-                        
-                        // Calculate status dynamically for immediate feedback
-                        const total = t.equipos.length;
-                        const atendidos = t.equipos.filter(e => e.atendido).length;
-                        let statusColor = 'blue';
-                        let isDone = false;
-
-                        if (total > 0 && atendidos === total) {
-                            statusColor = 'green';
-                            isDone = true;
-                        } else if (atendidos > 0) {
-                            statusColor = 'yellow';
-                        }
-
-                        const bgClass = {
-                            'green': 'bg-green-100 border-green-200 hover:border-green-400',
-                            'yellow': 'bg-yellow-100 border-yellow-200 hover:border-yellow-400',
-                            'blue': 'bg-blue-100 border-blue-200 hover:border-blue-400'
-                        }[statusColor];
-
-                        const textClass = {
-                            'green': 'text-green-800',
-                            'yellow': 'text-yellow-800',
-                            'blue': 'text-blue-800'
-                        }[statusColor];
-
-                        const iconClass = {
-                            'green': 'text-green-600',
-                            'yellow': 'text-yellow-600',
-                            'blue': 'text-blue-600'
-                        }[statusColor];
-
-                        gridHTML += `
-                            <div class="${bgClass} border p-1.5 rounded-lg mb-1 cursor-grab active:cursor-grabbing shadow-sm text-[10px] hover:shadow-md transition-all group relative pr-6" 
-                                 draggable="true" 
-                                 ondragstart="event.dataTransfer.setData('text/plain', '${t.id}')"
-                                 ondragover="event.preventDefault()"
-                                 ondrop="event.stopPropagation(); event.preventDefault(); handleSwap(event.dataTransfer.getData('text/plain'), ${t.id})"
-                                 onclick="event.stopPropagation(); showDetails(${t.id}, event)">
-                                <div class="font-bold ${textClass} truncate">${t.responsable}</div>
-                                <div class="flex items-center gap-1 ${iconClass} mt-0.5">
-                                    <i data-lucide="${icon}" class="w-3 h-3"></i> ${t.hora}
-                                    <span class="font-bold opacity-80 text-[9px] ml-1">· ${t.equipos.length} eq.</span>
-                                </div>
-                                <button onclick="event.stopPropagation(); ${t.equipos.length > 1 ? `showDetails(${t.id}, event)` : `toggleCompletado(${t.id}, event)`}" 
-                                        class="absolute top-1.5 right-1.5 p-0.5 rounded-full hover:bg-white/50 transition-colors ${isDone ? 'text-green-600' : 'text-gray-400 hover:text-blue-600'}">
-                                    <i data-lucide="${isDone ? 'check-circle-2' : (t.equipos.length > 1 ? 'list-checks' : 'circle')}" class="w-3.5 h-3.5"></i>
-                                </button>
-                            </div>
-                        `;
-                    });
+                        slotTurnos.forEach(t => {
+                            const card = createCard(t);
+                            card.classList.add('mb-1');
+                            gridHTML += card.outerHTML;
+                        });
                     
                     gridHTML += `</div>`;
                 }
@@ -2638,36 +2617,12 @@
                     </div>
                 `;
             } else {
-                container.innerHTML = dayTurnos.map(t => `
-                    <div class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-300 transition-all group">
-                        <div class="text-center min-w-[60px]">
-                            <span class="block text-lg font-black text-gray-900">${t.hora}</span>
-                            <span class="text-[10px] uppercase font-bold text-gray-400">Hora</span>
-                        </div>
-                        <div class="w-px h-12 bg-gray-200"></div>
-                        <div class="flex-1">
-                            <div class="flex justify-between items-start">
-                                <h4 class="font-bold text-gray-900 text-lg">${t.responsable}</h4>
-                                ${getStatusBadgeHTML(t.estado)}
-                            </div>
-                            <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                                <span class="flex items-center gap-1.5 font-medium"><i data-lucide="${getDeviceIcon(t.equipos)}" class="w-4 h-4"></i> ${t.equipos.length} Equipos</span>
-                            </div>
-                            <div class="mt-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="showDetails(${t.id}, event)" class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold hover:bg-gray-50 text-gray-700">Ver Detalles</button>
-                                ${t.equipos.length > 1 ? `
-                                <button onclick="showDetails(${t.id}, event)" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 flex items-center gap-1.5">
-                                    <i data-lucide="list-checks" class="w-3 h-3"></i> Ver Equipos
-                                </button>
-                                ` : `
-                                <button onclick="toggleCompletado(${t.id}, event)" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700">
-                                    ${t.estado === 'completado' ? 'Reabrir' : 'Marcar Listo'}
-                                </button>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+                container.innerHTML = '';
+                dayTurnos.forEach(t => {
+                    const card = createShiftCardForPanel(t);
+                    card.removeAttribute('draggable');
+                    container.appendChild(card);
+                });
             }
             lucide.createIcons();
         }

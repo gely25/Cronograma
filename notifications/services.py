@@ -63,6 +63,34 @@ class NotificationService:
             print("DEBUG: Sincronización terminada - Regla de notificación desactivada.")
 
         return creadas
+
+    @staticmethod
+    def fix_turno_sync():
+        """
+        Retroactive Sync: Busca notificaciones enviadas y asegura que el Turno refleje ese estado.
+        También limpia estados 'procesando' que hayan quedado huérfanos.
+        """
+        from .models import NotificacionEncolada
+        from core.models import Turno
+        from django.utils import timezone
+        
+        # 1. Recuperar items 'procesando' (huérfanos de hilos que crashearon o reiniciaron)
+        # Si llevan más de 1 hora en 'procesando', los volvemos a 'pendiente'
+        una_hora_atras = timezone.now() - timedelta(hours=1)
+        stuck = NotificacionEncolada.objects.filter(estado='procesando', fecha_programada__lte=una_hora_atras)
+        stuck_count = stuck.update(estado='pendiente')
+        
+        # 2. Sincronizar Turnos basándonos en notificaciones enviadas
+        sent_notifs = NotificacionEncolada.objects.filter(estado='enviado').select_related('turno')
+        synced = 0
+        for n in sent_notifs:
+            if n.turno and not n.turno.notificacion_enviada:
+                n.turno.notificacion_enviada = True
+                n.turno.notificacion_error = False
+                n.turno.save()
+                synced += 1
+        
+        return synced, stuck_count
     @staticmethod
     def calcular_proyeccion(dias=7, offset=0, overrides=None):
         """
@@ -231,6 +259,12 @@ class NotificationService:
             item.intentos += 1
             item.ultimo_error = ""
             item.save()
+
+            if item.turno:
+                item.turno.notificacion_enviada = True
+                item.turno.notificacion_error = False
+                item.turno.ultimo_envio = timezone.now()
+                item.turno.save(update_fields=['notificacion_enviada', 'notificacion_error', 'ultimo_envio'])
             
             # Auditoría
             HistorialEnvio.objects.create(
@@ -281,6 +315,9 @@ class NotificationService:
                     asunto=f"Error: {item.get_tipo_display()}",
                     error_log=str(e)
                 )
+                if item.turno:
+                    item.turno.notificacion_error = True
+                    item.turno.save(update_fields=['notificacion_error'])
             except Exception as save_err:
                 print(f"Error guardando estado de fallo para notificación {notification_id}: {save_err}")
             return False
@@ -373,13 +410,29 @@ class NotificationService:
                             valid_objs.append(o)
                         else: local_errors += 1
                     except: local_errors += 1
-                
                 if msgs:
                     try:
-                        conn.send_messages(msgs)
-                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
-                            estado='enviado', intentos=1, ultimo_error=""
-                        )
+                        # Enviar de verdad (CRITICO)
+                        if msgs:
+                            conn.send_messages(msgs)
+
+                        # Sync NOTIFICACIONES in batch
+                        v_ids = [vo.id for vo in valid_objs]
+                        if v_ids:
+                             NotificacionEncolada.objects.filter(id__in=v_ids).update(
+                                 estado='enviado',
+                                 ultimo_error=''
+                             )
+
+                        # Sync Turnos in batch
+                        turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
+                        if turno_ids:
+                            from core.models import Turno
+                            Turno.objects.filter(id__in=turno_ids).update(
+                                notificacion_enviada=True, 
+                                notificacion_error=False,
+                                ultimo_envio=timezone.now()
+                            )
                         local_sent = len(msgs)
                         
                         # Auditoría Loop
@@ -393,9 +446,15 @@ class NotificationService:
                     except Exception as send_err:
                         print(f"Error Thread {batch_num}: {send_err}")
                         local_errors += len(msgs)
-                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
+                        v_ids = [x.id for x in valid_objs]
+                        NotificacionEncolada.objects.filter(id__in=v_ids).update(
                             estado='error_temporal', ultimo_error=f"ThreadErr: {str(send_err)[:100]}"
                         )
+                        # Sync Turnos Error
+                        error_turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
+                        if error_turno_ids:
+                            from core.models import Turno
+                            Turno.objects.filter(id__in=error_turno_ids).update(notificacion_error=True)
             except Exception as conn_err:
                 local_errors += len(batch_ids)
                 print(f"Error Conn Thread {batch_num}: {conn_err}")
@@ -563,14 +622,28 @@ class NotificationService:
                         local_errors += 1
                 
                 # Enviar
+                # Enviar de verdad (CRITICO)
                 if msgs:
                     try:
                         conn.send_messages(msgs)
-                        # Optimista: Marcar enviados
-                        # now_ts = timezone.now() # fecha_envio no existe en NotificacionEncolada
-                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
-                            estado='enviado', intentos=1, ultimo_error="" 
-                        )
+                        
+                        # Sync NOTIFICACIONES in batch
+                        v_ids = [vo.id for vo in valid_objs]
+                        if v_ids:
+                             NotificacionEncolada.objects.filter(id__in=v_ids).update(
+                                 estado='enviado',
+                                 ultimo_error=''
+                             )
+
+                        # Sync Turnos in batch
+                        turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
+                        if turno_ids:
+                            from core.models import Turno
+                            Turno.objects.filter(id__in=turno_ids).update(
+                                notificacion_enviada=True, 
+                                notificacion_error=False,
+                                ultimo_envio=timezone.now()
+                            )
                         local_sent = len(msgs)
                         
                         # Auditoría Loop
@@ -585,9 +658,15 @@ class NotificationService:
                     except Exception as send_err:
                         print(f"Error Thread Batch {batch_num}: {send_err}")
                         local_errors += len(msgs)
-                        NotificacionEncolada.objects.filter(id__in=[x.id for x in valid_objs]).update(
+                        v_ids = [x.id for x in valid_objs]
+                        NotificacionEncolada.objects.filter(id__in=v_ids).update(
                             estado='error_temporal', ultimo_error=f"ThreadErr: {str(send_err)[:100]}"
                         )
+                        # Sync Turnos Error
+                        error_turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
+                        if error_turno_ids:
+                            from core.models import Turno
+                            Turno.objects.filter(id__in=error_turno_ids).update(notificacion_error=True)
             except Exception as conn_err:
                 local_errors += len(batch_ids)
                 print(f"Error Conexión Thread {batch_num}: {conn_err}")
@@ -805,6 +884,14 @@ class NotificationService:
             item.ultimo_error = ""
             item.save()
             
+            # Sync Turno
+            if turno:
+                from django.utils import timezone
+                turno.notificacion_enviada = True
+                turno.notificacion_error = False
+                turno.ultimo_envio = timezone.now()
+                turno.save()
+            
             # Auditoría
             HistorialEnvio.objects.create(
                 notificacion=item,
@@ -830,6 +917,9 @@ class NotificationService:
                 # Política de Reintentos (Max 3)
                 if item.intentos >= item.max_intentos:
                     item.estado = 'fallido'
+                    if item.turno:
+                        item.turno.notificacion_error = True
+                        item.turno.save()
                 else:
                     item.estado = 'error_temporal'
                 item.save()
@@ -922,6 +1012,14 @@ class NotificationService:
             item.intentos += 1
             item.save()
             
+            # Sync Turno (CRITICO para el emoticón)
+            if turno:
+                from django.utils import timezone
+                turno.notificacion_enviada = True
+                turno.notificacion_error = False
+                turno.ultimo_envio = timezone.now()
+                turno.save()
+            
             HistorialEnvio.objects.create(
                 notificacion=item,
                 turno=turno,
@@ -947,6 +1045,11 @@ class NotificationService:
             item.intentos += 1
             item.ultimo_error = str(e)
             item.save()
+            
+            # Sync Turno Error
+            if item.turno:
+                item.turno.notificacion_error = True
+                item.turno.save()
             
             HistorialEnvio.objects.create(
                 notificacion=item,

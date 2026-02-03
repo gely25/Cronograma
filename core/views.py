@@ -44,6 +44,8 @@ def api_get_datos(request):
             'fecha': t.fecha.strftime('%Y-%m-%d') if t.fecha else '',
             'hora': t.hora.strftime('%H:%M') if t.hora else '',
             'estado': t.estado,
+            'notificado': t.notificacion_enviada,
+            'error_notificacion': t.notificacion_error,
             'equipos': [{
                 'id': e.id,
                 'marca': e.marca,
@@ -78,6 +80,8 @@ def get_day_shifts(request, date):
             'fecha': t.fecha.strftime('%Y-%m-%d') if t.fecha else '',
             'hora': t.hora.strftime('%H:%M') if t.hora else '',
             'estado': t.estado,
+            'notificado': t.notificacion_enviada,
+            'error_notificacion': t.notificacion_error,
             'equipos': [{
                 'id': e.id,
                 'marca': e.marca,
@@ -351,7 +355,7 @@ def exportar_excel(request):
     ws.merge_cells('D4:E4')
 
     # 5. Tabla de Datos
-    headers = ['FECHA', 'HORA', 'RESPONSABLE', 'EQUIPOS', 'ESTADO', 'DETALLE TÉCNICO (MARCA, MODELO, ID)']
+    headers = ['FECHA', 'HORA', 'RESPONSABLE', 'NOTIFICACIÓN', 'EQUIPOS', 'ESTADO', 'DETALLE TÉCNICO (MARCA, MODELO, ID)']
     
     start_row = 8
     for i, h in enumerate(headers):
@@ -375,11 +379,20 @@ def exportar_excel(request):
         # Responsable
         ws.cell(row=current_row, column=3, value=t.responsable.nombre).alignment = left_align
         
+        # Notificación
+        notif_text = "ENVIADA" if t.notificacion_enviada else ("ERROR" if t.notificacion_error else "PENDIENTE")
+        c_notif = ws.cell(row=current_row, column=4, value=notif_text)
+        c_notif.alignment = center_align
+        if t.notificacion_enviada:
+            c_notif.font = success_font
+        elif t.notificacion_error:
+            c_notif.font = Font(color="FF0000", bold=True)
+        
         # Equipos (conteo del turno)
         eq_all = t.equipos.all()
         eq_count = eq_all.count()
         atendidos = eq_all.filter(atendido=True).count()
-        ws.cell(row=current_row, column=4, value=f"{atendidos}/{eq_count}").alignment = center_align
+        ws.cell(row=current_row, column=5, value=f"{atendidos}/{eq_count}").alignment = center_align
         
         # Estado con Color
         if t.estado == 'completado':
@@ -389,7 +402,7 @@ def exportar_excel(request):
         else:
             status_text = "PENDIENTE"
             
-        status_cell = ws.cell(row=current_row, column=5, value=status_text)
+        status_cell = ws.cell(row=current_row, column=6, value=status_text)
         status_cell.alignment = center_align
         
         if status_text == 'LISTO':
@@ -411,11 +424,11 @@ def exportar_excel(request):
             detalles_lista.append(f"{lbl} {eq.marca} {eq.modelo} {id_str}")
             
         detalles_full = " | ".join(detalles_lista)
-        ws.cell(row=current_row, column=6, value=detalles_full).alignment = left_align
-        ws.cell(row=current_row, column=6).font = Font(size=8)
+        ws.cell(row=current_row, column=7, value=detalles_full).alignment = left_align
+        ws.cell(row=current_row, column=7).font = Font(size=8)
         
         # Bordes
-        for col in range(1, 7):
+        for col in range(1, 8):
             ws.cell(row=current_row, column=col).border = border
             
         current_row += 1
@@ -424,9 +437,10 @@ def exportar_excel(request):
     ws.column_dimensions['A'].width = 13
     ws.column_dimensions['B'].width = 8
     ws.column_dimensions['C'].width = 30
-    ws.column_dimensions['D'].width = 10
-    ws.column_dimensions['E'].width = 15
-    ws.column_dimensions['F'].width = 85
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 10
+    ws.column_dimensions['F'].width = 15
+    ws.column_dimensions['G'].width = 85
 
     output = io.BytesIO()
     wb.save(output)

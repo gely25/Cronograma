@@ -61,6 +61,7 @@ class Turno(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
     notificar_el = models.DateTimeField(null=True, blank=True)
     notificacion_enviada = models.BooleanField(default=False)
+    notificacion_error = models.BooleanField(default=False)
     ultimo_envio = models.DateTimeField(null=True, blank=True, verbose_name="Último Envío")
 
     def save(self, *args, **kwargs):

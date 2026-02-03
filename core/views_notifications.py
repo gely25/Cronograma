@@ -72,6 +72,7 @@ def notification_manager(request):
                         fail_silently=False
                     )
                     turno.notificacion_enviada = True
+                    turno.notificacion_error = False
                     turno.ultimo_envio = timezone.now()
                     turno.save()
                     enviados += 1
