@@ -67,7 +67,11 @@ class Turno(models.Model):
     def save(self, *args, **kwargs):
         if self.fecha and self.hora and not self.notificar_el:
             fecha_hora_turno = datetime.combine(self.fecha, self.hora)
-            self.notificar_el = fecha_hora_turno - timedelta(days=1)
+            from django.utils import timezone
+            try:
+                self.notificar_el = timezone.make_aware(fecha_hora_turno) - timedelta(days=1)
+            except:
+                self.notificar_el = fecha_hora_turno - timedelta(days=1)
         super().save(*args, **kwargs)
 
     class Meta:

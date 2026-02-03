@@ -1089,7 +1089,7 @@
                 </div>
 
             <!-- STEP 2: RECIPIENTS (Accordion) -->
-            <div id="wizardStep2" class="wizard-step-node hidden flex-col space-y-6">
+            <div id="wizardStep2" class="wizard-step-node hidden flex-col space-y-6 flex-1 overflow-y-auto custom-scrollbar p-2">
                     <div
                         class="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
                     <div class="flex items-center gap-3">
@@ -3051,9 +3051,25 @@
         }
         header.innerHTML = headerHTML;
 
-        // Render Grid (Time slots 8am - 6pm)
+        // Render Grid (Time slots dynamic based on config)
         let gridHTML = '';
-        for (let hour = 8; hour <= 18; hour++) {
+        
+        let startHour = 8;
+        let endHour = 18;
+
+        if (config && config.hora_inicio) {
+            startHour = parseInt(config.hora_inicio.split(':')[0]);
+        }
+        if (config && config.hora_fin) {
+            endHour = parseInt(config.hora_fin.split(':')[0]);
+        }
+
+        // Validate range
+        if (isNaN(startHour)) startHour = 8;
+        if (isNaN(endHour)) endHour = 19; // Default slightly later if parsing fails
+        if (endHour < startHour) endHour = startHour + 8;
+
+        for (let hour = startHour; hour <= endHour; hour++) {
             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
             gridHTML += `<div class="grid grid-cols-8 border-b border-gray-100 min-h-[80px]">`;
             gridHTML += `<div class="p-2 text-center text-xs text-gray-400 font-bold border-r border-gray-100 sticky left-0 bg-white">${timeStr}</div>`;
@@ -3416,7 +3432,7 @@
                            </div>
                            <i id="wiz-arrow-${dateStr}" data-lucide="chevron-down" class="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
                     </div>
-                    <div id="wiz-content-${dateStr}" class="hidden p-2 bg-white space-y-1 border-t border-gray-100">
+                     <div id="wiz-content-${dateStr}" class="hidden p-2 bg-white space-y-1 border-t border-gray-100 max-h-[60vh] overflow-y-auto custom-scrollbar">
             `;
 
             // Turnos Items
@@ -3493,7 +3509,13 @@
     function toggleDayWizardSelection(dateStr, select, e) {
         if (e) e.stopPropagation();
         const dayTurnos = groupedRecipients[dateStr] || [];
+        const now = new Date();
+        
         dayTurnos.forEach(t => {
+            // Check expiration again to be safe
+            const turnDateTime = new Date(`${t.fecha}T${t.hora}:00`);
+            if (turnDateTime <= now) return; // Skip expired
+
             const itemKey = `${t.id}:anticipado`;
             if (select) selectedRecipients.add(itemKey);
             else selectedRecipients.delete(itemKey);
@@ -3512,6 +3534,7 @@
     function toggleAllWizard(select) {
         const checkboxes = document.querySelectorAll('#recipientsList input[type="checkbox"]');
         checkboxes.forEach(cb => {
+            if (cb.disabled) return;
             cb.checked = select;
             const id = cb.value;
             if (select) selectedRecipients.add(id);

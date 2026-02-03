@@ -62,6 +62,11 @@ def api_get_datos(request):
         'config': {
             'inicio': config.fecha_inicio.strftime('%Y-%m-%d') if config and config.fecha_inicio else '',
             'fin': config.fecha_fin.strftime('%Y-%m-%d') if config and config.fecha_fin else '',
+            'hora_inicio': config.hora_inicio.strftime('%H:%M') if config and config.hora_inicio else '08:00',
+            'hora_fin': config.hora_fin.strftime('%H:%M') if config and config.hora_fin else '18:00',
+            'duracion_turno': config.duracion_turno if config else 30,
+            'hora_almuerzo': config.hora_almuerzo.strftime('%H:%M') if config and config.hora_almuerzo else '12:00',
+            'duracion_almuerzo': config.duracion_almuerzo if config else 60,
         }
     }
     return JsonResponse(data)

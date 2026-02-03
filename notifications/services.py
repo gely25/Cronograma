@@ -364,10 +364,10 @@ class NotificationService:
         import concurrent.futures
         start_time = time_module.time()
         
-        BATCH_SIZE = 1 # Reducido para mayor feedback en Step 1
-        MAX_WORKERS = 8
+        BATCH_SIZE = 10 
+        MAX_WORKERS = 1
         total = len(ids_to_process)
-        print(f"🚀 Iniciando envío masivo SÍNCRONO de {total} correos (8 threads)...")
+        print(f"🚀 Iniciando envío masivo SÍNCRONO de {total} correos (1 thread x 10 batch)...")
 
         # Caché de imágenes
         header_cache = None
@@ -392,7 +392,8 @@ class NotificationService:
         # Worker (Copia del generador pero sin status yield)
         def process_batch_thread_sync(batch_ids, batch_num):
             from django.db import connection as db_connection
-            conn = get_connection(timeout=15)
+            # Timeout robusto
+            conn = get_connection(timeout=30)
             local_sent = 0
             local_errors = 0
             try:
@@ -534,188 +535,116 @@ class NotificationService:
         total = len(ids_to_process)
         yield json.dumps({'progress': 1, 'status': f'Preparando envío de {total} correos...', 'total': total, 'sent': 0, 'errors': 0})
 
-        # 3. Ejecución SECUENCIAL
+        # 3. Ejecución SECUENCIAL CON CONEXIÓN ÚNICA PRESISTENTE
         enviados = 0
         errores = 0
-        
         start_time = time_module.time()
         
-        # Conexión persistente
-        yield json.dumps({'progress': 2, 'status': 'Conectando con el servidor de correo...', 'total': total})
+        yield json.dumps({'progress': 2, 'status': 'Estableciendo conexión única segura...', 'total': total})
         
-        connection = get_connection()
-        connection_open = False
-        
-        try:
-            connection.open()
-            connection_open = True
-            yield json.dumps({'progress': 5, 'status': 'Conexión establecida. Enviando...', 'total': total})
-        except Exception as conn_err:
-            yield json.dumps({'progress': 0, 'status': f'Error de Conexión SMTP: {str(conn_err)}', 'error': True})
-            NotificacionEncolada.objects.filter(id__in=ids_to_process).update(
-                estado='error_temporal',
-                ultimo_error=f"No se pudo establecer conexión SMTP: {str(conn_err)[:200]}"
-            )
-            return
-        
-        
-        # Pre-cargar imágenes para Caché (Evita 160 lecturas de disco)
+        # Pre-cargar imágenes para Caché
         header_cache = None
         logo_cache = None
         try:
             h_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'mujeru.jpg')
             if os.path.exists(h_path):
                 with open(h_path, 'rb') as f: header_cache = f.read()
-            
             l_path = os.path.join(settings.BASE_DIR, 'core', 'static', 'img', 'unemi.png')
             if os.path.exists(l_path):
                 with open(l_path, 'rb') as f: logo_cache = f.read()
-        except:
-            pass
+        except: pass
+        
+        # ABRIR CONEXIÓN MAESTRA
+        connection = get_connection(timeout=60)
+        try:
+            connection.open()
+            yield json.dumps({'progress': 5, 'status': 'Conexión establecida. Iniciando envío...', 'total': total})
+        except Exception as e:
+            yield json.dumps({'progress': 0, 'status': f'Error de Conexión SMTP: {str(e)}', 'error': True})
+            return
 
-        
-        # Procesamiento en HILOS PARALELOS (Multithreading) EXTREMO
-        # 8 Hilos x 10 emails = hasta 80 emails en vuelo simultáneo.
-        # Esto debería ser casi instantáneo para volúmenes medianos.
-        import concurrent.futures
-        
-        BATCH_SIZE = 1 
-        MAX_WORKERS = 8
-        
-        # Dividir en lotes totales
+        # Prepare Batching
+        BATCH_SIZE = 10
         total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
-        batches = []
-        for i in range(total_batches):
-            s = i * BATCH_SIZE
-            e = min((i + 1) * BATCH_SIZE, total)
-            batches.append(ids_to_process[s:e])
-            
-        yield json.dumps({'progress': 5, 'status': '🚀 Iniciando envío masivo...', 'total': total})
+        ids_chunks = [ids_to_process[i:i + BATCH_SIZE] for i in range(0, len(ids_to_process), BATCH_SIZE)]
         
-        # Cerrar conexión principal de prueba, los hilos abrirán las suyas
-        if connection_open:
-            try: connection.close()
-            except: pass
+        completed_batches = 0
+        from django.db import connection as db_connection
 
-        # Función Worker para cada hilo
-        def process_batch_thread(batch_ids, batch_num):
-            from django.db import connection as db_connection
-            conn = get_connection(timeout=15)
-            local_sent = 0
-            local_errors = 0
-            try:
-                conn.open()
+        try:
+            for batch_num, batch_ids in enumerate(ids_chunks, 1):
                 msgs = []
                 valid_objs = []
+                local_errors = 0
                 
-                # Preparar
+                # Prepare
                 for nid in batch_ids:
                     try:
                         m, o = NotificationService._preparar_mensaje_individual(
-                            nid, conn, 
+                            nid, connection, 
                             header_img_cache=header_cache, 
                             logo_img_cache=logo_cache
                         )
                         if m and o:
                             msgs.append(m)
                             valid_objs.append(o)
-                        else:
-                            local_errors += 1
-                    except:
-                        local_errors += 1
+                        else: local_errors += 1
+                    except: local_errors += 1
                 
-                # Enviar
-                # Enviar de verdad (CRITICO)
+                # Send Batch
                 if msgs:
                     try:
-                        conn.send_messages(msgs)
+                        connection.send_messages(msgs)
                         
-                        # Sync NOTIFICACIONES in batch
+                        # Update DB
                         v_ids = [vo.id for vo in valid_objs]
-                        if v_ids:
-                             NotificacionEncolada.objects.filter(id__in=v_ids).update(
-                                 estado='enviado',
-                                 ultimo_error=''
-                             )
-
-                        # Sync Turnos in batch
-                        turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
-                        if turno_ids:
-                            from core.models import Turno
-                            Turno.objects.filter(id__in=turno_ids).update(
-                                notificacion_enviada=True, 
-                                notificacion_error=False,
-                                ultimo_envio=timezone.now()
-                            )
-                        local_sent = len(msgs)
+                        NotificacionEncolada.objects.filter(id__in=v_ids).update(estado='enviado', ultimo_error='')
                         
-                        # Auditoría Loop
-                        for vo in valid_objs:
-                            try:
-                                HistorialEnvio.objects.create(
-                                    notificacion=vo, turno=vo.turno, tipo=vo.tipo, estado='enviado',
-                                    destinatario=vo.turno.responsable.email, asunto="Notif Masiva Thread"
-                                )
-                            except: pass
-                            
+                        t_ids = [vo.turno.id for vo in valid_objs if vo.turno]
+                        if t_ids:
+                             from core.models import Turno
+                             Turno.objects.filter(id__in=t_ids).update(
+                                 notificacion_enviada=True, notificacion_error=False, ultimo_envio=timezone.now()
+                             )
+                        
+                        enviados += len(msgs)
                     except Exception as send_err:
-                        print(f"Error Thread Batch {batch_num}: {send_err}")
+                        print(f"Error Batch {batch_num}: {send_err}")
                         local_errors += len(msgs)
                         v_ids = [x.id for x in valid_objs]
                         NotificacionEncolada.objects.filter(id__in=v_ids).update(
-                            estado='error_temporal', ultimo_error=f"ThreadErr: {str(send_err)[:100]}"
+                            estado='error_temporal', ultimo_error=f"BatchErr: {str(send_err)[:100]}"
                         )
-                        # Sync Turnos Error
-                        error_turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
-                        if error_turno_ids:
-                            from core.models import Turno
-                            Turno.objects.filter(id__in=error_turno_ids).update(notificacion_error=True)
-            except Exception as conn_err:
-                local_errors += len(batch_ids)
-                print(f"Error Conexión Thread {batch_num}: {conn_err}")
-            finally:
-                try: conn.close()
-                except: pass
-                db_connection.close()
                 
-            return (local_sent, local_errors)
-
-        # Ejecutar Pool
-        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            future_to_batch = {executor.submit(process_batch_thread, b, idx+1): idx for idx, b in enumerate(batches)}
-            
-            completed_batches = 0
-            for future in concurrent.futures.as_completed(future_to_batch):
-                batch_index = future_to_batch[future]
+                errores += local_errors
                 completed_batches += 1
-                
-                try:
-                    b_sent, b_errors = future.result()
-                    enviados += b_sent
-                    errores += b_errors
-                except Exception as exc:
-                    print(f"Excepción en hilo: {exc}")
-                    errores += len(batches[batch_index])
                 
                 # Progreso
                 pct = 10 + int((completed_batches / total_batches) * 85)
                 yield json.dumps({
                     'progress': pct,
-                    'status': "✉️ Enviando notificaciones...",
+                    'status': f"Enviando... ({enviados}/{total})",
                     'sent': enviados,
                     'errors': errores,
                     'total': total
                 })
+                
+                # Throttle suave entre batches
+                time_module.sleep(1.0)
+                
+        except Exception as global_err:
+            print(f"Error Global en Loop: {global_err}")
+            yield json.dumps({'progress': 0, 'status': f'Error crítico: {str(global_err)}', 'error': True})
+            
+        finally:
+            try: connection.close()
+            except: pass
+            db_connection.close()
 
         # Finalizar
         elapsed_time = time_module.time() - start_time
         
-        # Cerrar conexión
-        if connection_open:
-            try:
-                connection.close()
-            except:
-                pass
+        # Cleanup removed (connection managed by workers)
         
         elapsed_time = time_module.time() - start_time
         
