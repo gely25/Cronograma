@@ -141,6 +141,24 @@
         display: grid !important;
     }
 
+    /* Tag Sidebar Styles - Compact & Premium */
+    .tag-blue   { background-color: rgba(239, 246, 255, 0.8) !important; border-color: #dbeafe !important; color: #2563eb !important; }
+    .tag-amber  { background-color: rgba(255, 251, 235, 0.8) !important; border-color: #fef3c7 !important; color: #d97706 !important; }
+    .tag-green  { background-color: rgba(240, 253, 244, 0.8) !important; border-color: #dcfce7 !important; color: #16a34a !important; }
+    .tag-purple { background-color: rgba(250, 245, 255, 0.8) !important; border-color: #f3e8ff !important; color: #9333ea !important; }
+    .tag-indigo { background-color: rgba(238, 242, 255, 0.8) !important; border-color: #e0e7ff !important; color: #4f46e5 !important; }
+
+    /* Integrated Editor Toolbar */
+    .ql-toolbar.ql-snow {
+        border: none !important;
+        border-bottom: 1px solid #f3f4f6 !important;
+        background: #fff !important;
+        padding: 12px 16px !important;
+    }
+    #wizardEditor {
+        border: none !important;
+    }
+
     #wizardStep1Preview p,
     #wizardPreviewContent p {
         margin-bottom: 1em;
@@ -155,6 +173,31 @@
     #wizardStep1Preview em,
     #wizardPreviewContent em {
         font-style: italic;
+    }
+    /* Custom Scrollbar Styles */
+    .custom-scrollbar::-webkit-scrollbar,
+    .ql-editor::-webkit-scrollbar,
+    .wizard-step-node::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track,
+    .ql-editor::-webkit-scrollbar-track,
+    .wizard-step-node::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb,
+    .ql-editor::-webkit-scrollbar-thumb,
+    .wizard-step-node::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 20px;
+        border: 1px solid transparent;
+        background-clip: content-box;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+    .ql-editor::-webkit-scrollbar-thumb:hover,
+    .wizard-step-node::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
     }
 </style>
 <!-- Quill CSS -->
@@ -882,23 +925,41 @@
     <div id="wizardModal"
         class="fixed inset-0 z-[100] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div id="wizardModalContainer"
-            class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-95 opacity-0">
+            class="bg-white rounded-[2rem] shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-95 opacity-0">
             <!-- Header -->
-            <div class="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <div class="flex items-center gap-3">
-                    <div class="p-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-100">
-                        <i data-lucide="wand-2" class="w-5 h-5"></i>
+            <div class="px-10 py-8 border-b border-gray-100 flex justify-between items-center bg-white">
+                <div class="flex items-center gap-5">
+                    <div class="size-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm">
+                        <i data-lucide="mail-plus" class="w-7 h-7"></i>
                     </div>
                     <div>
-                        <h3 id="wizardStepTitle" class="text-xl font-black text-gray-900 tracking-tight">Paso 1:
-                            Configuración</h3>
-                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Asistente de
-                            Notificación Masiva</p>
+                        <h3 class="text-2xl font-black text-gray-900 tracking-tight leading-none">Crear Notificaciones</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">ASISTENTE DE ENVÍO</p>
                     </div>
                 </div>
-                <button onclick="closeWizard()" class="p-2 hover:bg-gray-200 rounded-lg transition text-gray-400">
-                    <i data-lucide="x" class="w-5 h-5"></i>
+                <button onclick="closeWizard()" class="p-3 hover:bg-gray-100 rounded-2xl transition text-gray-400 group">
+                    <i data-lucide="x" class="w-6 h-6 group-hover:rotate-90 transition-transform"></i>
                 </button>
+            </div>
+
+            <!-- Step Indicators (Modernized & Compact) -->
+            <div class="px-10 py-4 bg-gray-50/50 border-b border-gray-50 flex justify-center items-center gap-20 relative">
+                <div class="absolute left-1/4 right-1/4 h-px bg-gray-200 top-1/2 -translate-y-1/2 -z-0"></div>
+                
+                <div class="flex flex-col items-center gap-1.5 relative z-10">
+                    <div id="step-circle-1" class="size-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-500 bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-110">1</div>
+                    <span class="text-[8px] font-black text-blue-600 uppercase tracking-widest">Configuración</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-1.5 relative z-10">
+                    <div id="step-circle-2" class="size-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-500 bg-gray-100 text-gray-400">2</div>
+                    <span class="text-[8px] font-black text-gray-300 uppercase tracking-widest">Destinatarios</span>
+                </div>
+
+                <div class="flex flex-col items-center gap-1.5 relative z-10">
+                    <div id="step-circle-3" class="size-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-500 bg-gray-100 text-gray-400">3</div>
+                    <span class="text-[8px] font-black text-gray-300 uppercase tracking-widest">Programación</span>
+                </div>
             </div>
 
             <!-- Progress Bar -->
@@ -908,30 +969,125 @@
             </div>
 
             <!-- Steps Container -->
-            <div class="flex-1 overflow-y-auto p-8 custom-scrollbar bg-white">
+            <div id="wizardStepsBody" class="flex-1 overflow-hidden p-5 bg-white flex flex-col min-h-0">
 
-                <!-- STEP 1: MESSAGE CONFIG -->
-                <div id="wizardStep1" class="wizard-step-node active-step flex-col space-y-6">
-                        <div class="space-y-2">
-                        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Asunto del
-                            Correo</label>
-                            <input type="text" id="wizardAsunto" value="Recordatorio de Mantenimiento Preventivo"
-                                oninput="updateStep1LivePreview()"
-                                class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                <!-- STEP 1: MESSAGE CONFIG (Integrated Design) -->
+                <div id="wizardStep1" class="wizard-step-node active-step flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden min-h-0">
+                    
+                    <!-- LEFT SIDE: EDITOR SUITE (6 Columns - Balanced & Independent Scroll) -->
+                    <div class="lg:col-span-6 flex flex-col space-y-8 overflow-y-auto custom-scrollbar pr-4 h-[500px] min-h-0">
+                        
+                        <!-- Grid structure to unify alignment -->
+                        <div class="grid grid-cols-[theme(spacing.24)_1fr] gap-x-4 gap-y-5">
+                            
+                            <!-- Row: Header -->
+                            <div class="col-start-2 space-y-1">
+                                <h2 class="text-2xl font-black text-gray-900 leading-none">Redacción</h2>
+                                <p class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">DEFINE TU MENSAJE BASE</p>
+                            </div>
+
+                            <!-- Row: Asunto -->
+                            <div class="col-start-2 space-y-1.5">
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">ASUNTO DEL CORREO</label>
+                                <input type="text" id="wizardAsunto" value="Recordatorio: Mantenimiento Preventivo ({marca})"
+                                    oninput="updateStep1LivePreview()"
+                                    class="w-full px-5 py-3.5 bg-gray-50 border border-transparent rounded-2xl text-sm font-bold text-gray-900 focus:bg-white focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/10 outline-none transition-all shadow-sm">
+                            </div>
+
+                            <!-- Row: Cuerpo Label -->
+                            <div class="col-start-2 -mb-3">
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">CUERPO DEL MENSAJE</label>
+                            </div>
+
+                            <!-- Row: Tags Sidebar + Editor -->
+                            <div class="col-span-2 flex gap-4 min-h-[480px]">
+                                <!-- Editor Sidebar (Tags - Ultra Compact) -->
+                                <div class="w-24 shrink-0 flex flex-col gap-1.5 py-1">
+                                    <label class="text-[7px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">ETIQUETAS</label>
+                                    <button onclick="insertWizardVar('{funcionario}')" class="w-full px-2 py-1 border rounded-full text-[8px] font-black transition-all flex items-center gap-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap tag-blue">
+                                        <i data-lucide="user" class="size-2"></i> Funcionario
+                                    </button>
+                                    <button onclick="insertWizardVar('{fecha_turno}')" class="w-full px-2 py-1 border rounded-full text-[8px] font-black transition-all flex items-center gap-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap tag-amber">
+                                        <i data-lucide="calendar" class="size-2"></i> Fecha
+                                    </button>
+                                    <button onclick="insertWizardVar('{hora}')" class="w-full px-2 py-1 border rounded-full text-[8px] font-black transition-all flex items-center gap-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap tag-green">
+                                        <i data-lucide="clock" class="size-2"></i> Hora
+                                    </button>
+                                    <button onclick="insertWizardVar('{equipos_lista}')" class="w-full px-2 py-1 border rounded-full text-[8px] font-black transition-all flex items-center gap-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap tag-purple">
+                                        <i data-lucide="monitor" class="size-2"></i> Equipos
+                                    </button>
+                                    <button onclick="insertWizardVar('{marca}')" class="w-full px-2 py-1 border rounded-full text-[8px] font-black transition-all flex items-center gap-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap tag-indigo">
+                                        <i data-lucide="award" class="size-2"></i> Marca
+                                    </button>
+                                    <button onclick="insertWizardVar('{modelo}')" class="w-full px-2 py-1 border rounded-full text-[8px] font-black transition-all flex items-center gap-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap tag-indigo">
+                                        <i data-lucide="cpu" class="size-2"></i> Modelo
+                                    </button>
+                                    <button onclick="insertWizardVar('{duracion}')" class="w-full px-2 py-1 border rounded-full text-[8px] font-black transition-all flex items-center gap-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:scale-95 whitespace-nowrap tag-blue">
+                                        <i data-lucide="timer" class="size-2"></i> Duración
+                                    </button>
+                                </div>
+
+                                <!-- Main Editor -->
+                                <div class="flex-1 bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm flex flex-col">
+                                    <div id="wizardEditor" class="flex-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="hidden_cuerpo">
+                    </div>
+
+                    <!-- RIGHT SIDE: PREVIEW (6 Columns - Balanced & Independent Scroll) -->
+                    <div class="lg:col-span-6 bg-gray-50/5 rounded-[2.5rem] border border-gray-100 p-6 flex flex-col overflow-y-auto custom-scrollbar h-[500px] min-h-0">
+                        <div class="flex items-center justify-between mb-4 px-2">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">VISTA PREVIA REAL</p>
+                            <div class="flex gap-1">
+                                <span class="size-1.5 rounded-full bg-blue-100 animate-pulse"></span>
+                                <span class="size-1.5 rounded-full bg-gray-200"></span>
+                            </div>
                         </div>
 
-                        <div class="flex-1 flex flex-col space-y-2 min-h-0">
-                            <div class="flex justify-between items-end px-1">
-                            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contenido del
-                                Mensaje</label>
-                            <span class="text-[9px] font-bold text-blue-500 cursor-help"
-                                title="Puedes usar variables como {funcionario}, {fecha_turno}, {equipos_lista}">Ver
-                                Variables</span>
+                        <div class="bg-white rounded-[2rem] shadow-2xl shadow-gray-200/20 border border-gray-50 p-6 space-y-4 relative">
+                            <!-- Email Header -->
+                            <div class="flex items-center justify-between pb-4 border-b border-gray-50">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-1 h-12 bg-orange-500 rounded-full shadow-lg shadow-orange-500/20"></div>
+                                    <div>
+                                        <h4 id="previewAsuntoDisplay" class="text-sm font-black text-gray-900 leading-tight"></h4>
+                                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">RECORDATORIO</p>
+                                    </div>
                                 </div>
-                        <div id="wizardEditor" class="h-64 rounded-2xl"></div>
-                            <input type="hidden" id="hidden_cuerpo">
+                                <img src="/static/img/unemi.png" alt="Logo" class="h-6 object-contain opacity-30">
+                            </div>
+
+                            <!-- Visual Asset (Smaller) -->
+                            <div class="flex justify-center">
+                                <div class="bg-gray-50/30 rounded-2xl p-2 border border-gray-100/50">
+                                    <img src="/static/img/mujeru.jpg" alt="Preview Context" class="h-24 object-contain">
+                                </div>
+                            </div>
+
+                            <!-- Content AREA (Boxed) -->
+                            <div class="bg-gray-50/50 rounded-2xl p-5 border border-gray-100/30 space-y-3">
+                                <p class="text-[11px] font-black text-gray-900">Estimado/a <span id="previewFuncionario" class="text-blue-600">ACOSTA NUÑEZ JANINA NATALI</span></p>
+                                <div id="wizardStep1Preview" class="text-[10px] text-gray-600 leading-[1.3] space-y-2 ql-editor !p-0 italic font-medium">
+                                    <!-- Content -->
+                                </div>
+                            </div>
+
+                            <!-- Meta Fields -->
+                            <div class="pt-4 border-t border-gray-100 flex flex-col gap-1.5">
+                                <div class="flex justify-between items-center px-1">
+                                    <span class="text-[8px] font-black text-gray-300 uppercase tracking-widest italic">FECHA:</span>
+                                    <span class="text-[9px] font-black text-gray-900">03 de Feb 2026</span>
+                                </div>
+                                <div class="flex justify-between items-center px-1">
+                                    <span class="text-[8px] font-black text-gray-300 uppercase tracking-widest italic">HORA:</span>
+                                    <span class="text-[9px] font-black text-gray-900">08:00 AM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
             <!-- STEP 2: RECIPIENTS (Accordion) -->
             <div id="wizardStep2" class="wizard-step-node hidden flex-col space-y-6">
@@ -997,20 +1153,24 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
-            <button type="button" id="wizardPrevBtn" onclick="moveStep(wizardCurrentStep - 1)"
-                class="px-6 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-600 disabled:opacity-0 transition-all flex items-center gap-2">
-                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Atrás
+        <!-- Footer (Refined) -->
+        <div class="px-10 py-8 bg-white border-t border-gray-100 flex justify-between items-center">
+            <button type="button" onclick="closeWizard()"
+                class="text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-red-500 transition-colors flex items-center gap-2">
+                CANCELAR PROCESO
             </button>
-            <div class="flex gap-3">
+            <div class="flex gap-4">
+                <button type="button" id="wizardPrevBtn" onclick="moveStep(wizardCurrentStep - 1)"
+                    class="px-8 py-3.5 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-600 disabled:opacity-0 transition-all">
+                    ATRÁS
+                </button>
                 <button type="button" id="wizardNextBtn" onclick="moveStep(wizardCurrentStep + 1)"
-                    class="px-10 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                    Siguiente <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    class="px-12 py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-3">
+                    SIGUIENTE <i data-lucide="arrow-right" class="w-4 h-4"></i>
                 </button>
                 <button type="button" id="wizardSendBtn" onclick="startSendingProcess()"
-                    class="hidden px-10 py-3 bg-green-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-green-500/20 hover:bg-green-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                    <i data-lucide="send" class="w-3.5 h-3.5"></i> Notificar Ahora
+                    class="hidden px-12 py-4 bg-green-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-green-500/20 hover:bg-green-700 hover:-translate-y-0.5 transition-all flex items-center gap-3">
+                    NOTIFICAR AHORA <i data-lucide="send" class="w-4 h-4"></i>
                 </button>
             </div>
         </div>
@@ -3003,27 +3163,41 @@
     function insertPlaceholderWizard() {
         if (wizardQuill) {
             wizardQuill.clipboard.dangerouslyPasteHTML(`
-                 <p>Estimado/a <strong>{funcionario}</strong>,</p>
+                 <p>Se informa que se realizará el mantenimiento preventivo de los siguientes equipos asignados a su cargo:</p>
                  <p><br></p>
-                 <p>Se le informa que tiene un mantenimiento programado para el día <strong>{fecha_turno}</strong>.<br>Los equipos a intervenir son: <em>{equipos_lista}</em>.</p>
+                 <p><strong>{equipos_lista}</strong></p>
                  <p><br></p>
-                 <p>Por favor, confirme la disponibilidad de los mismos.</p>
+                 <p>Dicha actividad se llevará a cabo el día <strong>{fecha_turno}</strong>, en las oficinas del área de Gestión de Mantenimiento, ubicadas en el Bloque C, planta alta. El horario de atención para su turno específico inicia a las <strong>{hora}</strong>, con una duración estimada de <strong>{duracion}</strong> minutos por equipo. Las actividades programadas a ejecutar son las siguientes:</p>
                  <p><br></p>
-                 <p>Saludos cordiales,</p>
-                 <p><strong>Dpto. de Tecnologías de la Información</strong></p>
+                 <p>• <strong>Limpieza externa e interna</strong>: Eliminación de polvo y residuos de componentes internos y carcasa exterior del equipo.</p>
+                 <p>• <strong>Cambio de pasta térmica</strong>: Reemplazo de pasta térmica en procesador y componentes críticos para optimizar la transferencia de calor.</p>
+                 <p>• <strong>Diagnóstico de rendimiento</strong>: Evaluación integral del funcionamiento del sistema y verificación de parámetros operativos.</p>
+                 <p>• <strong>Actualización de software</strong>: Instalación de las últimas versiones de software y parches de seguridad disponibles.</p>
+                 <p><br></p>
+                 <p>Se solicita coordinar previamente la entrega de sus equipos para garantizar el cumplimiento del cronograma establecido y evitar interrupciones en el servicio durante el período mencionado.</p>
              `);
         }
     }
 
     function updateWizardUI() {
-        // Progress Bar
-        const progress = document.getElementById('wizardProgress');
-        const percentage = (wizardCurrentStep / 3) * 100;
-        progress.style.width = `${percentage}%`;
-
-        // Step Title
-        const items = ["Configuración", "Destinatarios", "Confirmación"];
-        document.getElementById('wizardStepTitle').textContent = `Paso ${wizardCurrentStep}: ${items[wizardCurrentStep - 1]}`;
+        // Update Step Indicators (Manually set classes to avoid @apply issues)
+        for (let i = 1; i <= 3; i++) {
+            const circle = document.getElementById(`step-circle-${i}`);
+            const span = circle.nextElementSibling;
+            if (i < wizardCurrentStep) {
+                circle.className = "size-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-500 bg-green-500 text-white shadow-lg shadow-green-500/20";
+                circle.innerHTML = '<i data-lucide="check" class="size-3"></i>';
+                span.className = "text-[8px] font-black text-green-500 uppercase tracking-widest";
+            } else if (i === wizardCurrentStep) {
+                circle.className = "size-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-500 bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-110";
+                circle.innerHTML = i;
+                span.className = "text-[8px] font-black text-blue-600 uppercase tracking-widest";
+            } else {
+                circle.className = "size-6 rounded-full flex items-center justify-center text-[9px] font-black transition-all duration-500 bg-gray-100 text-gray-400";
+                circle.innerHTML = i;
+                span.className = "text-[8px] font-black text-gray-300 uppercase tracking-widest";
+            }
+        }
 
         // Buttons
         const prevBtn = document.getElementById('wizardPrevBtn');
@@ -3035,21 +3209,21 @@
         if (wizardCurrentStep === 3) {
             nextBtn.classList.add('hidden');
             sendBtn.classList.remove('hidden');
-            // Update counts in Step 3
-            document.getElementById('finalCount').textContent = selectedRecipients.size;
+            const finalCountEl = document.getElementById('finalCount');
+            if (finalCountEl) finalCountEl.textContent = selectedRecipients.size;
         } else {
             nextBtn.classList.remove('hidden');
             sendBtn.classList.add('hidden');
         }
 
-        // Visibility of Steps handled in moveStep usually, but ensure classes
+        // Visibility
         for (let i = 1; i <= 3; i++) {
             const stepDiv = document.getElementById(`wizardStep${i}`);
             if (i === wizardCurrentStep) {
-                stepDiv.classList.add('active-step');
+                stepDiv.classList.add('active-step', 'grid');
                 stepDiv.classList.remove('hidden');
             } else {
-                stepDiv.classList.remove('active-step');
+                stepDiv.classList.remove('active-step', 'grid');
                 stepDiv.classList.add('hidden');
             }
         }
@@ -3256,22 +3430,33 @@
         const asunto = document.getElementById('wizardAsunto').value;
         const bodyContent = wizardQuill.root.innerHTML;
 
-        // Update Asunto Display
-        const previewAsunto = document.getElementById('previewAsuntoDisplay');
-        if (previewAsunto) previewAsunto.textContent = asunto;
-
-        // Mock data for replacement
+        // Mock data for replacement (Realistic for preview)
         const mockData = {
-            'funcionario': 'Juan Pérez',
-            'fecha_turno': '15 de Mayo, 2026',
-            'equipos_lista': 'Laptop Lenovo ThinkPad (SN: 12345), Impresora HP Laser (SN: 67890)'
+            'funcionario': 'ACOSTA NUÑEZ JANINA NATALI',
+            'fecha_turno': '03 de Febrero del 2026',
+            'hora': '08:00 AM',
+            'equipos_lista': '• QUASAD QC-N240BU (Cód: 23252147)',
+            'marca': 'QUASAD',
+            'modelo': 'QC-N240BU',
+            'duracion': '30',
+            'actividad': 'Mantenimiento Preventivo'
         };
 
+        // Update Asunto with replacements
+        let processedAsunto = asunto;
+        for (const [key, val] of Object.entries(mockData)) {
+            processedAsunto = processedAsunto.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
+        }
+        const previewAsunto = document.getElementById('previewAsuntoDisplay');
+        if (previewAsunto) previewAsunto.textContent = processedAsunto;
+
+        // Process Body with stylized tags
         let processedBody = bodyContent;
-        // Simple regex replacement for preview
-        processedBody = processedBody.replace(/\{funcionario\}/g, `<span class="bg-blue-100 text-blue-800 px-1 rounded font-bold">${mockData.funcionario}</span>`);
-        processedBody = processedBody.replace(/\{fecha_turno\}/g, `<span class="bg-blue-100 text-blue-800 px-1 rounded font-bold">${mockData.fecha_turno}</span>`);
-        processedBody = processedBody.replace(/\{equipos_lista\}/g, `<span class="bg-blue-100 text-blue-800 px-1 rounded font-bold">${mockData.equipos_lista}</span>`);
+        for (const [key, val] of Object.entries(mockData)) {
+            // Stylize the values in the preview for a "real" feel
+            const styledVal = `<span class="font-black text-gray-800">${val}</span>`;
+            processedBody = processedBody.replace(new RegExp(`\\{${key}\\}`, 'g'), styledVal);
+        }
 
         const previewBody = document.getElementById('wizardStep1Preview');
         if (previewBody) previewBody.innerHTML = processedBody;
