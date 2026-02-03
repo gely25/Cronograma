@@ -464,25 +464,24 @@
 
         <!-- WARNING BANNER -->
         <div id="topWarningBanner" class="px-8 pt-6 pb-2">
-            <div
-                class="bg-[#FFF8E1] border-l-4 border-[#FFA000] rounded-r-xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden">
+            <div id="bannerStyledContainer"
+                class="bg-[#FFF8E1] border-l-4 border-[#FFA000] rounded-r-xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden transition-colors duration-300">
                 <div class="flex items-center gap-4 z-10">
-                    <div class="bg-white/60 p-2 rounded-lg text-[#FFA000]">
-                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    <div id="bannerIconContainer" class="bg-white/60 p-2 rounded-lg text-[#FFA000] transition-colors duration-300">
+                        <i id="bannerIcon" data-lucide="alert-triangle" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h4 class="text-sm font-black text-[#5D4037]">Tienes 1 turnos esta semana sin notificación</h4>
-                        <p class="text-xs font-bold text-[#8D6E63] mt-0.5">Se recomienda notificar con al menos 3 días
-                            de anticipación</p>
+                        <h4 id="bannerTitle" class="text-sm font-black text-[#5D4037] transition-colors duration-300">Tienes 1 turnos esta semana sin notificación</h4>
+                        <p id="bannerSubtitle" class="text-xs font-bold text-[#8D6E63] mt-0.5 transition-colors duration-300">Se recomienda notificar con al menos 3 días de anticipación</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-4 z-10">
-                    <button onclick="openWizard()"
+                    <button id="bannerActionBtn" onclick="openWizard()"
                         class="px-5 py-2.5 bg-[#2962FF] hover:bg-[#1E88E5] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
                         Notificar Ahora
                     </button>
-                    <button onclick="document.getElementById('topWarningBanner').remove()"
-                        class="p-2 text-[#FFD54F] hover:text-[#FFA000] transition-colors">
+                    <button onclick="document.getElementById('topWarningBanner').classList.add('hidden')"
+                        class="p-2 text-current opacity-60 hover:opacity-100 transition-colors">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                 </div>
@@ -2851,6 +2850,76 @@
         const done = turnos.filter(t => t.estado === 'completado').length;
         const pendingTotal = turnos.filter(t => t.estado !== 'completado').length;
 
+        // CALCULATE PENDING NOTIFICATIONS FOR THE CURRENT OR VIEWED WEEK (Banner)
+        // If in Month view -> Use Real Life Week (Urgency focus)
+        // If in Week view -> Use The Week Currently Displayed (Context focus)
+        let referenceDate = new Date(); // Default: Real Now
+        
+        if (currentView === 'week' || currentView === 'day') {
+            referenceDate = new Date(currentMonth); // Use the navigation cursor
+        }
+
+        const startOfWeek = new Date(referenceDate);
+        // Correct way to get Monday (starts at 00:00:00)
+        const day = referenceDate.getDay();
+        const diff = referenceDate.getDate() - day + (day === 0 ? -6 : 1);
+        startOfWeek.setDate(diff);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const pendingWeeklyCount = turnos.filter(t => {
+            const tDate = new Date(t.fecha + 'T00:00:00');
+            return tDate >= startOfWeek && tDate <= endOfWeek && !t.notificado && t.estado !== 'completado';
+        }).length;
+
+        // Update Banner UI
+        const bannerContainer = document.getElementById('topWarningBanner');
+        const styledContainer = document.getElementById('bannerStyledContainer');
+        const iconContainer = document.getElementById('bannerIconContainer');
+        const icon = document.getElementById('bannerIcon');
+        const title = document.getElementById('bannerTitle');
+        const subtitle = document.getElementById('bannerSubtitle');
+        const actionBtn = document.getElementById('bannerActionBtn');
+
+        if (bannerContainer && styledContainer && title) {
+            bannerContainer.classList.remove('hidden');
+            bannerContainer.style.display = 'block';
+
+            if (pendingWeeklyCount > 0) {
+                // WARN STATE (Amber)
+                styledContainer.className = "bg-[#FFF8E1] border-l-4 border-[#FFA000] rounded-r-xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden transition-colors duration-300";
+                iconContainer.className = "bg-white/60 p-2 rounded-lg text-[#FFA000] transition-colors duration-300";
+                if(icon) icon.innerHTML = '<i data-lucide="alert-triangle" class="w-6 h-6"></i>'; // Reset icon if needed, or just change attr
+                if(icon) icon.setAttribute('data-lucide', 'alert-triangle');
+
+                title.className = "text-sm font-black text-[#5D4037] transition-colors duration-300";
+                title.textContent = `Tienes ${pendingWeeklyCount} turno${pendingWeeklyCount > 1 ? 's' : ''} esta semana sin notificación`;
+                
+                subtitle.className = "text-xs font-bold text-[#8D6E63] mt-0.5 transition-colors duration-300";
+                subtitle.textContent = "Se recomienda notificar con al menos 3 días de anticipación";
+
+                if (actionBtn) actionBtn.classList.remove('hidden');
+
+            } else {
+                // SUCCESS STATE (Green)
+                styledContainer.className = "bg-emerald-50 border-l-4 border-emerald-500 rounded-r-xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden transition-colors duration-300";
+                iconContainer.className = "bg-white/60 p-2 rounded-lg text-emerald-600 transition-colors duration-300";
+                if(icon) icon.setAttribute('data-lucide', 'check-circle-2');
+
+                title.className = "text-sm font-black text-emerald-900 transition-colors duration-300";
+                title.textContent = "¡Todo al día! No hay notificaciones pendientes esta semana";
+                
+                subtitle.className = "text-xs font-bold text-emerald-700 mt-0.5 transition-colors duration-300";
+                subtitle.textContent = "Has notificado a todos los responsables de la semana actual";
+
+                if (actionBtn) actionBtn.classList.add('hidden');
+            }
+            lucide.createIcons();
+        }
+
         // Update all possible stat elements
         const elements = {
             'statDone': done,
@@ -2932,6 +3001,9 @@
         } else if (currentView === 'day') {
             renderDayView();
         }
+        
+        // Ensure stats and banner reflect the potentially new view context
+        updateStats();
     }
 
     function navigateCalendar(dir) {
@@ -3270,15 +3342,27 @@
             endDate = new Date(currentMonth);
             endDate.setHours(23, 59, 59, 999);
         } else {
-            // Month view: All days in the current month
-            startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1, 0, 0, 0);
-            endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0, 23, 59, 59, 999);
+            // MONTH VIEW -> Priority: Current REAL-LIFE week for the wizard
+            // This prevents the recipient list from being too overwhelming
+            const today = new Date();
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - today.getDay());
+            startDate.setHours(0, 0, 0, 0);
+
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+            endDate.setHours(23, 59, 59, 999);
         }
 
-        // Filter turnos
+        // Filter turnos: ONLY PENDING (Hourglass ⏳) - exclude those already notified (📧)
         const filteredTurnos = turnos.filter(t => {
             const tDate = new Date(t.fecha + 'T00:00:00');
-            return tDate >= startDate && tDate <= endDate && t.estado !== 'completado';
+            const isInRange = tDate >= startDate && tDate <= endDate;
+            const isNotCompleted = t.estado !== 'completado';
+            // User requested: Not showed if already notified
+            const isNotYetNotified = !t.notificado; 
+            
+            return isInRange && isNotCompleted && isNotYetNotified;
         });
 
         // Group by Date for Accordion
@@ -3293,7 +3377,7 @@
             listContainer.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-12 text-gray-400">
                     <i data-lucide="calendar-off" class="w-12 h-12 mb-3 opacity-20"></i>
-                    <p class="text-xs font-medium">Para esta semana no hay turnos asignados.</p>
+                    <p class="text-xs font-medium">Para esta semana no hay turnos pendientes por notificar.</p>
                 </div>`;
             lucide.createIcons();
             return;
@@ -3344,6 +3428,9 @@
                 const turnDateTime = new Date(`${t.fecha}T${t.hora}:00`);
                 const isExpired = turnDateTime <= now;
 
+                const [year, month, day] = t.fecha.split('-');
+                const shortDate = `${day}/${month}`;
+
                 html += `
                     <label class="flex items-center gap-3 p-3 rounded-lg transition border border-transparent ${isExpired ? 'bg-gray-50 opacity-60 cursor-not-allowed' : 'hover:bg-blue-50 cursor-pointer hover:border-blue-100'}">
                         <input type="checkbox" value="${itemKey}" ${isSelected ? 'checked' : ''} 
@@ -3353,7 +3440,9 @@
                             <div class="flex justify-between items-baseline mb-1">
                                  <span class="font-black text-xs text-gray-800 uppercase truncate pr-2">${t.responsable}</span>
                                  ${isExpired ? 
-                                    `<span class="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded animate-pulse">EXPIRADO</span>` :
+                                    `<span class="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded animate-pulse" title="Venció el ${shortDate} a las ${t.hora}">
+                                        EXPIRADO (${shortDate} ${t.hora})
+                                     </span>` :
                                     `<span class="text-[10px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">${t.hora}</span>`
                                  }
                             </div>
@@ -3577,5 +3666,12 @@
             closeBtn.classList.remove('hidden');
         }
     }
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshAllData();
+        // Also ensure Lucide icons are rendered initially
+        lucide.createIcons();
+    });
 </script>
 {% endblock %}
