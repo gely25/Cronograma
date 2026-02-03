@@ -95,7 +95,7 @@ def dashboard(request):
             Q(asunto__icontains=search)
         )
     
-    paginator_hist = Paginator(historial_queryset, 5) # 5 por página para no sobrecargar
+    paginator_hist = Paginator(historial_queryset, 10) # 10 por página para no sobrecargar
     page_number_hist = request.GET.get('page')
     historial = paginator_hist.get_page(page_number_hist)
 
@@ -840,6 +840,10 @@ def guardar_configuracion(request):
         except: pass
         
         config.save()
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+            return JsonResponse({'status': 'ok', 'message': 'Configuración guardada correctamente'})
+            
         messages.success(request, "Configuración global actualizada correctamente.")
         
     return redirect('notifications_dashboard')
