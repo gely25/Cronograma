@@ -130,7 +130,31 @@
     }
 
     .wizard-step-node.active-step {
+        display: block !important;
+    }
+
+    .wizard-step-node.active-step.flex-col {
         display: flex !important;
+    }
+
+    .wizard-step-node.active-step.grid {
+        display: grid !important;
+    }
+
+    #wizardStep1Preview p,
+    #wizardPreviewContent p {
+        margin-bottom: 1em;
+    }
+
+    #wizardStep1Preview strong,
+    #wizardPreviewContent strong {
+        font-weight: 800;
+        color: #1a202c;
+    }
+
+    #wizardStep1Preview em,
+    #wizardPreviewContent em {
+        font-style: italic;
     }
 </style>
 <!-- Quill CSS -->
@@ -326,10 +350,17 @@
                             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform" id="diasArrow"></i>
                         </button>
                         <div id="diasContent" class="p-4 pt-0 hidden">
-                            <select name="modo_exclusion" id="modoExclusion" class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20">
-                                <option value="none" {% if config and config.modo_exclusion == 'none' %}selected{% endif %}>Todos los días</option>
-                                <option value="sundays" {% if config and config.modo_exclusion == 'sundays' %}selected{% endif %}>Lun a Sáb (Excluir Dom)</option>
-                                <option value="weekends" {% if not config or config.modo_exclusion == 'weekends' %}selected{% endif %}>Lun a Vie (Excluir Fines)</option>
+                            <select name="modo_exclusion" id="modoExclusion"
+                                class="w-full text-xs font-bold text-slate-700 bg-slate-50 border-transparent rounded-lg focus:ring-2 focus:ring-indigo-500/20">
+                        <option value="none" {% if config and config.modo_exclusion == 'none' %}selected{% endif %}>
+                                    Todos los días
+                                </option>
+                        <option value="sundays" {% if config and config.modo_exclusion == 'sundays' %}selected{% endif %}>
+                                    Lun a Sáb (Excluir Dom)
+                                </option>
+                        <option value="weekends" {% if config and config.modo_exclusion == 'weekends' %}selected{% endif %}>
+                                    Lun a Vie (Excluir Fines)
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -881,147 +912,148 @@
 
                 <!-- STEP 1: MESSAGE CONFIG -->
                 <div id="wizardStep1" class="wizard-step-node active-step flex-col space-y-6">
-                    <div class="space-y-2">
+                        <div class="space-y-2">
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Asunto del
                             Correo</label>
-                        <input type="text" id="wizardAsunto" value="Recordatorio de Mantenimiento Preventivo"
-                            class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
-                    </div>
+                            <input type="text" id="wizardAsunto" value="Recordatorio de Mantenimiento Preventivo"
+                                oninput="updateStep1LivePreview()"
+                                class="w-full px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition">
+                        </div>
 
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-end px-1">
+                        <div class="flex-1 flex flex-col space-y-2 min-h-0">
+                            <div class="flex justify-between items-end px-1">
                             <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contenido del
                                 Mensaje</label>
                             <span class="text-[9px] font-bold text-blue-500 cursor-help"
                                 title="Puedes usar variables como {funcionario}, {fecha_turno}, {equipos_lista}">Ver
                                 Variables</span>
-                        </div>
+                                </div>
                         <div id="wizardEditor" class="h-64 rounded-2xl"></div>
-                        <input type="hidden" id="hidden_cuerpo">
-                    </div>
-                </div>
-
-                <!-- STEP 2: RECIPIENTS (Accordion) -->
-                <div id="wizardStep2" class="wizard-step-node hidden flex-col space-y-6">
-                    <div
-                        class="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                                <i data-lucide="users" class="w-4 h-4"></i>
-                            </div>
-                            <div>
-                                <p class="text-[10px] font-black text-blue-900 uppercase tracking-widest">Destinatarios
-                                    Seleccionados</p>
-                                <p class="text-lg font-black text-blue-600 leading-none mt-1"><span
-                                        id="wizardSelectedCount">0</span> Funcionarios</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="toggleAllWizard(true)"
-                                class="px-3 py-1.5 bg-white border border-blue-200 text-blue-600 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 transition">Marcar
-                                Todos</button>
-                            <button onclick="toggleAllWizard(false)"
-                                class="px-3 py-1.5 bg-white border border-gray-200 text-gray-500 rounded-lg text-[9px] font-black uppercase hover:bg-gray-50 transition">Desmarcar</button>
-                        </div>
-                    </div>
-
-                    <div id="recipientsList" class="space-y-3">
-                        <!-- Accordion Items injected via JS -->
-                    </div>
-                </div>
-
-                <!-- STEP 3: CONFIRMATION -->
-                <div id="wizardStep3"
-                    class="wizard-step-node hidden flex-col items-center justify-center text-center py-10 space-y-8">
-                    <div class="relative">
-                        <div class="absolute inset-0 bg-blue-100 rounded-[2.5rem] rotate-6 animate-pulse"></div>
-                        <div
-                            class="size-24 bg-blue-600 rounded-[2.5rem] shadow-2xl flex items-center justify-center relative -rotate-6">
-                            <i data-lucide="send" class="size-10 text-white"></i>
-                        </div>
-                    </div>
-
-                    <div class="max-w-xs mx-auto space-y-2">
-                        <h4 class="text-2xl font-black text-gray-900 tracking-tight">¿Listo para Notificar?</h4>
-                        <p class="text-[11px] text-gray-500 font-medium px-4">Se enviarán <span id="finalCount"
-                                class="text-blue-600 font-black">0</span> mensajes personalizados por correo
-                            electrónico.</p>
-                    </div>
-
-                    <div class="w-full bg-gray-50 rounded-3xl p-6 border border-gray-100 text-left space-y-4">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="size-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm text-gray-400">
-                                <i data-lucide="eye" class="size-4"></i>
-                            </div>
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vista de lo que
-                                recibirán</p>
-                        </div>
-                        <div id="wizardPreviewContent"
-                            class="text-[11px] text-gray-600 bg-white p-4 rounded-xl border border-gray-100 prose prose-sm max-h-32 overflow-y-auto custom-scrollbar">
-                            <!-- Preview Content -->
-                        </div>
-                    </div>
+                            <input type="hidden" id="hidden_cuerpo">
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
-                <button type="button" id="wizardPrevBtn" onclick="moveStep(wizardCurrentStep - 1)"
-                    class="px-6 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-600 disabled:opacity-0 transition-all flex items-center gap-2">
-                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Atrás
-                </button>
-                <div class="flex gap-3">
-                    <button type="button" id="wizardNextBtn" onclick="moveStep(wizardCurrentStep + 1)"
-                        class="px-10 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                        Siguiente <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button type="button" id="wizardSendBtn" onclick="startSendingProcess()"
-                        class="hidden px-10 py-3 bg-green-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-green-500/20 hover:bg-green-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                        <i data-lucide="send" class="w-3.5 h-3.5"></i> Notificar Ahora
-                    </button>
+            <!-- STEP 2: RECIPIENTS (Accordion) -->
+            <div id="wizardStep2" class="wizard-step-node hidden flex-col space-y-6">
+                    <div
+                        class="flex justify-between items-center bg-blue-50/50 p-4 rounded-2xl border border-blue-100/50">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                            <i data-lucide="users" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black text-blue-900 uppercase tracking-widest">Destinatarios
+                                Seleccionados</p>
+                            <p class="text-lg font-black text-blue-600 leading-none mt-1"><span
+                                    id="wizardSelectedCount">0</span> Funcionarios</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="toggleAllWizard(true)"
+                            class="px-3 py-1.5 bg-white border border-blue-200 text-blue-600 rounded-lg text-[9px] font-black uppercase hover:bg-blue-50 transition">Marcar
+                            Todos</button>
+                        <button onclick="toggleAllWizard(false)"
+                            class="px-3 py-1.5 bg-white border border-gray-200 text-gray-500 rounded-lg text-[9px] font-black uppercase hover:bg-gray-50 transition">Desmarcar</button>
+                    </div>
+                </div>
+
+                <div id="recipientsList" class="space-y-3">
+                    <!-- Accordion Items injected via JS -->
+                </div>
+            </div>
+
+            <!-- STEP 3: CONFIRMATION -->
+            <div id="wizardStep3"
+                class="wizard-step-node hidden flex-col items-center justify-center text-center py-10 space-y-8">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-blue-100 rounded-[2.5rem] rotate-6 animate-pulse"></div>
+                    <div
+                        class="size-24 bg-blue-600 rounded-[2.5rem] shadow-2xl flex items-center justify-center relative -rotate-6">
+                        <i data-lucide="send" class="size-10 text-white"></i>
+                    </div>
+                </div>
+
+                <div class="max-w-xs mx-auto space-y-2">
+                    <h4 class="text-2xl font-black text-gray-900 tracking-tight">¿Listo para Notificar?</h4>
+                    <p class="text-[11px] text-gray-500 font-medium px-4">Se enviarán <span id="finalCount"
+                            class="text-blue-600 font-black">0</span> mensajes personalizados por correo
+                        electrónico.</p>
+                </div>
+
+                <div class="w-full bg-gray-50 rounded-3xl p-6 border border-gray-100 text-left space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="size-8 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm text-gray-400">
+                            <i data-lucide="eye" class="size-4"></i>
+                        </div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Vista de lo que
+                            recibirán</p>
+                    </div>
+                    <div id="wizardPreviewContent"
+                        class="text-[11px] text-gray-600 bg-white p-4 rounded-xl border border-gray-100 prose prose-sm max-h-32 overflow-y-auto custom-scrollbar">
+                        <!-- Preview Content -->
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Footer -->
+        <div class="px-8 py-6 bg-gray-50/50 border-t border-gray-100 flex justify-between items-center">
+            <button type="button" id="wizardPrevBtn" onclick="moveStep(wizardCurrentStep - 1)"
+                class="px-6 py-3 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:text-gray-600 disabled:opacity-0 transition-all flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Atrás
+            </button>
+            <div class="flex gap-3">
+                <button type="button" id="wizardNextBtn" onclick="moveStep(wizardCurrentStep + 1)"
+                    class="px-10 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                    Siguiente <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+                <button type="button" id="wizardSendBtn" onclick="startSendingProcess()"
+                    class="hidden px-10 py-3 bg-green-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-green-500/20 hover:bg-green-700 hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i> Notificar Ahora
+                </button>
+            </div>
+        </div>
     </div>
+</div>
 
-    <!-- STREAMING PROGRESS MODAL -->
-    <div id="streamingProgressModal"
-        class="fixed inset-0 z-[110] hidden bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-        <div
-            class="bg-white p-8 rounded-[2rem] shadow-2xl border border-gray-100 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95">
-            <div class="relative w-24 h-24 mx-auto">
-                <div class="absolute inset-0 border-4 border-blue-50 rounded-full"></div>
-                <div id="streamProgressBar"
-                    class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin">
-                </div>
-                <div class="absolute inset-0 flex items-center justify-center">
-                    <i data-lucide="mail" class="w-10 h-10 text-blue-600"></i>
-                </div>
+<!-- STREAMING PROGRESS MODAL -->
+<div id="streamingProgressModal"
+    class="fixed inset-0 z-[110] hidden bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+        class="bg-white p-8 rounded-[2rem] shadow-2xl border border-gray-100 max-w-sm w-full text-center space-y-6 animate-in zoom-in-95">
+        <div class="relative w-24 h-24 mx-auto">
+            <div class="absolute inset-0 border-4 border-blue-50 rounded-full"></div>
+            <div id="streamProgressBar"
+                class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin">
             </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i data-lucide="mail" class="w-10 h-10 text-blue-600"></i>
+            </div>
+        </div>
 
-            <div class="space-y-2">
-                <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight">Enviando Notificaciones</h3>
-                <p id="streamStatusText" class="text-xs text-gray-500 font-medium italic">Iniciando proceso...</p>
-            </div>
+        <div class="space-y-2">
+            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight">Enviando Notificaciones</h3>
+            <p id="streamStatusText" class="text-xs text-gray-500 font-medium italic">Iniciando proceso...</p>
+        </div>
 
-            <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden border border-gray-50">
-                <div id="streamProgressBarFill" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
-            </div>
+        <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden border border-gray-50">
+            <div id="streamProgressBarFill" class="bg-blue-600 h-full w-0 transition-all duration-300"></div>
+        </div>
 
-            <div class="flex justify-between items-center px-2">
-                <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progreso</span>
-                <span id="streamProgressText" class="text-[10px] font-black text-blue-600 uppercase tracking-widest">0
-                    de 0</span>
-            </div>
+        <div class="flex justify-between items-center px-2">
+            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progreso</span>
+            <span id="streamProgressText" class="text-[10px] font-black text-blue-600 uppercase tracking-widest">0
+                de 0</span>
+        </div>
 
             <button id="streamCloseBtn"
                 onclick="document.getElementById('streamingProgressModal').classList.add('hidden')"
-                class="hidden w-full py-3 bg-gray-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
-                Cerrar Ventana
-            </button>
-        </div>
+            class="hidden w-full py-3 bg-gray-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-black transition-all">
+            Cerrar Ventana
+        </button>
     </div>
+</div>
 
 </div>
 {% endblock %}
@@ -2921,6 +2953,7 @@
         }, 10);
 
         updateWizardUI();
+        updateStep1LivePreview();
     }
 
     function closeWizard() {
@@ -2932,6 +2965,13 @@
             modal.classList.remove('flex');
             modal.classList.add('hidden');
         }, 300);
+    }
+
+    function insertWizardVar(tagName) {
+        if (!wizardQuill) return;
+        const range = wizardQuill.getSelection(true);
+        wizardQuill.insertText(range.index, tagName, 'bold', true);
+        wizardQuill.setSelection(range.index + tagName.length);
     }
 
     function initWizardQuill() {
@@ -2951,23 +2991,26 @@
             }
         });
 
-        // Sync to hidden input
+        // Sync to hidden input and previews
         wizardQuill.on('text-change', () => {
             const txt = wizardQuill.root.innerHTML;
             document.getElementById('hidden_cuerpo').value = txt;
-            updateWizardPreview();
+            updateStep1LivePreview();
+            updateWizardPreview(); // Step 3
         });
     }
 
     function insertPlaceholderWizard() {
         if (wizardQuill) {
             wizardQuill.clipboard.dangerouslyPasteHTML(`
-                 <p>Estimado/a colega,</p>
+                 <p>Estimado/a <strong>{funcionario}</strong>,</p>
                  <p><br></p>
-                 <p>Se le informa que tiene un mantenimiento programado.<br>Por favor, confirme la disponibilidad del equipo.</p>
+                 <p>Se le informa que tiene un mantenimiento programado para el día <strong>{fecha_turno}</strong>.<br>Los equipos a intervenir son: <em>{equipos_lista}</em>.</p>
+                 <p><br></p>
+                 <p>Por favor, confirme la disponibilidad de los mismos.</p>
                  <p><br></p>
                  <p>Saludos cordiales,</p>
-                 <p><strong>Dpto. de Mantenimiento</strong></p>
+                 <p><strong>Dpto. de Tecnologías de la Información</strong></p>
              `);
         }
     }
@@ -3005,11 +3048,9 @@
             if (i === wizardCurrentStep) {
                 stepDiv.classList.add('active-step');
                 stepDiv.classList.remove('hidden');
-                stepDiv.style.display = 'flex'; // Enforce flex
             } else {
                 stepDiv.classList.remove('active-step');
                 stepDiv.classList.add('hidden');
-                stepDiv.style.display = 'none';
             }
         }
         lucide.createIcons();
@@ -3103,7 +3144,7 @@
 
         sortedDates.forEach(dateStr => {
             const dayTurnos = groupedRecipients[dateStr];
-            const allSelectedForDay = dayTurnos.every(t => selectedRecipients.has(t.id));
+            const allSelectedForDay = dayTurnos.every(t => selectedRecipients.has(`${t.id}:anticipado`));
 
             // Accordion Item
             html += `
@@ -3124,10 +3165,11 @@
 
             // Turnos Items
             dayTurnos.forEach(t => {
-                const isSelected = selectedRecipients.has(t.id);
+                const itemKey = `${t.id}:anticipado`;
+                const isSelected = selectedRecipients.has(itemKey);
                 html += `
                     <label class="flex items-center gap-3 p-3 hover:bg-blue-50 rounded-lg cursor-pointer transition border border-transparent hover:border-blue-100">
-                        <input type="checkbox" value="${t.id}" ${isSelected ? 'checked' : ''} onchange="toggleWizardSelection(${t.id})" 
+                        <input type="checkbox" value="${itemKey}" ${isSelected ? 'checked' : ''} onchange="toggleWizardSelection('${itemKey}')" 
                             class="size-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300">
                         <div class="flex-1 min-w-0">
                             <div class="flex justify-between items-baseline mb-1">
@@ -3170,7 +3212,6 @@
     }
 
     function toggleWizardSelection(id) {
-        id = Number(id);
         if (selectedRecipients.has(id)) {
             selectedRecipients.delete(id);
         } else {
@@ -3183,8 +3224,9 @@
         if (e) e.stopPropagation();
         const dayTurnos = groupedRecipients[dateStr] || [];
         dayTurnos.forEach(t => {
-            if (select) selectedRecipients.add(t.id);
-            else selectedRecipients.delete(t.id);
+            const itemKey = `${t.id}:anticipado`;
+            if (select) selectedRecipients.add(itemKey);
+            else selectedRecipients.delete(itemKey);
         });
 
         // Update checkboxes UI
@@ -3201,18 +3243,43 @@
         const checkboxes = document.querySelectorAll('#recipientsList input[type="checkbox"]');
         checkboxes.forEach(cb => {
             cb.checked = select;
-            const id = Number(cb.value);
+            const id = cb.value;
             if (select) selectedRecipients.add(id);
             else selectedRecipients.delete(id);
         });
         document.getElementById('wizardSelectedCount').textContent = selectedRecipients.size;
     }
 
+    function updateStep1LivePreview() {
+        if (!wizardQuill) return;
+
+        const asunto = document.getElementById('wizardAsunto').value;
+        const bodyContent = wizardQuill.root.innerHTML;
+
+        // Update Asunto Display
+        const previewAsunto = document.getElementById('previewAsuntoDisplay');
+        if (previewAsunto) previewAsunto.textContent = asunto;
+
+        // Mock data for replacement
+        const mockData = {
+            'funcionario': 'Juan Pérez',
+            'fecha_turno': '15 de Mayo, 2026',
+            'equipos_lista': 'Laptop Lenovo ThinkPad (SN: 12345), Impresora HP Laser (SN: 67890)'
+        };
+
+        let processedBody = bodyContent;
+        // Simple regex replacement for preview
+        processedBody = processedBody.replace(/\{funcionario\}/g, `<span class="bg-blue-100 text-blue-800 px-1 rounded font-bold">${mockData.funcionario}</span>`);
+        processedBody = processedBody.replace(/\{fecha_turno\}/g, `<span class="bg-blue-100 text-blue-800 px-1 rounded font-bold">${mockData.fecha_turno}</span>`);
+        processedBody = processedBody.replace(/\{equipos_lista\}/g, `<span class="bg-blue-100 text-blue-800 px-1 rounded font-bold">${mockData.equipos_lista}</span>`);
+
+        const previewBody = document.getElementById('wizardStep1Preview');
+        if (previewBody) previewBody.innerHTML = processedBody;
+    }
+
     function updateWizardPreview() {
         if (!wizardQuill) return;
         const html = wizardQuill.root.innerHTML;
-        // Basic variable replacement simulation (optional)
-        // For now just show the raw body as it will appear
         document.getElementById('wizardPreviewContent').innerHTML = html;
     }
 
