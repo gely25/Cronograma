@@ -134,7 +134,8 @@
 <div class="flex h-screen overflow-hidden bg-gray-50/50">
 
     <!-- 1. LEFT SIDEBAR (Config & Tools) -->
-    <aside id="leftSidebar" class="w-80 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-30 relative">
+    <aside id="leftSidebar"
+        class="w-80 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-30 relative">
         <!-- Sidebar Header -->
         <div class="p-6 border-b border-gray-100 flex justify-between items-start">
             <div>
@@ -145,20 +146,21 @@
                 <i data-lucide="chevrons-left" class="w-5 h-5"></i>
             </button>
         </div>
-        
+
         <!-- RESET BUTTON -->
         <div class="px-6 py-4 bg-rose-50/30 border-b border-rose-50">
-            <button onclick="resetEverything()" 
+            <button onclick="resetEverything()"
                 class="w-full py-2.5 px-4 rounded-xl border border-rose-100 bg-white text-rose-600 text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-2 group shadow-sm">
-                <i data-lucide="refresh-ccw" class="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500"></i>
+                <i data-lucide="refresh-ccw"
+                    class="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500"></i>
                 Reiniciar Cronograma
             </button>
         </div>
 
         <!-- Scrollable Content -->
         <div class="flex-1 overflow-y-auto custom-scrollbar">
-            
-            
+
+
             <!-- STEP 1: IMPORTAR DATOS -->
             <div id="step1Container" class="p-6 border-b border-gray-50">
                 <div class="flex items-center gap-3 mb-6">
@@ -348,6 +350,34 @@
 
     <!-- 2. MAIN CALENDAR AREA -->
     <main class="flex-1 flex flex-col min-w-0 bg-gray-50/50 relative">
+
+        <!-- WARNING BANNER -->
+        <div id="topWarningBanner" class="px-8 pt-6 pb-2">
+            <div
+                class="bg-[#FFF8E1] border-l-4 border-[#FFA000] rounded-r-xl p-4 flex items-center justify-between shadow-sm relative overflow-hidden">
+                <div class="flex items-center gap-4 z-10">
+                    <div class="bg-white/60 p-2 rounded-lg text-[#FFA000]">
+                        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-black text-[#5D4037]">Tienes 1 turnos esta semana sin notificación</h4>
+                        <p class="text-xs font-bold text-[#8D6E63] mt-0.5">Se recomienda notificar con al menos 3 días
+                            de anticipación</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 z-10">
+                    <button onclick="window.location.href='{% url 'notifications_dashboard' %}?open_wizard=true'"
+                        class="px-5 py-2.5 bg-[#2962FF] hover:bg-[#1E88E5] text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-95">
+                        Notificar Ahora
+                    </button>
+                    <button onclick="document.getElementById('topWarningBanner').remove()"
+                        class="p-2 text-[#FFD54F] hover:text-[#FFA000] transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Header -->
         <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shadow-sm z-20">
             <div class="flex items-center gap-4">
@@ -497,19 +527,20 @@
     </div>
 
     <!-- DAY DETAIL MODAL -->
-    <div id="dayDetailOverlay" 
-         style="display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 9998; backdrop-filter: blur(2px);"
-         onclick="closeDayDetailPanel()"></div>
-    
+    <div id="dayDetailOverlay"
+        style="display: none; position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); z-index: 9998; backdrop-filter: blur(2px);"
+        onclick="closeDayDetailPanel()"></div>
+
     <div id="dayDetailPanel"
-         style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; max-width: 95vw; max-height: 90vh; background-color: white; z-index: 9999; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border-radius: 16px; flex-direction: column; overflow: hidden;">
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; max-width: 95vw; max-height: 90vh; background-color: white; z-index: 9999; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border-radius: 16px; flex-direction: column; overflow: hidden;">
         <!-- Modal Header -->
         <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-6 flex justify-between items-center">
             <div>
                 <h3 class="text-2xl font-black" id="dayDetailDate">-</h3>
                 <p class="text-sm opacity-90 font-medium" id="dayDetailSubtitle">Turnos del día</p>
             </div>
-            <button onclick="event.stopPropagation(); closeDayDetailPanel()" class="hover:bg-white/20 rounded-lg p-2 transition-colors">
+            <button onclick="event.stopPropagation(); closeDayDetailPanel()"
+                class="hover:bg-white/20 rounded-lg p-2 transition-colors">
                 <i data-lucide="x" class="w-6 h-6"></i>
             </button>
         </div>
@@ -610,12 +641,12 @@
                     <div class="grid grid-cols-1 gap-4">
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Nombre Completo</label>
-                            <input type="text" id="manualResponsableNombre" placeholder="Ej: Juan Pérez" 
+                            <input type="text" id="manualResponsableNombre" placeholder="Ej: Juan Pérez"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
                         </div>
                         <div class="space-y-1.5">
                             <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Correo Electrónico (Opcional)</label>
-                            <input type="email" id="manualResponsableEmail" placeholder="juan.perez@empresa.com" 
+                            <input type="email" id="manualResponsableEmail" placeholder="juan.perez@empresa.com"
                                 class="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all">
                         </div>
                     </div>
@@ -625,12 +656,12 @@
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <div class="space-y-1.5">
                         <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Fecha Programada</label>
-                        <input type="date" id="manualTurnFecha" readonly 
+                        <input type="date" id="manualTurnFecha" readonly
                             class="w-full px-4 py-3 bg-gray-100 border border-gray-100 rounded-xl text-sm font-black text-gray-400 cursor-not-allowed">
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Hora Programada</label>
-                        <input type="time" id="manualTurnHora" readonly 
+                        <input type="time" id="manualTurnHora" readonly
                             class="w-full px-4 py-3 bg-gray-100 border border-gray-100 rounded-xl text-sm font-black text-gray-400 cursor-not-allowed">
                     </div>
                 </div>
@@ -638,14 +669,16 @@
                 <!-- Equipos List -->
                 <div class="space-y-4 pt-4 border-t border-gray-100">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <h4
+                            class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
                             <i data-lucide="cpu" class="w-3.5 h-3.5 text-blue-500"></i> Equipos a Mantener
                         </h4>
-                        <button onclick="addManualEquipoRow()" class="text-[10px] font-black text-blue-600 uppercase hover:text-blue-700 flex items-center gap-1">
+                        <button onclick="addManualEquipoRow()"
+                            class="text-[10px] font-black text-blue-600 uppercase hover:text-blue-700 flex items-center gap-1">
                             <i data-lucide="plus-circle" class="w-3 h-3"></i> Añadir Equipo
                         </button>
                     </div>
-                    
+
                     <div id="manualEquiposList" class="space-y-3">
                         <!-- Rows added via JS -->
                     </div>
@@ -654,7 +687,7 @@
 
             <!-- Footer -->
             <div class="p-6 bg-gray-50 border-t border-gray-100 flex gap-3">
-                <button onclick="closeManualTurnModal()" 
+                <button onclick="closeManualTurnModal()"
                     class="flex-1 py-3 border border-gray-200 bg-white text-gray-500 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-100 transition-all active:scale-95">
                     Cancelar
                 </button>
@@ -703,7 +736,7 @@
                         <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">D</div>
                         <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center">E</div>
                     </div>
-                    
+
                     <!-- Header Row -->
                     <div class="flex bg-white border-b border-gray-200">
                         <div class="w-10 bg-gray-100 border-r border-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-400">1</div>
@@ -734,82 +767,84 @@
                         </li>
                         <li class="flex items-center gap-2 text-[11px] text-gray-600 font-medium">
                             <span class="size-1.5 rounded-full bg-amber-500"></span>
-                            La columna <strong class="text-gray-900">EMAIL</strong> es crucial para las notificaciones automáticas.
+                            La columna <strong class="text-gray-900">EMAIL</strong> es crucial para las notificaciones
+                            automáticas.
                         </li>
                     </ul>
                 </div>
             </div>
 
             <div class="p-6 bg-gray-50 border-t border-gray-100">
-                <button onclick="closeExcelFormatModal()" class="w-full py-3 bg-gray-800 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95">
+                <button onclick="closeExcelFormatModal()"
+                    class="w-full py-3 bg-gray-800 text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all active:scale-95">
                     Entendido, Corregiré mi Excel
                 </button>
             </div>
         </div>
     </div>
-<div id="confirmationModal"
-    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[50000] backdrop-blur-sm transition-opacity duration-300 opacity-0">
-    <div id="confirmModalContent"
-        class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-all duration-300 p-6">
-        <div class="text-center">
-            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                <i data-lucide="help-circle" class="w-6 h-6 text-blue-600"></i>
+    <div id="confirmationModal"
+        class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[50000] backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div id="confirmModalContent"
+            class="bg-white rounded-2xl shadow-2xl w-full max-w-sm transform scale-95 transition-all duration-300 p-6">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                    <i data-lucide="help-circle" class="w-6 h-6 text-blue-600"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900" id="confirmTitle">Confirmar Acción</h3>
+                <p class="text-xs text-gray-500 mt-2" id="confirmMessage">¿Estás seguro de realizar esta acción?</p>
+
+                <!-- Extra Content Container -->
+                <div id="confirmExtraContent" class="mt-4 hidden"></div>
             </div>
-            <h3 class="text-lg font-bold text-gray-900" id="confirmTitle">Confirmar Acción</h3>
-            <p class="text-xs text-gray-500 mt-2" id="confirmMessage">¿Estás seguro de realizar esta acción?</p>
-            
-            <!-- Extra Content Container -->
-            <div id="confirmExtraContent" class="mt-4 hidden"></div>
-        </div>
-        <div class="mt-6 flex gap-3">
-            <button id="confirmCancelBtn" onclick="closeConfirmModal()"
-                class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors">
-                Cancelar
-            </button>
-            <button id="confirmActionBtn"
-                class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-blue-500/30">
-                Confirmar
-            </button>
+            <div class="mt-6 flex gap-3">
+                <button id="confirmCancelBtn" onclick="closeConfirmModal()"
+                    class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-colors">
+                    Cancelar
+                </button>
+                <button id="confirmActionBtn"
+                    class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-blue-500/30">
+                    Confirmar
+                </button>
+            </div>
         </div>
     </div>
+
 </div>
+{% endblock %}
 
-    </div>
-    {% endblock %}
-
-    {% block extra_js %}
-    <script>
-        // Data from Django
-            let turnos = [
+{% block extra_js %}
+<script>
+    // Data from Django
+    let turnos = [
         {% for t in turnos %}
-        {
+    {
             id: {{ t.id }},
-            responsable: "{{ t.responsable.nombre }}",
+        responsable: "{{ t.responsable.nombre }}",
             fecha: "{{ t.fecha|date:'Y-m-d'|default:'' }}",
-            hora: "{{ t.hora|time:'H:i'|default:'' }}",
-            estado: "{{ t.estado }}",
+                hora: "{{ t.hora|time:'H:i'|default:'' }}",
+                    estado: "{{ t.estado }}",
             notificado: {{ t.notificacion_enviada|yesno:"true,false" }},
             error_notificacion: {{ t.notificacion_error|yesno:"true,false" }},
-            equipos: [
-                {% for e in t.equipos.all %}
-                {
+        equipos: [
+            {% for e in t.equipos.all %}
+    {
                     id: {{ e.id }},
-                    marca: "{{ e.marca }}",
-                    modelo: "{{ e.modelo }}",
-                    codigo: "{{ e.codigo }}",
+        marca: "{{ e.marca }}",
+            modelo: "{{ e.modelo }}",
+                codigo: "{{ e.codigo }}",
                     descripcion: "{{ e.descripcion }}",
                     atendido: {{ e.atendido|yesno:"true,false" }}
                 }{% if not forloop.last %},{% endif %}
-                {% endfor %}
+    {% endfor %}
             ]
         }{% if not forloop.last %},{% endif %}
-        {% endfor %}
+    {% endfor %}
     ];
 
     let feriados = [
         {% for f in feriados %}
             "{{ f.fecha|date:'Y-m-d' }}"{% if not forloop.last %},{% endif %}
-        {% endfor %}
+    {% endfor %}
     ];
 
     let config = {
@@ -818,120 +853,120 @@
         modo_exclusion: "{{ config.modo_exclusion|default:'weekends' }}",
     };
 
-        let currentMonth = new Date();
-        const togglingIds = new Set(); // Multi-click prevention
-        if (config.inicio) {
-            currentMonth = new Date(config.inicio + 'T00:00:00');
+    let currentMonth = new Date();
+    const togglingIds = new Set(); // Multi-click prevention
+    if (config.inicio) {
+        currentMonth = new Date(config.inicio + 'T00:00:00');
+    }
+
+    // --- GLOBAL HELPERS ---
+    function getStatusBadgeHTML(estado) {
+        let classes = "px-2 py-0.5 rounded-full text-[10px] font-black uppercase ";
+        let label = estado;
+
+        if (estado === 'completado') {
+            classes += "bg-green-100 text-green-700";
+            label = "Completado";
+        } else if (estado === 'en_proceso') {
+            classes += "bg-yellow-100 text-yellow-700";
+            label = "En Proceso";
+        } else {
+            classes += "bg-blue-100 text-blue-700";
+            label = "Pendiente";
         }
 
-        // --- GLOBAL HELPERS ---
-        function getStatusBadgeHTML(estado) {
-            let classes = "px-2 py-0.5 rounded-full text-[10px] font-black uppercase ";
-            let label = estado;
+        return `<span class="${classes}">${label}</span>`;
+    }
 
-            if (estado === 'completado') {
-                classes += "bg-green-100 text-green-700";
-                label = "Completado";
-            } else if (estado === 'en_proceso') {
-                classes += "bg-yellow-100 text-yellow-700";
-                label = "En Proceso";
-            } else {
-                classes += "bg-blue-100 text-blue-700";
-                label = "Pendiente";
-            }
+    function initCalendar() {
+        const container = document.getElementById('calendarContainer');
+        container.innerHTML = '';
 
-            return `<span class="${classes}">${label}</span>`;
-        }
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
 
-        function initCalendar() {
-            const container = document.getElementById('calendarContainer');
-            container.innerHTML = '';
-
-            const year = currentMonth.getFullYear();
-            const month = currentMonth.getMonth();
-
-            const header = document.createElement('div');
-            header.className = 'flex justify-between items-center mb-6';
-            header.innerHTML = `
+        const header = document.createElement('div');
+        header.className = 'flex justify-between items-center mb-6';
+        header.innerHTML = `
             <h3 class="text-xl font-bold">${currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase()}</h3>
             <div class="flex gap-2">
                 <button onclick="changeMonth(-1)" class="p-2 border rounded hover:bg-gray-100 transition">←</button>
                 <button onclick="changeMonth(1)" class="p-2 border rounded hover:bg-gray-100 transition">→</button>
             </div>
         `;
-            container.appendChild(header);
+        container.appendChild(header);
 
-            const grid = document.createElement('div');
-            grid.className = 'grid grid-cols-7 gap-4';
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-7 gap-4';
 
-            ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(day => {
-                const h = document.createElement('div');
-                h.className = 'text-center text-[10px] font-black text-gray-400 uppercase mb-4';
-                h.textContent = day;
-                grid.appendChild(h);
-            });
+        ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].forEach(day => {
+            const h = document.createElement('div');
+            h.className = 'text-center text-[10px] font-black text-gray-400 uppercase mb-4';
+            h.textContent = day;
+            grid.appendChild(h);
+        });
 
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // Padding for days before month starts
-            for (let i = 0; i < firstDay; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'calendar-day other-month';
-                grid.appendChild(cell);
+        // Padding for days before month starts
+        for (let i = 0; i < firstDay; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-day other-month';
+            grid.appendChild(cell);
+        }
+
+        // Render each day
+        for (let d = 1; d <= daysInMonth; d++) {
+            const cellDate = new Date(year, month, d);
+            // Fix timezone issue by manually formatting YYYY-MM-DD
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
+            const isHoliday = feriados.includes(dateStr);
+            const isToday = new Date().toDateString() === cellDate.toDateString();
+            const dayTurnos = turnos.filter(t => t.fecha === dateStr);
+            const turnosCount = dayTurnos.length;
+
+            const cell = document.createElement('div');
+            cell.className = `calendar-day ${isWeekend ? 'weekend' : ''} ${isHoliday ? 'holiday' : ''} ${isToday ? 'today' : ''}`;
+            cell.dataset.date = dateStr;
+
+            // Click handler to open day detail panel
+            if (!isWeekend && !isHoliday) {
+                cell.onclick = (e) => {
+                    e.stopPropagation();
+                    console.log('Click on day:', dateStr);
+                    openDayDetailPanel(dateStr);
+                };
+                cell.style.cursor = 'pointer';
             }
 
-            // Render each day
-            for (let d = 1; d <= daysInMonth; d++) {
-                const cellDate = new Date(year, month, d);
-                // Fix timezone issue by manually formatting YYYY-MM-DD
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
-                const isHoliday = feriados.includes(dateStr);
-                const isToday = new Date().toDateString() === cellDate.toDateString();
-                const dayTurnos = turnos.filter(t => t.fecha === dateStr);
-                const turnosCount = dayTurnos.length;
+            // Determine badge status based on overall day progress
+            let badgeClass = 'shift-count-badge';
+            if (turnosCount > 0) {
+                const allCompleted = dayTurnos.every(t => t.estado === 'completado');
+                const anyStarted = dayTurnos.some(t => t.estado !== 'asignado');
 
-                const cell = document.createElement('div');
-                cell.className = `calendar-day ${isWeekend ? 'weekend' : ''} ${isHoliday ? 'holiday' : ''} ${isToday ? 'today' : ''}`;
-                cell.dataset.date = dateStr;
-
-                // Click handler to open day detail panel
-                if (!isWeekend && !isHoliday) {
-                    cell.onclick = (e) => {
-                        e.stopPropagation();
-                        console.log('Click on day:', dateStr);
-                        openDayDetailPanel(dateStr);
-                    };
-                    cell.style.cursor = 'pointer';
+                if (allCompleted) {
+                    badgeClass += ' has-completed';
+                } else if (anyStarted) {
+                    badgeClass += ' has-in-progress';
                 }
+            }
 
-                // Determine badge status based on overall day progress
-                let badgeClass = 'shift-count-badge';
-                if (turnosCount > 0) {
-                    const allCompleted = dayTurnos.every(t => t.estado === 'completado');
-                    const anyStarted = dayTurnos.some(t => t.estado !== 'asignado');
+            // Determine day-level notification status counts
+            let statusHTML = '';
+            if (turnosCount > 0) {
+                const errors = dayTurnos.filter(t => t.error_notificacion).length;
+                const sent = dayTurnos.filter(t => t.notificado && !t.error_notificacion).length;
+                const pending = dayTurnos.filter(t => !t.notificado && !t.error_notificacion).length;
 
-                    if (allCompleted) {
-                        badgeClass += ' has-completed';
-                    } else if (anyStarted) {
-                        badgeClass += ' has-in-progress';
-                    }
-                }
+                if (errors > 0) statusHTML += `<span class="ml-1">${errors}⚠️</span>`;
+                if (sent > 0) statusHTML += `<span class="ml-1">${sent}📧</span>`;
+                if (pending > 0) statusHTML += `<span class="ml-1">${pending}⏳</span>`;
+            }
 
-                // Determine day-level notification status counts
-                let statusHTML = '';
-                if (turnosCount > 0) {
-                    const errors = dayTurnos.filter(t => t.error_notificacion).length;
-                    const sent = dayTurnos.filter(t => t.notificado && !t.error_notificacion).length;
-                    const pending = dayTurnos.filter(t => !t.notificado && !t.error_notificacion).length;
-
-                    if (errors > 0) statusHTML += `<span class="ml-1">${errors}⚠️</span>`;
-                    if (sent > 0) statusHTML += `<span class="ml-1">${sent}📧</span>`;
-                    if (pending > 0) statusHTML += `<span class="ml-1">${pending}⏳</span>`;
-                }
-
-                cell.innerHTML = `
+            cell.innerHTML = `
                 <div class="flex justify-between items-start mb-3">
                     <span class="day-number font-bold text-lg">${d}</span>
                     <div class="flex flex-col items-end gap-1">
@@ -944,56 +979,56 @@
                 </div>
             `;
 
-                // Setup drag and drop for day cells
-                cell.ondragover = (e) => {
-                    e.preventDefault();
-                    cell.classList.add('drag-over');
-                };
+            // Setup drag and drop for day cells
+            cell.ondragover = (e) => {
+                e.preventDefault();
+                cell.classList.add('drag-over');
+            };
 
-                cell.ondragleave = () => {
-                    cell.classList.remove('drag-over');
-                };
+            cell.ondragleave = () => {
+                cell.classList.remove('drag-over');
+            };
 
-                cell.ondrop = (e) => {
-                    e.preventDefault();
-                    cell.classList.remove('drag-over');
-                    handleDayDrop(e, dateStr);
-                };
+            cell.ondrop = (e) => {
+                e.preventDefault();
+                cell.classList.remove('drag-over');
+                handleDayDrop(e, dateStr);
+            };
 
-                grid.appendChild(cell);
-            }
-
-            container.appendChild(grid);
-            lucide.createIcons();
+            grid.appendChild(cell);
         }
 
-        function getDeviceIcon(equipos) {
-            if (!equipos || equipos.length === 0) return 'help-circle';
-            const marcas = equipos.map(e => (e.marca || '').toLowerCase());
-            const descrip = equipos.map(e => (e.descripcion || '').toLowerCase());
-            const allStr = marcas.join(' ') + ' ' + descrip.join(' ');
+        container.appendChild(grid);
+        lucide.createIcons();
+    }
 
-            if (allStr.includes('laptop') || allStr.includes('portatil')) return 'laptop';
-            if (allStr.includes('impresora') || allStr.includes('printer')) return 'printer';
-            if (allStr.includes('monitor') || allStr.includes('pantalla')) return 'monitor';
-            if (allStr.includes('servidor') || allStr.includes('server')) return 'server';
-            return 'pc-case';
-        }
+    function getDeviceIcon(equipos) {
+        if (!equipos || equipos.length === 0) return 'help-circle';
+        const marcas = equipos.map(e => (e.marca || '').toLowerCase());
+        const descrip = equipos.map(e => (e.descripcion || '').toLowerCase());
+        const allStr = marcas.join(' ') + ' ' + descrip.join(' ');
 
-        function getTurnoCardHTML(t, isCompact = true) {
-            const deviceIcon = getDeviceIcon(t.equipos);
-            const atendidos = t.equipos.filter(e => e.atendido).length;
-            const total = t.equipos.length;
-            const progressStr = `${atendidos}/${total}`;
-            
-            const notifEmoji = t.error_notificacion ? '⚠️' : (t.notificado ? '📧' : '⏳');
-            const notifTitle = t.error_notificacion ? 'Error en notificación' : (t.notificado ? 'Notificación Enviada' : 'Pendiente de Envío');
-            
-            const statusIcon = t.estado === 'completado' ? 'check-circle-2' : (t.estado === 'en_proceso' ? 'clock' : 'circle');
+        if (allStr.includes('laptop') || allStr.includes('portatil')) return 'laptop';
+        if (allStr.includes('impresora') || allStr.includes('printer')) return 'printer';
+        if (allStr.includes('monitor') || allStr.includes('pantalla')) return 'monitor';
+        if (allStr.includes('servidor') || allStr.includes('server')) return 'server';
+        return 'pc-case';
+    }
 
-            if (isCompact) {
-                // For Weekly View or small slots
-                return `
+    function getTurnoCardHTML(t, isCompact = true) {
+        const deviceIcon = getDeviceIcon(t.equipos);
+        const atendidos = t.equipos.filter(e => e.atendido).length;
+        const total = t.equipos.length;
+        const progressStr = `${atendidos}/${total}`;
+
+        const notifEmoji = t.error_notificacion ? '⚠️' : (t.notificado ? '📧' : '⏳');
+        const notifTitle = t.error_notificacion ? 'Error en notificación' : (t.notificado ? 'Notificación Enviada' : 'Pendiente de Envío');
+
+        const statusIcon = t.estado === 'completado' ? 'check-circle-2' : (t.estado === 'en_proceso' ? 'clock' : 'circle');
+
+        if (isCompact) {
+            // For Weekly View or small slots
+            return `
                     <div class="flex justify-between text-[10px] font-bold opacity-90 mb-1">
                         <span class="flex items-center gap-1">
                             <i data-lucide="${deviceIcon}" class="w-3 h-3"></i> ${t.hora}
@@ -1012,9 +1047,9 @@
                         </button>
                     </div>
                 `;
-            } else {
-                // For Daily View or Panels
-                return `
+        } else {
+            // For Daily View or Panels
+            return `
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <div class="flex items-center gap-2 mb-1">
@@ -1051,159 +1086,159 @@
                         </button>
                     </div>
                 `;
-            }
         }
+    }
 
-        function createCard(t) {
-            let cardClass = "appointment-card transition-all";
-            if (t.estado === 'completado') cardClass += " completed";
-            else if (t.estado === 'en_proceso') cardClass += " in-progress";
+    function createCard(t) {
+        let cardClass = "appointment-card transition-all";
+        if (t.estado === 'completado') cardClass += " completed";
+        else if (t.estado === 'en_proceso') cardClass += " in-progress";
 
-            const card = document.createElement('div');
-            card.className = cardClass;
-            card.draggable = true;
-            card.dataset.id = t.id;
+        const card = document.createElement('div');
+        card.className = cardClass;
+        card.draggable = true;
+        card.dataset.id = t.id;
 
-            const deviceIcon = getDeviceIcon(t.equipos);
-            const atendidos = t.equipos.filter(e => e.atendido).length;
-            const total = t.equipos.length;
-            const progressStr = `${atendidos}/${total}`;
+        const deviceIcon = getDeviceIcon(t.equipos);
+        const atendidos = t.equipos.filter(e => e.atendido).length;
+        const total = t.equipos.length;
+        const progressStr = `${atendidos}/${total}`;
 
-            card.innerHTML = getTurnoCardHTML(t, true);
-            card.ondragstart = (e) => {
-                e.dataTransfer.setData('text/plain', t.id);
-                card.classList.add('dragging');
-            };
-            card.ondragend = () => card.classList.remove('dragging');
+        card.innerHTML = getTurnoCardHTML(t, true);
+        card.ondragstart = (e) => {
+            e.dataTransfer.setData('text/plain', t.id);
+            card.classList.add('dragging');
+        };
+        card.ondragend = () => card.classList.remove('dragging');
 
-            // Soporte para intercambio (Swap)
-            card.ondragover = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                card.classList.add('bg-blue-100', 'border-blue-400', 'scale-105');
-            };
-            card.ondragleave = () => {
-                card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
-            };
-            card.ondrop = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
-                const draggedId = e.dataTransfer.getData('text/plain');
-                if (draggedId != t.id) {
-                    handleSwap(draggedId, t.id);
-                }
-            };
-
-            return card;
-        }
-
-        function isDayExcluded(dateStr) {
-            const date = new Date(dateStr + 'T00:00:00');
-            const day = date.getDay(); // 0 Sun, 6 Sat
-            
-            if (config.modo_exclusion === 'weekends' && (day === 0 || day === 6)) return true;
-            if (config.modo_exclusion === 'sundays' && day === 0) return true;
-            return false;
-        }
-
-        function handleSwap(idA, idB) {
-            const turnoA = turnos.find(t => t.id == idA);
-            const turnoB = turnos.find(t => t.id == idB);
-
-            // Validation for excluded days
-            if (isDayExcluded(turnoB.fecha)) {
-                showToast(`No puedes mover un turno al ${new Date(turnoB.fecha + 'T00:00:00').toLocaleDateString('es-ES', {weekday: 'long'})} (Día excluido)`, 'error');
-                return;
-            }
-
-            // Allow moving FROM excluded day (to fix mistakes), but check Target.
-            // If swapping, both swap positions might matter, but usually dragging A to B means we want A to be on B's slot.
-
-            showConfirmModal(
-                'Intercambiar Turnos',
-                `¿Estás seguro de intercambiar los turnos de ${turnoA.responsable} y ${turnoB.responsable}?`,
-                () => realizarIntercambio(idA, idB)
-            );
-        }
-
-        async function realizarIntercambio(idA, idB) {
-            try {
-                const resp = await fetch('/turno/intercambiar/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': CSRF_TOKEN,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ turno_a_id: idA, turno_b_id: idB })
-                });
-
-                const data = await resp.json();
-                if (resp.ok) {
-                    showToast(data.message);
-                    await refreshAllData();
-                } else {
-                    showToast(data.message || 'Error al intercambiar', 'error');
-                }
-            } catch (err) {
-                showToast('Error de conexión', 'error');
-            }
-        }
-
-        async function handleDrop(e) {
+        // Soporte para intercambio (Swap)
+        card.ondragover = (e) => {
             e.preventDefault();
-            const turnoId = e.dataTransfer.getData('text/plain');
-            const newDate = e.currentTarget.closest('.calendar-day').dataset.date;
+            e.stopPropagation();
+            card.classList.add('bg-blue-100', 'border-blue-400', 'scale-105');
+        };
+        card.ondragleave = () => {
+            card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
+        };
+        card.ondrop = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            card.classList.remove('bg-blue-100', 'border-blue-400', 'scale-105');
+            const draggedId = e.dataTransfer.getData('text/plain');
+            if (draggedId != t.id) {
+                handleSwap(draggedId, t.id);
+            }
+        };
 
-            if (!newDate) return;
+        return card;
+    }
 
-            // AJAX update
-            const resp = await fetch(`/turno/${turnoId}/actualizar/`, {
+    function isDayExcluded(dateStr) {
+        const date = new Date(dateStr + 'T00:00:00');
+        const day = date.getDay(); // 0 Sun, 6 Sat
+
+        if (config.modo_exclusion === 'weekends' && (day === 0 || day === 6)) return true;
+        if (config.modo_exclusion === 'sundays' && day === 0) return true;
+        return false;
+    }
+
+    function handleSwap(idA, idB) {
+        const turnoA = turnos.find(t => t.id == idA);
+        const turnoB = turnos.find(t => t.id == idB);
+
+        // Validation for excluded days
+        if (isDayExcluded(turnoB.fecha)) {
+                showToast(`No puedes mover un turno al ${new Date(turnoB.fecha + 'T00:00:00').toLocaleDateString('es-ES', {weekday: 'long'})} (Día excluido)`, 'error');
+            return;
+        }
+
+        // Allow moving FROM excluded day (to fix mistakes), but check Target.
+        // If swapping, both swap positions might matter, but usually dragging A to B means we want A to be on B's slot.
+
+        showConfirmModal(
+            'Intercambiar Turnos',
+            `¿Estás seguro de intercambiar los turnos de ${turnoA.responsable} y ${turnoB.responsable}?`,
+            () => realizarIntercambio(idA, idB)
+        );
+    }
+
+    async function realizarIntercambio(idA, idB) {
+        try {
+            const resp = await fetch('/turno/intercambiar/', {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': CSRF_TOKEN,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ fecha: newDate })
+                body: JSON.stringify({ turno_a_id: idA, turno_b_id: idB })
             });
 
+            const data = await resp.json();
             if (resp.ok) {
-                const t = turnos.find(x => x.id == turnoId);
-                t.fecha = newDate;
-                initCalendar();
+                showToast(data.message);
+                await refreshAllData();
+            } else {
+                showToast(data.message || 'Error al intercambiar', 'error');
             }
+        } catch (err) {
+            showToast('Error de conexión', 'error');
         }
+    }
 
-        // --- DAY DETAIL PANEL LOGIC ---
-        async function openDayDetailPanel(dateStr) {
-            console.trace('openDayDetailPanel called for:', dateStr);
-            try {
-                const panel = document.getElementById('dayDetailPanel');
-                const overlay = document.getElementById('dayDetailOverlay');
-                const content = document.getElementById('dayDetailContent');
-                const titleEl = document.getElementById('dayDetailDate'); // Corrected ID
+    async function handleDrop(e) {
+        e.preventDefault();
+        const turnoId = e.dataTransfer.getData('text/plain');
+        const newDate = e.currentTarget.closest('.calendar-day').dataset.date;
 
-                if (!panel || !overlay || !content) return;
-                content.dataset.currentDate = dateStr; // Store for refreshes
-                const [y, m, d] = dateStr.split('-').map(Number);
-                const date = new Date(y, m - 1, d);
-                const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
-                
-                if (titleEl) titleEl.textContent = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+        if (!newDate) return;
 
-                // Show panel
-                overlay.style.display = 'block';
-                panel.style.display = 'flex';
+        // AJAX update
+        const resp = await fetch(`/turno/${turnoId}/actualizar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fecha: newDate })
+        });
 
-                // Prevent instant close if overlay pops up under cursor
-                overlay.style.pointerEvents = 'none';
-                setTimeout(() => { overlay.style.pointerEvents = 'auto'; }, 300);
-                
-                // Render content
-                const dayTurnos = turnos.filter(t => t.fecha === dateStr);
-                
-                if (dayTurnos.length === 0) {
-                    content.innerHTML = `
+        if (resp.ok) {
+            const t = turnos.find(x => x.id == turnoId);
+            t.fecha = newDate;
+            initCalendar();
+        }
+    }
+
+    // --- DAY DETAIL PANEL LOGIC ---
+    async function openDayDetailPanel(dateStr) {
+        console.trace('openDayDetailPanel called for:', dateStr);
+        try {
+            const panel = document.getElementById('dayDetailPanel');
+            const overlay = document.getElementById('dayDetailOverlay');
+            const content = document.getElementById('dayDetailContent');
+            const titleEl = document.getElementById('dayDetailDate'); // Corrected ID
+
+            if (!panel || !overlay || !content) return;
+            content.dataset.currentDate = dateStr; // Store for refreshes
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
+            const formattedDate = date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            if (titleEl) titleEl.textContent = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+
+            // Show panel
+            overlay.style.display = 'block';
+            panel.style.display = 'flex';
+
+            // Prevent instant close if overlay pops up under cursor
+            overlay.style.pointerEvents = 'none';
+            setTimeout(() => { overlay.style.pointerEvents = 'auto'; }, 300);
+
+            // Render content
+            const dayTurnos = turnos.filter(t => t.fecha === dateStr);
+
+            if (dayTurnos.length === 0) {
+                content.innerHTML = `
                         <div class="flex flex-col items-center justify-center h-full text-gray-400 p-8 text-center">
                             <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 border-2 border-dashed border-gray-100">
                                 <i data-lucide="calendar-plus" class="w-10 h-10 opacity-20"></i>
@@ -1218,206 +1253,206 @@
                             </button>
                         </div>
                     `;
-                } else {
-                    content.innerHTML = '<div class="space-y-3"></div>';
-                    const list = content.querySelector('div');
-                    
-                    dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
+            } else {
+                content.innerHTML = '<div class="space-y-3"></div>';
+                const list = content.querySelector('div');
 
-                    dayTurnos.forEach(t => {
-                        const card = createShiftCardForPanel(t);
-                        list.appendChild(card);
-                    });
+                dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
+
+                dayTurnos.forEach(t => {
+                    const card = createShiftCardForPanel(t);
+                    list.appendChild(card);
+                });
+            }
+            lucide.createIcons();
+
+        } catch (err) {
+            console.error('Error opening panel:', err);
+            showToast('Error al abrir panel', 'error');
+        }
+    }
+
+    function closeDayDetailPanel() {
+        console.trace('closeDayDetailPanel called');
+        const panel = document.getElementById('dayDetailPanel');
+        const overlay = document.getElementById('dayDetailOverlay');
+
+        if (panel) {
+            panel.style.display = 'none';
+            console.log('Panel hidden');
+        } else {
+            console.error('Panel element not found!');
+        }
+        if (overlay) {
+            overlay.style.display = 'none';
+            console.log('Overlay hidden');
+        } else {
+            console.error('Overlay element not found!');
+        }
+    }
+
+    function createShiftCardForPanel(t) {
+        let cardClass = "appointment-card mb-3";
+        if (t.estado === 'completado') cardClass += " completed";
+        else if (t.estado === 'en_proceso') cardClass += " in-progress";
+
+        const card = document.createElement('div');
+        card.className = cardClass;
+        card.draggable = true;
+        card.dataset.id = t.id;
+
+        const atendidos = t.equipos.filter(e => e.atendido).length;
+        const total = t.equipos.length;
+        const progressStr = `${atendidos}/${total}`;
+
+        card.innerHTML = getTurnoCardHTML(t, false);
+
+        // Drag handlers
+        card.ondragstart = (e) => {
+            e.dataTransfer.setData('text/plain', t.id);
+            card.classList.add('dragging');
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                if (!day.classList.contains('other-month') && !day.classList.contains('weekend')) {
+                    day.classList.add('drag-source');
                 }
-                lucide.createIcons();
+            });
+        };
 
-            } catch (err) {
-                console.error('Error opening panel:', err);
-                showToast('Error al abrir panel', 'error');
-            }
-        }
+        card.ondragend = () => {
+            card.classList.remove('dragging');
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                day.classList.remove('drag-source');
+            });
+        };
 
-        function closeDayDetailPanel() {
-            console.trace('closeDayDetailPanel called');
+        return card;
+    }
+
+    async function handleDayDrop(e, newDate) {
+        const turnoId = e.dataTransfer.getData('text/plain');
+        if (!turnoId || !newDate) return;
+
+        const turno = turnos.find(t => t.id == turnoId);
+        if (turno && turno.fecha === newDate) return; // Same day, do nothing
+
+        // Update via API
+        const resp = await fetch(`/turno/${turnoId}/actualizar/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ fecha: newDate })
+        });
+
+        if (resp.ok) {
+            showToast(`Turno movido a ${newDate}`);
+            await refreshAllData();
+
+            // If panel is open, refresh it with the new date's shifts
             const panel = document.getElementById('dayDetailPanel');
-            const overlay = document.getElementById('dayDetailOverlay');
+            if (panel.style.display !== 'none' && panel.style.display !== '') {
+                openDayDetailPanel(newDate);
+            }
+        } else {
+            showToast('Error al mover turno', 'error');
+        }
+    }
 
-            if (panel) {
-                panel.style.display = 'none';
-                console.log('Panel hidden');
-            } else {
-                console.error('Panel element not found!');
-            }
-            if (overlay) {
-                overlay.style.display = 'none';
-                console.log('Overlay hidden');
-            } else {
-                console.error('Overlay element not found!');
-            }
+    async function toggleCompletado(id, e) {
+        if (e) e.stopPropagation();
+        id = Number(id);
+
+        if (togglingIds.has(id)) {
+            console.log('Debounce: Ignoring click for ID', id);
+            return;
         }
 
-        function createShiftCardForPanel(t) {
-            let cardClass = "appointment-card mb-3";
-            if (t.estado === 'completado') cardClass += " completed";
-            else if (t.estado === 'en_proceso') cardClass += " in-progress";
+        console.log('toggleCompletado (Optimistic) for ID:', id);
 
-            const card = document.createElement('div');
-            card.className = cardClass;
-            card.draggable = true;
-            card.dataset.id = t.id;
+        // Find ALL instances of this ID (to handle potential duplicates from Django)
+        const targetTurnos = turnos.filter(x => x.id === id);
+        if (targetTurnos.length === 0) return;
 
-            const atendidos = t.equipos.filter(e => e.atendido).length;
-            const total = t.equipos.length;
-            const progressStr = `${atendidos}/${total}`;
+        // Save old state for rollback
+        const oldEstado = targetTurnos[0].estado;
+        const nuevoEstado = (oldEstado === 'completado') ? 'asignado' : 'completado';
 
-            card.innerHTML = getTurnoCardHTML(t, false);
+        // Optimistic update locally
+        targetTurnos.forEach(t => t.estado = nuevoEstado);
 
-            // Drag handlers
-            card.ondragstart = (e) => {
-                e.dataTransfer.setData('text/plain', t.id);
-                card.classList.add('dragging');
-                document.querySelectorAll('.calendar-day').forEach(day => {
-                    if (!day.classList.contains('other-month') && !day.classList.contains('weekend')) {
-                        day.classList.add('drag-source');
-                    }
-                });
-            };
+        // Immediate UI Refresh
+        console.log('Optimistic UI Refresh');
+        updateUIOnly();
 
-            card.ondragend = () => {
-                card.classList.remove('dragging');
-                document.querySelectorAll('.calendar-day').forEach(day => {
-                    day.classList.remove('drag-source');
-                });
-            };
-
-            return card;
-        }
-
-        async function handleDayDrop(e, newDate) {
-            const turnoId = e.dataTransfer.getData('text/plain');
-            if (!turnoId || !newDate) return;
-
-            const turno = turnos.find(t => t.id == turnoId);
-            if (turno && turno.fecha === newDate) return; // Same day, do nothing
-
-            // Update via API
-            const resp = await fetch(`/turno/${turnoId}/actualizar/`, {
+        try {
+            togglingIds.add(id);
+            const resp = await fetch(`/turno/${id}/toggle/`, {
                 method: 'POST',
-                headers: {
-                    'X-CSRFToken': CSRF_TOKEN,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ fecha: newDate })
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
             });
 
             if (resp.ok) {
-                showToast(`Turno movido a ${newDate}`);
-                await refreshAllData();
-
-                // If panel is open, refresh it with the new date's shifts
-                const panel = document.getElementById('dayDetailPanel');
-                if (panel.style.display !== 'none' && panel.style.display !== '') {
-                    openDayDetailPanel(newDate);
-                }
-            } else {
-                showToast('Error al mover turno', 'error');
-            }
-        }
-
-        async function toggleCompletado(id, e) {
-            if (e) e.stopPropagation();
-            id = Number(id);
-            
-            if (togglingIds.has(id)) {
-                console.log('Debounce: Ignoring click for ID', id);
-                return;
-            }
-
-            console.log('toggleCompletado (Optimistic) for ID:', id);
-            
-            // Find ALL instances of this ID (to handle potential duplicates from Django)
-            const targetTurnos = turnos.filter(x => x.id === id);
-            if (targetTurnos.length === 0) return;
-
-            // Save old state for rollback
-            const oldEstado = targetTurnos[0].estado;
-            const nuevoEstado = (oldEstado === 'completado') ? 'asignado' : 'completado';
-
-            // Optimistic update locally
-            targetTurnos.forEach(t => t.estado = nuevoEstado);
-            
-            // Immediate UI Refresh
-            console.log('Optimistic UI Refresh');
-            updateUIOnly(); 
-
-            try {
-                togglingIds.add(id);
-                const resp = await fetch(`/turno/${id}/toggle/`, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': CSRF_TOKEN }
+                const data = await resp.json();
+                // Final sync with backend reality
+                targetTurnos.forEach(t => {
+                    t.estado = data.nuevo_estado;
+                    if (data.equipos) {
+                        data.equipos.forEach(eqResp => {
+                            const eqLocal = t.equipos.find(e => e.id == eqResp.id);
+                            if (eqLocal) eqLocal.atendido = eqResp.atendido;
+                        });
+                    }
                 });
-
-                if (resp.ok) {
-                    const data = await resp.json();
-                    // Final sync with backend reality
-                    targetTurnos.forEach(t => {
-                        t.estado = data.nuevo_estado;
-                        if (data.equipos) {
-                            data.equipos.forEach(eqResp => {
-                                const eqLocal = t.equipos.find(e => e.id == eqResp.id);
-                                if (eqLocal) eqLocal.atendido = eqResp.atendido;
-                            });
-                        }
-                    });
-                    updateUIOnly();
-                } else {
-                    // Rollback
-                    targetTurnos.forEach(t => t.estado = oldEstado);
-                    updateUIOnly();
-                    showToast('Error en servidor', 'error');
-                }
-            } catch (err) {
+                updateUIOnly();
+            } else {
                 // Rollback
                 targetTurnos.forEach(t => t.estado = oldEstado);
                 updateUIOnly();
-                showToast('Error de conexión', 'error');
-            } finally {
-                setTimeout(() => togglingIds.delete(id), 1000);
+                showToast('Error en servidor', 'error');
             }
+        } catch (err) {
+            // Rollback
+            targetTurnos.forEach(t => t.estado = oldEstado);
+            updateUIOnly();
+            showToast('Error de conexión', 'error');
+        } finally {
+            setTimeout(() => togglingIds.delete(id), 1000);
         }
+    }
 
-        // Helper to refresh all UI components without full data reload
-        function updateUIOnly() {
-            initCalendar();
-            renderPendingAssets();
-            updateStats();
-            if (currentView === 'week') renderWeekView();
-            if (currentView === 'day') renderDayView();
-            
-            // Update day detail panel if open for the date of the changed turno
-            const content = document.getElementById('dayDetailContent');
-            const panel = document.getElementById('dayDetailPanel');
-            if (panel && panel.style.display !== 'none' && content.dataset.currentDate) {
-                // Refresh content from local data
-                const dateStr = content.dataset.currentDate;
-                const dayTurnos = turnos.filter(t => t.fecha === dateStr);
-                
-                // We reuse the rendering logic from openDayDetailPanel but localized here
-                // To keep it simple, we could re-call openDayDetailPanel(dateStr)
-                // but let's avoid a recursive loop if openDayDetailPanel ever calls updateUIOnly
-                renderDayDetailContentDirect(dateStr);
-            }
-            
-            lucide.createIcons();
-        }
+    // Helper to refresh all UI components without full data reload
+    function updateUIOnly() {
+        initCalendar();
+        renderPendingAssets();
+        updateStats();
+        if (currentView === 'week') renderWeekView();
+        if (currentView === 'day') renderDayView();
 
-        // Extracted rendering logic to allow refreshes without re-triggering open/close logic
-        function renderDayDetailContentDirect(dateStr) {
-            const content = document.getElementById('dayDetailContent');
+        // Update day detail panel if open for the date of the changed turno
+        const content = document.getElementById('dayDetailContent');
+        const panel = document.getElementById('dayDetailPanel');
+        if (panel && panel.style.display !== 'none' && content.dataset.currentDate) {
+            // Refresh content from local data
+            const dateStr = content.dataset.currentDate;
             const dayTurnos = turnos.filter(t => t.fecha === dateStr);
-            
-            if (dayTurnos.length === 0) {
-                content.innerHTML = `
+
+            // We reuse the rendering logic from openDayDetailPanel but localized here
+            // To keep it simple, we could re-call openDayDetailPanel(dateStr)
+            // but let's avoid a recursive loop if openDayDetailPanel ever calls updateUIOnly
+            renderDayDetailContentDirect(dateStr);
+        }
+
+        lucide.createIcons();
+    }
+
+    // Extracted rendering logic to allow refreshes without re-triggering open/close logic
+    function renderDayDetailContentDirect(dateStr) {
+        const content = document.getElementById('dayDetailContent');
+        const dayTurnos = turnos.filter(t => t.fecha === dateStr);
+
+        if (dayTurnos.length === 0) {
+            content.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full text-gray-400 p-8 text-center">
                         <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 border-2 border-dashed border-gray-100">
                             <i data-lucide="calendar-plus" class="w-10 h-10 opacity-20"></i>
@@ -1432,37 +1467,37 @@
                         </button>
                     </div>
                 `;
-            } else {
-                content.innerHTML = '<div class="space-y-3"></div>';
-                const list = content.querySelector('div');
-                dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
+        } else {
+            content.innerHTML = '<div class="space-y-3"></div>';
+            const list = content.querySelector('div');
+            dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora));
 
-                dayTurnos.forEach(t => {
-                    const card = createShiftCardForPanel(t);
-                    list.appendChild(card);
-                });
-            }
-            lucide.createIcons();
+            dayTurnos.forEach(t => {
+                const card = createShiftCardForPanel(t);
+                list.appendChild(card);
+            });
+        }
+        lucide.createIcons();
+    }
+
+    function showDetails(id, e) {
+        console.log('showDetails called for ID:', id);
+        if (e) e.stopPropagation();
+        const t = turnos.find(x => x.id == id);
+        if (!t) {
+            console.error('Turno not found for details:', id);
+            return;
+        }
+        const modal = document.getElementById('detailModal');
+        const content = document.getElementById('modalContent');
+
+        if (!modal || !content) {
+            console.error('Detail modal elements not found');
+            return;
         }
 
-        function showDetails(id, e) {
-            console.log('showDetails called for ID:', id);
-            if (e) e.stopPropagation();
-            const t = turnos.find(x => x.id == id);
-            if (!t) {
-                console.error('Turno not found for details:', id);
-                return;
-            }
-            const modal = document.getElementById('detailModal');
-            const content = document.getElementById('modalContent');
-
-            if (!modal || !content) {
-                console.error('Detail modal elements not found');
-                return;
-            }
-
-            console.log('Opening modal with content for:', t.responsable);
-            content.innerHTML = `
+        console.log('Opening modal with content for:', t.responsable);
+        content.innerHTML = `
             <h3 class="text-2xl font-bold mb-1">${t.responsable}</h3>
             <p class="text-[10px] font-bold text-gray-400 mb-4 flex items-center gap-2 uppercase tracking-widest">
                 Estado Comunicación: ${t.error_notificacion ? '<span class="text-rose-600">⚠️ ERROR</span>' : (t.notificado ? '<span class="text-green-600">📧 ENVIADA</span>' : '<span class="text-amber-600">⏳ PENDIENTE</span>')}
@@ -1494,114 +1529,114 @@
                 `).join('')}
             </div>
             `;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
 
-        async function toggleEquipo(equipoId, turnoId, e) {
-            if (e) e.stopPropagation();
-            equipoId = Number(equipoId);
-            turnoId = Number(turnoId);
+    async function toggleEquipo(equipoId, turnoId, e) {
+        if (e) e.stopPropagation();
+        equipoId = Number(equipoId);
+        turnoId = Number(turnoId);
 
-            const turno = turnos.find(t => t.id === turnoId);
-            if (!turno) return;
-            const equipo = turno.equipos.find(e => e.id === equipoId);
-            if (!equipo) return;
+        const turno = turnos.find(t => t.id === turnoId);
+        if (!turno) return;
+        const equipo = turno.equipos.find(e => e.id === equipoId);
+        if (!equipo) return;
 
-            // Optimistic update
-            const oldAtendido = equipo.atendido;
-            equipo.atendido = !oldAtendido;
-            updateUIOnly();
-            
-            // Update the modal content immediately with optimistic state
-            showDetails(turnoId);
+        // Optimistic update
+        const oldAtendido = equipo.atendido;
+        equipo.atendido = !oldAtendido;
+        updateUIOnly();
 
-            try {
-                const resp = await fetch(`/equipo/${equipoId}/toggle-atendido/`, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': CSRF_TOKEN }
-                });
+        // Update the modal content immediately with optimistic state
+        showDetails(turnoId);
 
-                if (resp.ok) {
-                    const data = await resp.json();
-                    equipo.atendido = data.atendido;
-                    if (data.turno_estado) {
-                        turno.estado = data.turno_estado;
-                    }
-                    updateUIOnly();
-                    // Refresh modal with server-confirmed state
-                    showDetails(turnoId);
-                } else {
-                    equipo.atendido = oldAtendido;
-                    updateUIOnly();
-                    showDetails(turnoId);
-                    showToast('Error en servidor', 'error');
+        try {
+            const resp = await fetch(`/equipo/${equipoId}/toggle-atendido/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            });
+
+            if (resp.ok) {
+                const data = await resp.json();
+                equipo.atendido = data.atendido;
+                if (data.turno_estado) {
+                    turno.estado = data.turno_estado;
                 }
-            } catch (err) {
+                updateUIOnly();
+                // Refresh modal with server-confirmed state
+                showDetails(turnoId);
+            } else {
                 equipo.atendido = oldAtendido;
                 updateUIOnly();
                 showDetails(turnoId);
-                showToast('Error de conexión', 'error');
+                showToast('Error en servidor', 'error');
             }
+        } catch (err) {
+            equipo.atendido = oldAtendido;
+            updateUIOnly();
+            showDetails(turnoId);
+            showToast('Error de conexión', 'error');
         }
+    }
 
-        // --- MANUAL TURN LOGIC ---
-        function openManualTurnModal(dateStr, timeStr = "08:00") {
-            const modal = document.getElementById('manualTurnModal');
-            const container = document.getElementById('manualTurnModalContainer');
-            const fechaInput = document.getElementById('manualTurnFecha');
-            const horaInput = document.getElementById('manualTurnHora');
-            const dateLabel = document.getElementById('manualTurnDateLabel');
-            const equipList = document.getElementById('manualEquiposList');
+    // --- MANUAL TURN LOGIC ---
+    function openManualTurnModal(dateStr, timeStr = "08:00") {
+        const modal = document.getElementById('manualTurnModal');
+        const container = document.getElementById('manualTurnModalContainer');
+        const fechaInput = document.getElementById('manualTurnFecha');
+        const horaInput = document.getElementById('manualTurnHora');
+        const dateLabel = document.getElementById('manualTurnDateLabel');
+        const equipList = document.getElementById('manualEquiposList');
 
-            if (!modal || !container || !fechaInput || !horaInput) return;
+        if (!modal || !container || !fechaInput || !horaInput) return;
 
-            // Reset Form
-            document.getElementById('manualResponsableNombre').value = '';
-            document.getElementById('manualResponsableEmail').value = '';
-            equipList.innerHTML = '';
-            addManualEquipoRow(); // Add one initial row
+        // Reset Form
+        document.getElementById('manualResponsableNombre').value = '';
+        document.getElementById('manualResponsableEmail').value = '';
+        equipList.innerHTML = '';
+        addManualEquipoRow(); // Add one initial row
 
-            // Pre-fill
-            fechaInput.value = dateStr;
-            horaInput.value = timeStr;
-            
-            const [y, m, d] = dateStr.split('-').map(Number);
-            const dateObj = new Date(y, m - 1, d);
-            dateLabel.textContent = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        // Pre-fill
+        fechaInput.value = dateStr;
+        horaInput.value = timeStr;
 
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => {
-                container.classList.remove('scale-95', 'opacity-0');
-                container.classList.add('scale-100', 'opacity-100');
-            }, 10);
-            
-            // Close other panels if open
-            closeDayDetailPanel();
-            lucide.createIcons();
-        }
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dateObj = new Date(y, m - 1, d);
+        dateLabel.textContent = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-        function closeManualTurnModal() {
-            const modal = document.getElementById('manualTurnModal');
-            const container = document.getElementById('manualTurnModalContainer');
-            if (!modal || !container) return;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            container.classList.remove('scale-95', 'opacity-0');
+            container.classList.add('scale-100', 'opacity-100');
+        }, 10);
 
-            container.classList.add('scale-95', 'opacity-0');
-            container.classList.remove('scale-100', 'opacity-100');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 300);
-        }
+        // Close other panels if open
+        closeDayDetailPanel();
+        lucide.createIcons();
+    }
 
-        function addManualEquipoRow() {
-            const list = document.getElementById('manualEquiposList');
-            const id = Date.now();
-            const div = document.createElement('div');
-            div.className = "bg-gray-50/50 border border-gray-100 p-4 rounded-xl space-y-3 relative group animate-in slide-in-from-top-1 fade-in duration-300";
-            div.dataset.rowId = id;
-            div.innerHTML = `
+    function closeManualTurnModal() {
+        const modal = document.getElementById('manualTurnModal');
+        const container = document.getElementById('manualTurnModalContainer');
+        if (!modal || !container) return;
+
+        container.classList.add('scale-95', 'opacity-0');
+        container.classList.remove('scale-100', 'opacity-100');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+    }
+
+    function addManualEquipoRow() {
+        const list = document.getElementById('manualEquiposList');
+        const id = Date.now();
+        const div = document.createElement('div');
+        div.className = "bg-gray-50/50 border border-gray-100 p-4 rounded-xl space-y-3 relative group animate-in slide-in-from-top-1 fade-in duration-300";
+        div.dataset.rowId = id;
+        div.innerHTML = `
                 <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
@@ -1626,76 +1661,76 @@
                     </div>
                 </div>
             `;
-            list.appendChild(div);
-            lucide.createIcons();
+        list.appendChild(div);
+        lucide.createIcons();
+    }
+
+    async function submitManualTurn(forceCreate = false) {
+        const btn = document.getElementById('btnSubmitManualTurn');
+        const nombre = document.getElementById('manualResponsableNombre').value.trim();
+        const email = document.getElementById('manualResponsableEmail').value.trim();
+        const fecha = document.getElementById('manualTurnFecha').value;
+        const hora = document.getElementById('manualTurnHora').value;
+
+        if (!nombre) {
+            showAlertModal('Dato Obligatorio', 'El nombre del responsable es necesario para agendar el turno.');
+            return;
         }
 
-        async function submitManualTurn(forceCreate = false) {
-            const btn = document.getElementById('btnSubmitManualTurn');
-            const nombre = document.getElementById('manualResponsableNombre').value.trim();
-            const email = document.getElementById('manualResponsableEmail').value.trim();
-            const fecha = document.getElementById('manualTurnFecha').value;
-            const hora = document.getElementById('manualTurnHora').value;
+        const equipos = [];
+        document.querySelectorAll('#manualEquiposList > div').forEach(row => {
+            const marca = row.querySelector('.manual-eq-marca').value.trim();
+            const modelo = row.querySelector('.manual-eq-modelo').value.trim();
+            const codigo = row.querySelector('.manual-eq-codigo').value.trim();
+            const descripcion = row.querySelector('.manual-eq-desc').value.trim();
 
-            if (!nombre) {
-                showAlertModal('Dato Obligatorio', 'El nombre del responsable es necesario para agendar el turno.');
-                return;
+            if (marca || modelo || codigo) {
+                equipos.push({ marca, modelo, codigo, descripcion });
+            }
+        });
+
+        if (equipos.length === 0) {
+            showAlertModal('Equipos Requeridos', 'Debes añadir al menos un equipo con su marca o código para crear el turno.');
+            return;
+        }
+
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="w-4 h-4 animate-spin border-2 border-white/30 border-t-white rounded-full"></i> Cargando...';
+
+            const payload = { nombre, email, fecha, hora, equipos };
+            if (forceCreate) {
+                payload.force_create = true;
             }
 
-            const equipos = [];
-            document.querySelectorAll('#manualEquiposList > div').forEach(row => {
-                const marca = row.querySelector('.manual-eq-marca').value.trim();
-                const modelo = row.querySelector('.manual-eq-modelo').value.trim();
-                const codigo = row.querySelector('.manual-eq-codigo').value.trim();
-                const descripcion = row.querySelector('.manual-eq-desc').value.trim();
-                
-                if (marca || modelo || codigo) {
-                    equipos.push({ marca, modelo, codigo, descripcion });
-                }
+            const resp = await fetch('/api/turnos/crear-manual/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
             });
 
-            if (equipos.length === 0) {
-                showAlertModal('Equipos Requeridos', 'Debes añadir al menos un equipo con su marca o código para crear el turno.');
-                return;
-            }
+            const data = await resp.json();
 
-            try {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="w-4 h-4 animate-spin border-2 border-white/30 border-t-white rounded-full"></i> Cargando...';
-
-                const payload = { nombre, email, fecha, hora, equipos };
-                if (forceCreate) {
-                    payload.force_create = true;
-                }
-
-                const resp = await fetch('/api/turnos/crear-manual/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': CSRF_TOKEN,
-                        'Content-Type': 'application/json'
+            // Handle duplicate status
+            if (data.status === 'duplicate') {
+                showConfirmModal(
+                    '⚠️ Responsable Existente',
+                    data.message,
+                    async (showSuccess) => {
+                        const success = await submitManualTurn(true);
+                        if (success) {
+                            showSuccess('Nuevo turno independiente creado con éxito.');
+                        } else {
+                            closeConfirmModal();
+                        }
                     },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await resp.json();
-                
-                // Handle duplicate status
-                if (data.status === 'duplicate') {
-                    showConfirmModal(
-                        '⚠️ Responsable Existente',
-                        data.message,
-                        async (showSuccess) => {
-                            const success = await submitManualTurn(true);
-                            if (success) {
-                                showSuccess('Nuevo turno independiente creado con éxito.');
-                            } else {
-                                closeConfirmModal();
-                            }
-                        },
-                        {
-                            type: 'warning',
-                            noCloseOnConfirm: true,
-                            extraHTML: `
+                    {
+                        type: 'warning',
+                        noCloseOnConfirm: true,
+                        extraHTML: `
                                 <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 text-left mt-4">
                                     <div class="flex items-center gap-3 mb-2">
                                         <div class="p-2 bg-blue-100 text-blue-600 rounded-lg">
@@ -1717,76 +1752,76 @@
                                     </div>
                                 </div>
                             `
-                        }
-                    );
-                    return;
-                }
-                
-                if (resp.ok && data.status === 'ok') {
-                    if (!forceCreate) {
-                        showToast('Turno creado con éxito');
                     }
-                    closeManualTurnModal();
-                    await refreshAllData();
-                    return true;
-                } else {
-                    showToast(data.message || 'Error al crear turno', 'error');
-                    return false;
-                }
-            } catch (err) {
-                console.error('Error in submitManualTurn:', err);
-                showToast('Error de conexión: ' + (err.message || 'Error desconocido'), 'error');
-                return false;
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Crear Turno';
-                lucide.createIcons();
-            }
-        }
-
-        function renderPendingAssets() {
-            const panel = document.getElementById('pendingAssetsPanel');
-            if (!panel) return;
-
-            const pendingItems = [];
-            turnos.forEach(t => {
-                if (t.estado !== 'completado') {
-                    const total = t.equipos.length;
-                    const atendidos = t.equipos.filter(e => e.atendido).length;
-
-                    t.equipos.forEach(e => {
-                        if (!e.atendido) {
-                            pendingItems.push({
-                                ...e,
-                                responsable: t.responsable,
-                                turnoId: t.id,
-                                fecha: t.fecha,
-                                hora: t.hora,
-                                progreso: `${atendidos + 1}/${total}`,
-                                enProceso: t.estado === 'en_proceso'
-                            });
-                        }
-                    });
-                }
-            });
-
-            // Sort by Date THEN Time sequence
-            pendingItems.sort((a, b) => {
-                if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-                return a.hora.localeCompare(b.hora);
-            });
-
-            if (pendingItems.length === 0) {
-                panel.innerHTML = '<p class="text-[10px] text-gray-400 italic text-center py-4">Sin equipos pendientes</p>';
+                );
                 return;
             }
 
-            panel.innerHTML = pendingItems.map(p => {
-                // Format date for better readability (e.g., "Lun 26")
-                const d = new Date(p.fecha + 'T00:00:00');
-                const dateStr = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).toUpperCase();
+            if (resp.ok && data.status === 'ok') {
+                if (!forceCreate) {
+                    showToast('Turno creado con éxito');
+                }
+                closeManualTurnModal();
+                await refreshAllData();
+                return true;
+            } else {
+                showToast(data.message || 'Error al crear turno', 'error');
+                return false;
+            }
+        } catch (err) {
+            console.error('Error in submitManualTurn:', err);
+            showToast('Error de conexión: ' + (err.message || 'Error desconocido'), 'error');
+            return false;
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i> Crear Turno';
+            lucide.createIcons();
+        }
+    }
 
-                return `
+    function renderPendingAssets() {
+        const panel = document.getElementById('pendingAssetsPanel');
+        if (!panel) return;
+
+        const pendingItems = [];
+        turnos.forEach(t => {
+            if (t.estado !== 'completado') {
+                const total = t.equipos.length;
+                const atendidos = t.equipos.filter(e => e.atendido).length;
+
+                t.equipos.forEach(e => {
+                    if (!e.atendido) {
+                        pendingItems.push({
+                            ...e,
+                            responsable: t.responsable,
+                            turnoId: t.id,
+                            fecha: t.fecha,
+                            hora: t.hora,
+                            progreso: `${atendidos + 1}/${total}`,
+                            enProceso: t.estado === 'en_proceso'
+                        });
+                    }
+                });
+            }
+        });
+
+        // Sort by Date THEN Time sequence
+        pendingItems.sort((a, b) => {
+            if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+            return a.hora.localeCompare(b.hora);
+        });
+
+        if (pendingItems.length === 0) {
+            panel.innerHTML = '<p class="text-[10px] text-gray-400 italic text-center py-4">Sin equipos pendientes</p>';
+            return;
+        }
+
+        panel.innerHTML = pendingItems.map(p => {
+            // Format date for better readability (e.g., "Lun 26")
+            const d = new Date(p.fecha + 'T00:00:00');
+            const dateStr = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }).toUpperCase();
+
+            return `
             <div class="p-3 border border-gray-200 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
                 <div class="flex justify-between items-start mb-2">
                     <div class="flex gap-1">
@@ -1827,781 +1862,781 @@
                 </div>
             </div>
             `;
-            }).join('');
-            lucide.createIcons();
+        }).join('');
+        lucide.createIcons();
+    }
+
+    function handleUploadDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('bg-blue-50', 'border-blue-500');
+    }
+
+    function handleUploadDragLeave(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
+    }
+
+    function handleUploadDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            document.getElementById('fileInput').files = files;
+            submitUpload();
         }
+    }
 
-        function handleUploadDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('bg-blue-50', 'border-blue-500');
-        }
+    async function submitUpload() {
+        const input = document.getElementById('fileInput');
+        if (input.files.length > 0) {
+            const fileName = input.files[0].name;
+            const fileNameDisplay = document.getElementById('fileName');
+            const uploadText = document.getElementById('uploadText');
 
-        function handleUploadDragLeave(e) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
-        }
+            fileNameDisplay.textContent = fileName;
+            fileNameDisplay.classList.remove('hidden');
+            uploadText.textContent = "Cargando archivo...";
 
-        function handleUploadDrop(e) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('bg-blue-50', 'border-blue-500');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                document.getElementById('fileInput').files = files;
-                submitUpload();
-            }
-        }
+            const formData = new FormData(document.getElementById('uploadForm'));
+            formData.append('ajax', '1');
 
-        async function submitUpload() {
-            const input = document.getElementById('fileInput');
-            if (input.files.length > 0) {
-                const fileName = input.files[0].name;
-                const fileNameDisplay = document.getElementById('fileName');
-                const uploadText = document.getElementById('uploadText');
-
-                fileNameDisplay.textContent = fileName;
-                fileNameDisplay.classList.remove('hidden');
-                uploadText.textContent = "Cargando archivo...";
-
-                const formData = new FormData(document.getElementById('uploadForm'));
-                formData.append('ajax', '1');
-
-                try {
-                    const resp = await fetch('{% url "upload_excel" %}', {
-                        method: 'POST',
-                        body: formData,
-                        headers: { 'X-CSRFToken': CSRF_TOKEN }
-                    });
-                    const data = await resp.json();
-                    if (resp.ok) {
-                        showToast(data.message || 'Archivo cargado con éxito');
-                        await refreshAllData();
-                    } else {
-                        showToast(data.message || 'Error al cargar archivo', 'error');
-                        // AUTOMATIC MODAL ON FORMAT ERROR
-                        if (data.message && data.message.includes('formato')) {
-                            setTimeout(openExcelFormatModal, 1500);
-                        }
-                    }
-                } catch (err) {
-                    console.error('Upload error:', err);
-                    showToast('Ocurrió un error inesperado al procesar el archivo.', 'error');
-                } finally {
-                    uploadText.textContent = "Subir Excel de Mantenimientos";
-                    input.value = '';
-                    updateStepStatus();
-                }
-            }
-        }
-
-        function updateStepStatus() {
-            const hasData = turnos && turnos.length > 0;
-            const step2 = document.getElementById('step2Container');
-            const step3 = document.getElementById('step3Container');
-            const step2Indicator = document.getElementById('step2Indicator');
-            const step3Indicator = document.getElementById('step3Indicator');
-            const btnGenerarTodo = document.getElementById('btnGenerarTodo');
-
-            if (!step2 || !step3) return;
-
-            if (hasData) {
-                // ENABLED STATE
-                step2.classList.remove('opacity-40', 'pointer-events-none', 'grayscale');
-                step3.classList.remove('opacity-40', 'pointer-events-none', 'grayscale');
-                step2Indicator.classList.replace('bg-gray-200', 'bg-indigo-600');
-                step2Indicator.classList.replace('text-gray-500', 'text-white');
-                step3Indicator.classList.replace('bg-gray-200', 'bg-indigo-600');
-                step3Indicator.classList.replace('text-gray-500', 'text-white');
-                if (btnGenerarTodo) btnGenerarTodo.disabled = false;
-            } else {
-                // DISABLED STATE
-                step2.classList.add('opacity-40', 'pointer-events-none', 'grayscale');
-                step3.classList.add('opacity-40', 'pointer-events-none', 'grayscale');
-                step2Indicator.classList.replace('bg-indigo-600', 'bg-gray-200');
-                step2Indicator.classList.replace('text-white', 'text-gray-500');
-                step3Indicator.classList.replace('bg-indigo-600', 'bg-gray-200');
-                step3Indicator.classList.replace('text-white', 'text-gray-500');
-                if (btnGenerarTodo) btnGenerarTodo.disabled = true;
-            }
-        }
-
-        function openExcelFormatModal() {
-            const modal = document.getElementById('excelFormatModal');
-            const container = document.getElementById('excelFormatModalContainer');
-            if (modal && container) {
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                setTimeout(() => {
-                    container.classList.remove('scale-95', 'opacity-0');
-                    container.classList.add('scale-100', 'opacity-100');
-                }, 10);
-            }
-        }
-
-        function closeExcelFormatModal() {
-            const modal = document.getElementById('excelFormatModal');
-            const container = document.getElementById('excelFormatModalContainer');
-            if (modal && container) {
-                container.classList.remove('scale-100', 'opacity-100');
-                container.classList.add('scale-95', 'opacity-0');
-                setTimeout(() => {
-                    modal.classList.remove('flex');
-                    modal.classList.add('hidden');
-                }, 300);
-            }
-        }
-
-        async function refreshAllData() {
             try {
-                const resp = await fetch('{% url "api_get_datos" %}');
-                if (!resp.ok) throw new Error('Network response was not ok');
-                const data = await resp.json();
-
-                // Actualizar variables globales con seguridad
-                turnos = data.turnos || [];
-                feriados = data.feriados || [];
-                config = data.config || {};
-
-                if (config && config.inicio) {
-                    currentMonth = new Date(config.inicio + 'T00:00:00');
-                }
-
-                // Refrescar UI
-                updateCalendarView();
-                updateStats();
-                renderPendingAssets();
-                updateStepStatus();
-
-                // Activar indicadores de progreso y botón de generar
-                const btn = document.getElementById('btnGenerarTodo');
-                const step2 = document.getElementById('step2Indicator');
-                const step3 = document.getElementById('step3Indicator');
-
-                if (step2) {
-                    step2.classList.remove('bg-gray-200', 'text-gray-500');
-                    step2.classList.add('bg-indigo-600', 'text-white');
-                }
-
-                if (turnos && turnos.length > 0) {
-                    if (btn) {
-                        btn.classList.remove('bg-slate-200', 'text-gray-400', 'cursor-not-allowed');
-                        btn.classList.add('bg-gradient-to-r', 'from-indigo-600', 'to-indigo-700', 'text-white', 'shadow-indigo-200', 'hover:shadow-indigo-400', 'hover:-translate-y-0.5');
-                        const icon = btn.querySelector('i, svg');
-                        if (icon) icon.classList.remove('opacity-40');
-                    }
-                    if (step3) {
-                        step3.classList.remove('bg-gray-200', 'text-gray-500');
-                        step3.classList.add('bg-indigo-600', 'text-white');
-                    }
-                }
-            } catch (err) {
-                console.error('Error refreshing data:', err);
-            }
-        }
-        function toggleAccordion(id) {
-            const content = document.getElementById(id);
-            const arrow = document.getElementById(id.replace('Content', 'Arrow'));
-            const isHidden = content.classList.contains('hidden');
-            
-            // Cerrar otros acordeones (opcional, pero mejora UX)
-            // document.querySelectorAll('[id$="Content"]').forEach(c => c.classList.add('hidden'));
-            // document.querySelectorAll('[id$="Arrow"]').forEach(a => a.classList.remove('rotate-180'));
-
-            if (isHidden) {
-                content.classList.remove('hidden');
-                if (arrow) arrow.classList.add('rotate-180');
-            } else {
-                content.classList.add('hidden');
-                if (arrow) arrow.classList.remove('rotate-180');
-            }
-        }
-
-        // --- UI HELPERS ---
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-
-            const toast = document.createElement('div');
-            const config = {
-                success: { icon: 'check-circle-2', style: 'background: var(--green-pastel); color: var(--green-text); border: 1px solid rgba(6, 95, 70, 0.2);' },
-                error: { icon: 'alert-circle', style: 'background: var(--red-pastel); color: var(--red-text); border: 1px solid rgba(153, 27, 27, 0.2);' },
-                info: { icon: 'info', style: 'background: var(--blue-pastel); color: var(--blue-text); border: 1px solid rgba(30, 64, 175, 0.2);' }
-            };
-
-            const cfg = config[type];
-            toast.className = `px-6 py-3 rounded-xl shadow-xl font-black text-[10px] uppercase tracking-widest transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto flex items-center gap-3`;
-            toast.style = cfg.style;
-            toast.innerHTML = `<i data-lucide="${cfg.icon}" class="w-4 h-4"></i> <span>${message}</span>`;
-
-            container.appendChild(toast);
-            lucide.createIcons(); // Re-init for new toast
-
-            // Trigger animation
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-x-full', 'opacity-0');
-                toast.classList.add('translate-x-0', 'opacity-100');
-            });
-
-            // Auto-remove
-            setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 400);
-            }, 3000);
-        }
-
-        async function guardarConfig(silent = false) {
-            const f_inicio = document.getElementById('fechaInicio').value;
-            const f_fin = document.getElementById('fechaFin').value;
-            const h_inicio = document.getElementById('horaInicio').value;
-            const h_fin = document.getElementById('horaFin').value;
-
-            // Validar campos obligatorios
-            if (!f_inicio || !f_fin) {
-                await showAlertModal('Datos Faltantes', 'Tanto la fecha de inicio como la de fin son obligatorias para el cronograma.');
-                return false;
-            }
-
-            // Validar rango de fechas
-            if (f_inicio > f_fin) {
-                await showAlertModal('Rango de Fechas Inválido', 'La fecha de inicio no puede ser posterior a la fecha de fin.');
-                return false;
-            }
-
-            // Validar rango de horas
-            if (h_inicio && h_fin && h_inicio >= h_fin) {
-                await showAlertModal('Rango Horario Inválido', 'La hora de inicio de la jornada debe ser anterior a la hora de finalización.');
-                return false;
-            }
-
-            const formData = new FormData(document.getElementById('configForm'));
-            try {
-                const resp = await fetch('{% url "guardar_configuracion" %}', {
+                const resp = await fetch('{% url "upload_excel" %}', {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-CSRFToken': CSRF_TOKEN }
                 });
                 const data = await resp.json();
                 if (resp.ok) {
-                    if (!silent) {
-                        await showAlertModal('¡Éxito!', data.message || 'La configuración se ha guardado correctamente.', 'success');
+                    showToast(data.message || 'Archivo cargado con éxito');
+                    await refreshAllData();
+                } else {
+                    showToast(data.message || 'Error al cargar archivo', 'error');
+                    // AUTOMATIC MODAL ON FORMAT ERROR
+                    if (data.message && data.message.includes('formato')) {
+                        setTimeout(openExcelFormatModal, 1500);
                     }
-                    return true;
-                } else {
-                    showToast(data.message || 'Error al guardar la configuración', 'error');
-                    return false;
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Error de conexión', 'error');
-                return false;
+            } catch (err) {
+                console.error('Upload error:', err);
+                showToast('Ocurrió un error inesperado al procesar el archivo.', 'error');
+            } finally {
+                uploadText.textContent = "Subir Excel de Mantenimientos";
+                input.value = '';
+                updateStepStatus();
             }
         }
+    }
 
-        async function showAlertModal(title, message, type = 'error') {
-            return new Promise((resolve) => {
-                showConfirmModal(title, message, () => {
-                    resolve();
-                }, {
-                    type: type === 'error' ? 'warning' : (type === 'success' ? 'info' : 'info'),
-                    hideCancel: true,
-                    confirmText: 'Entendido',
-                    btnClass: type === 'error' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'
-                });
-            });
+    function updateStepStatus() {
+        const hasData = turnos && turnos.length > 0;
+        const step2 = document.getElementById('step2Container');
+        const step3 = document.getElementById('step3Container');
+        const step2Indicator = document.getElementById('step2Indicator');
+        const step3Indicator = document.getElementById('step3Indicator');
+        const btnGenerarTodo = document.getElementById('btnGenerarTodo');
+
+        if (!step2 || !step3) return;
+
+        if (hasData) {
+            // ENABLED STATE
+            step2.classList.remove('opacity-40', 'pointer-events-none', 'grayscale');
+            step3.classList.remove('opacity-40', 'pointer-events-none', 'grayscale');
+            step2Indicator.classList.replace('bg-gray-200', 'bg-indigo-600');
+            step2Indicator.classList.replace('text-gray-500', 'text-white');
+            step3Indicator.classList.replace('bg-gray-200', 'bg-indigo-600');
+            step3Indicator.classList.replace('text-gray-500', 'text-white');
+            if (btnGenerarTodo) btnGenerarTodo.disabled = false;
+        } else {
+            // DISABLED STATE
+            step2.classList.add('opacity-40', 'pointer-events-none', 'grayscale');
+            step3.classList.add('opacity-40', 'pointer-events-none', 'grayscale');
+            step2Indicator.classList.replace('bg-indigo-600', 'bg-gray-200');
+            step2Indicator.classList.replace('text-white', 'text-gray-500');
+            step3Indicator.classList.replace('bg-indigo-600', 'bg-gray-200');
+            step3Indicator.classList.replace('text-white', 'text-gray-500');
+            if (btnGenerarTodo) btnGenerarTodo.disabled = true;
         }
+    }
 
-        function showConfirmModal(title, message, onConfirm, options = {}) {
-            const modal = document.getElementById('confirmationModal');
-            const container = document.getElementById('confirmModalContent');
-            const titleEl = document.getElementById('confirmTitle');
-            const msgEl = document.getElementById('confirmMessage');
-            const extraEl = document.getElementById('confirmExtraContent');
-            const confirmBtn = document.getElementById('confirmActionBtn');
-            const cancelBtn = document.getElementById('confirmCancelBtn') || (container ? container.querySelector('button[onclick="closeConfirmModal()"]') : null);
-            const iconContainer = container ? container.querySelector('.rounded-full') : null;
-
-            if (!modal || !confirmBtn || !container) return;
-
-            // Reset state
-            titleEl.textContent = title;
-            msgEl.textContent = message;
-            msgEl.classList.remove('text-green-600', 'font-bold');
-            extraEl.innerHTML = '';
-            extraEl.classList.add('hidden');
-            confirmBtn.style.display = 'block';
-            confirmBtn.disabled = false;
-            if (cancelBtn) cancelBtn.style.display = options.hideCancel ? 'none' : 'block';
-
-            // Icon handling
-            const icon = iconContainer ? iconContainer.querySelector('i, svg') : null;
-            const type = options.type || 'info';
-            if (iconContainer) {
-                iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${type === 'warning' ? 'bg-red-100' : 'bg-blue-100'}`;
-            }
-            
-            if (icon) {
-                icon.setAttribute('data-lucide', type === 'warning' ? 'alert-triangle' : (type === 'info' ? 'check-circle-2' : 'help-circle'));
-                icon.className = `w-6 h-6 ${type === 'warning' ? 'text-red-600' : 'text-blue-600'}`;
-            }
-
-            confirmBtn.innerHTML = options.confirmText || 'Confirmar';
-            confirmBtn.className = "flex-1 py-2 text-white rounded-xl text-xs font-bold transition-colors shadow-lg " + 
-                (options.btnClass || (type === 'warning' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'));
-
-            if (options.extraHTML) {
-                extraEl.innerHTML = options.extraHTML;
-                extraEl.classList.remove('hidden');
-            }
-
-            // Assign handler directly
-            confirmBtn.onclick = async () => {
-                if (options.noCloseOnConfirm) {
-                    confirmBtn.disabled = true;
-                    confirmBtn.innerHTML = '<i class="w-3 h-3 animate-spin border-2 border-white/30 border-t-white rounded-full"></i>';
-                    await onConfirm(async (successMsg) => {
-                        if (iconContainer) {
-                            iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4 animate-bounce";
-                            const finalIcon = iconContainer.querySelector('i, svg');
-                            if (finalIcon) {
-                                finalIcon.setAttribute('data-lucide', 'check-circle-2');
-                                finalIcon.className = "w-6 h-6 text-green-600";
-                            }
-                        }
-                        titleEl.textContent = '¡Éxito!';
-                        msgEl.textContent = successMsg || 'Acción completada con éxito.';
-                        msgEl.classList.add('text-green-600', 'font-bold');
-                        extraEl.classList.add('hidden');
-                        confirmBtn.style.display = 'none';
-                        if (cancelBtn) cancelBtn.style.display = 'none';
-                        lucide.createIcons();
-                        setTimeout(() => closeConfirmModal(), 2000);
-                    });
-                } else {
-                    closeConfirmModal();
-                    if (typeof onConfirm === 'function') onConfirm();
-                }
-            };
-            
-            lucide.createIcons();
+    function openExcelFormatModal() {
+        const modal = document.getElementById('excelFormatModal');
+        const container = document.getElementById('excelFormatModalContainer');
+        if (modal && container) {
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                container.classList.remove('scale-95');
-                container.classList.add('scale-100');
+                container.classList.remove('scale-95', 'opacity-0');
+                container.classList.add('scale-100', 'opacity-100');
             }, 10);
         }
+    }
 
-        function closeConfirmModal() {
-            const modal = document.getElementById('confirmationModal');
-            const container = document.getElementById('confirmModalContent');
-            if (!modal || !container) return;
-
-            modal.classList.add('opacity-0');
-            container.classList.remove('scale-100');
-            container.classList.add('scale-95');
-
+    function closeExcelFormatModal() {
+        const modal = document.getElementById('excelFormatModal');
+        const container = document.getElementById('excelFormatModalContainer');
+        if (modal && container) {
+            container.classList.remove('scale-100', 'opacity-100');
+            container.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
-                modal.classList.add('hidden');
                 modal.classList.remove('flex');
+                modal.classList.add('hidden');
             }, 300);
         }
+    }
 
-        async function generarCronograma() {
-            showConfirmModal(
-                'Confirmar Generación',
-                'Esto guardará la configuración actual y redistribuirá todos los turnos. ¿Deseas continuar?',
-                async (showSuccess) => {
-                    try {
-                        // 1. Save Config First
-                        const saved = await guardarConfig(true); // silent save
-                        if (!saved) return;
+    async function refreshAllData() {
+        try {
+            const resp = await fetch('{% url "api_get_datos" %}');
+            if (!resp.ok) throw new Error('Network response was not ok');
+            const data = await resp.json();
 
-                        // 2. Generate
-                        const resp = await fetch('{% url "generar_cronograma" %}', {
-                            method: 'POST',
-                            headers: { 'X-CSRFToken': CSRF_TOKEN }
-                        });
-                        const result = await resp.json();
+            // Actualizar variables globales con seguridad
+            turnos = data.turnos || [];
+            feriados = data.feriados || [];
+            config = data.config || {};
 
-                        if (resp.ok) {
-                            showSuccess(result.message || 'Cronograma generado correctamente');
-                            await refreshAllData();
-                        } else {
-                            // If we failed, we close the "loading" modal to show the error modal or toast
-                            closeConfirmModal();
-                            if (result.data && result.data.error_type === 'insufficient_slots') {
-                                showErrorModal(result.data);
-                            } else if (result.data && result.data.error_type === 'no_pending_turns') {
-                                // Redirect to help modal if no data
-                                openExcelFormatModal();
-                                showToast('Asegúrate de importar un archivo Excel válido primero.', 'info');
-                            } else {
-                                showToast(result.data ? result.data.message : 'Error al procesar datos', 'error');
-                            }
+            if (config && config.inicio) {
+                currentMonth = new Date(config.inicio + 'T00:00:00');
+            }
+
+            // Refrescar UI
+            updateCalendarView();
+            updateStats();
+            renderPendingAssets();
+            updateStepStatus();
+
+            // Activar indicadores de progreso y botón de generar
+            const btn = document.getElementById('btnGenerarTodo');
+            const step2 = document.getElementById('step2Indicator');
+            const step3 = document.getElementById('step3Indicator');
+
+            if (step2) {
+                step2.classList.remove('bg-gray-200', 'text-gray-500');
+                step2.classList.add('bg-indigo-600', 'text-white');
+            }
+
+            if (turnos && turnos.length > 0) {
+                if (btn) {
+                    btn.classList.remove('bg-slate-200', 'text-gray-400', 'cursor-not-allowed');
+                    btn.classList.add('bg-gradient-to-r', 'from-indigo-600', 'to-indigo-700', 'text-white', 'shadow-indigo-200', 'hover:shadow-indigo-400', 'hover:-translate-y-0.5');
+                    const icon = btn.querySelector('i, svg');
+                    if (icon) icon.classList.remove('opacity-40');
+                }
+                if (step3) {
+                    step3.classList.remove('bg-gray-200', 'text-gray-500');
+                    step3.classList.add('bg-indigo-600', 'text-white');
+                }
+            }
+        } catch (err) {
+            console.error('Error refreshing data:', err);
+        }
+    }
+    function toggleAccordion(id) {
+        const content = document.getElementById(id);
+        const arrow = document.getElementById(id.replace('Content', 'Arrow'));
+        const isHidden = content.classList.contains('hidden');
+
+        // Cerrar otros acordeones (opcional, pero mejora UX)
+        // document.querySelectorAll('[id$="Content"]').forEach(c => c.classList.add('hidden'));
+        // document.querySelectorAll('[id$="Arrow"]').forEach(a => a.classList.remove('rotate-180'));
+
+        if (isHidden) {
+            content.classList.remove('hidden');
+            if (arrow) arrow.classList.add('rotate-180');
+        } else {
+            content.classList.add('hidden');
+            if (arrow) arrow.classList.remove('rotate-180');
+        }
+    }
+
+    // --- UI HELPERS ---
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        const config = {
+            success: { icon: 'check-circle-2', style: 'background: var(--green-pastel); color: var(--green-text); border: 1px solid rgba(6, 95, 70, 0.2);' },
+            error: { icon: 'alert-circle', style: 'background: var(--red-pastel); color: var(--red-text); border: 1px solid rgba(153, 27, 27, 0.2);' },
+            info: { icon: 'info', style: 'background: var(--blue-pastel); color: var(--blue-text); border: 1px solid rgba(30, 64, 175, 0.2);' }
+        };
+
+        const cfg = config[type];
+        toast.className = `px-6 py-3 rounded-xl shadow-xl font-black text-[10px] uppercase tracking-widest transform transition-all duration-300 translate-x-full opacity-0 pointer-events-auto flex items-center gap-3`;
+        toast.style = cfg.style;
+        toast.innerHTML = `<i data-lucide="${cfg.icon}" class="w-4 h-4"></i> <span>${message}</span>`;
+
+        container.appendChild(toast);
+        lucide.createIcons(); // Re-init for new toast
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+        });
+
+        // Auto-remove
+        setTimeout(() => {
+            toast.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.remove(), 400);
+        }, 3000);
+    }
+
+    async function guardarConfig(silent = false) {
+        const f_inicio = document.getElementById('fechaInicio').value;
+        const f_fin = document.getElementById('fechaFin').value;
+        const h_inicio = document.getElementById('horaInicio').value;
+        const h_fin = document.getElementById('horaFin').value;
+
+        // Validar campos obligatorios
+        if (!f_inicio || !f_fin) {
+            await showAlertModal('Datos Faltantes', 'Tanto la fecha de inicio como la de fin son obligatorias para el cronograma.');
+            return false;
+        }
+
+        // Validar rango de fechas
+        if (f_inicio > f_fin) {
+            await showAlertModal('Rango de Fechas Inválido', 'La fecha de inicio no puede ser posterior a la fecha de fin.');
+            return false;
+        }
+
+        // Validar rango de horas
+        if (h_inicio && h_fin && h_inicio >= h_fin) {
+            await showAlertModal('Rango Horario Inválido', 'La hora de inicio de la jornada debe ser anterior a la hora de finalización.');
+            return false;
+        }
+
+        const formData = new FormData(document.getElementById('configForm'));
+        try {
+            const resp = await fetch('{% url "guardar_configuracion" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                if (!silent) {
+                    await showAlertModal('¡Éxito!', data.message || 'La configuración se ha guardado correctamente.', 'success');
+                }
+                return true;
+            } else {
+                showToast(data.message || 'Error al guardar la configuración', 'error');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('Error de conexión', 'error');
+            return false;
+        }
+    }
+
+    async function showAlertModal(title, message, type = 'error') {
+        return new Promise((resolve) => {
+            showConfirmModal(title, message, () => {
+                resolve();
+            }, {
+                type: type === 'error' ? 'warning' : (type === 'success' ? 'info' : 'info'),
+                hideCancel: true,
+                confirmText: 'Entendido',
+                btnClass: type === 'error' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'
+            });
+        });
+    }
+
+    function showConfirmModal(title, message, onConfirm, options = {}) {
+        const modal = document.getElementById('confirmationModal');
+        const container = document.getElementById('confirmModalContent');
+        const titleEl = document.getElementById('confirmTitle');
+        const msgEl = document.getElementById('confirmMessage');
+        const extraEl = document.getElementById('confirmExtraContent');
+        const confirmBtn = document.getElementById('confirmActionBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn') || (container ? container.querySelector('button[onclick="closeConfirmModal()"]') : null);
+        const iconContainer = container ? container.querySelector('.rounded-full') : null;
+
+        if (!modal || !confirmBtn || !container) return;
+
+        // Reset state
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        msgEl.classList.remove('text-green-600', 'font-bold');
+        extraEl.innerHTML = '';
+        extraEl.classList.add('hidden');
+        confirmBtn.style.display = 'block';
+        confirmBtn.disabled = false;
+        if (cancelBtn) cancelBtn.style.display = options.hideCancel ? 'none' : 'block';
+
+        // Icon handling
+        const icon = iconContainer ? iconContainer.querySelector('i, svg') : null;
+        const type = options.type || 'info';
+        if (iconContainer) {
+            iconContainer.className = `mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${type === 'warning' ? 'bg-red-100' : 'bg-blue-100'}`;
+        }
+
+        if (icon) {
+            icon.setAttribute('data-lucide', type === 'warning' ? 'alert-triangle' : (type === 'info' ? 'check-circle-2' : 'help-circle'));
+            icon.className = `w-6 h-6 ${type === 'warning' ? 'text-red-600' : 'text-blue-600'}`;
+        }
+
+        confirmBtn.innerHTML = options.confirmText || 'Confirmar';
+        confirmBtn.className = "flex-1 py-2 text-white rounded-xl text-xs font-bold transition-colors shadow-lg " +
+            (options.btnClass || (type === 'warning' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'));
+
+        if (options.extraHTML) {
+            extraEl.innerHTML = options.extraHTML;
+            extraEl.classList.remove('hidden');
+        }
+
+        // Assign handler directly
+        confirmBtn.onclick = async () => {
+            if (options.noCloseOnConfirm) {
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="w-3 h-3 animate-spin border-2 border-white/30 border-t-white rounded-full"></i>';
+                await onConfirm(async (successMsg) => {
+                    if (iconContainer) {
+                        iconContainer.className = "mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4 animate-bounce";
+                        const finalIcon = iconContainer.querySelector('i, svg');
+                        if (finalIcon) {
+                            finalIcon.setAttribute('data-lucide', 'check-circle-2');
+                            finalIcon.className = "w-6 h-6 text-green-600";
                         }
-                    } catch (error) {
-                        console.error('Error:', error);
+                    }
+                    titleEl.textContent = '¡Éxito!';
+                    msgEl.textContent = successMsg || 'Acción completada con éxito.';
+                    msgEl.classList.add('text-green-600', 'font-bold');
+                    extraEl.classList.add('hidden');
+                    confirmBtn.style.display = 'none';
+                    if (cancelBtn) cancelBtn.style.display = 'none';
+                    lucide.createIcons();
+                    setTimeout(() => closeConfirmModal(), 2000);
+                });
+            } else {
+                closeConfirmModal();
+                if (typeof onConfirm === 'function') onConfirm();
+            }
+        };
+
+        lucide.createIcons();
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            container.classList.remove('scale-95');
+            container.classList.add('scale-100');
+        }, 10);
+    }
+
+    function closeConfirmModal() {
+        const modal = document.getElementById('confirmationModal');
+        const container = document.getElementById('confirmModalContent');
+        if (!modal || !container) return;
+
+        modal.classList.add('opacity-0');
+        container.classList.remove('scale-100');
+        container.classList.add('scale-95');
+
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 300);
+    }
+
+    async function generarCronograma() {
+        showConfirmModal(
+            'Confirmar Generación',
+            'Esto guardará la configuración actual y redistribuirá todos los turnos. ¿Deseas continuar?',
+            async (showSuccess) => {
+                try {
+                    // 1. Save Config First
+                    const saved = await guardarConfig(true); // silent save
+                    if (!saved) return;
+
+                    // 2. Generate
+                    const resp = await fetch('{% url "generar_cronograma" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': CSRF_TOKEN }
+                    });
+                    const result = await resp.json();
+
+                    if (resp.ok) {
+                        showSuccess(result.message || 'Cronograma generado correctamente');
+                        await refreshAllData();
+                    } else {
+                        // If we failed, we close the "loading" modal to show the error modal or toast
                         closeConfirmModal();
-                        showToast('Error de comunicación con el servidor. Verifica tu conexión.', 'error');
-                    }
-                },
-                {
-                    noCloseOnConfirm: true,
-                    confirmText: 'Sí, Generar Ahora'
-                }
-            );
-        }
-
-        async function resetEverything() {
-            showConfirmModal(
-                '¿Reiniciar Sistema?',
-                'Esta acción eliminará TODOS los turnos, responsables y configuraciones actuales. No se puede deshacer.',
-                async () => {
-                    try {
-                        const resp = await fetch('{% url "reset_database" %}', {
-                            method: 'POST',
-                            headers: { 'X-CSRFToken': CSRF_TOKEN }
-                        });
-                        const data = await resp.json();
-                        if (resp.ok) {
-                            showToast(data.message, 'success');
-                            // Actualizar UI
-                            await refreshAllData();
+                        if (result.data && result.data.error_type === 'insufficient_slots') {
+                            showErrorModal(result.data);
+                        } else if (result.data && result.data.error_type === 'no_pending_turns') {
+                            // Redirect to help modal if no data
+                            openExcelFormatModal();
+                            showToast('Asegúrate de importar un archivo Excel válido primero.', 'info');
                         } else {
-                            showToast(data.message, 'error');
+                            showToast(result.data ? result.data.message : 'Error al procesar datos', 'error');
                         }
-                    } catch (err) {
-                        console.error('Error resetting database:', err);
-                        showToast('Error al conectar con el servidor', 'error');
                     }
-                },
-                {
-                    type: 'warning',
-                    confirmText: 'Sí, Reiniciar Todo',
-                    btnClass: 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/30'
+                } catch (error) {
+                    console.error('Error:', error);
+                    closeConfirmModal();
+                    showToast('Error de comunicación con el servidor. Verifica tu conexión.', 'error');
                 }
-            );
-        }
+            },
+            {
+                noCloseOnConfirm: true,
+                confirmText: 'Sí, Generar Ahora'
+            }
+        );
+    }
 
-        function showErrorModal(data) {
-            const modal = document.getElementById('errorModal');
-            const container = document.getElementById('errorModalContainer');
+    async function resetEverything() {
+        showConfirmModal(
+            '¿Reiniciar Sistema?',
+            'Esta acción eliminará TODOS los turnos, responsables y configuraciones actuales. No se puede deshacer.',
+            async () => {
+                try {
+                    const resp = await fetch('{% url "reset_database" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': CSRF_TOKEN }
+                    });
+                    const data = await resp.json();
+                    if (resp.ok) {
+                        showToast(data.message, 'success');
+                        // Actualizar UI
+                        await refreshAllData();
+                    } else {
+                        showToast(data.message, 'error');
+                    }
+                } catch (err) {
+                    console.error('Error resetting database:', err);
+                    showToast('Error al conectar con el servidor', 'error');
+                }
+            },
+            {
+                type: 'warning',
+                confirmText: 'Sí, Reiniciar Todo',
+                btnClass: 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/30'
+            }
+        );
+    }
 
-            document.getElementById('errorSlotsGen').textContent = data.slots_generados;
-            document.getElementById('errorDaysLab').textContent = `${data.dias_laborables} días laborales`;
-            document.getElementById('errorSlotsMiss').textContent = data.faltantes;
+    function showErrorModal(data) {
+        const modal = document.getElementById('errorModal');
+        const container = document.getElementById('errorModalContainer');
 
-            const percent = Math.round((data.slots_generados / data.usuarios_pendientes) * 100);
-            document.getElementById('errorPercentText').textContent = `${percent}%`;
+        document.getElementById('errorSlotsGen').textContent = data.slots_generados;
+        document.getElementById('errorDaysLab').textContent = `${data.dias_laborables} días laborales`;
+        document.getElementById('errorSlotsMiss').textContent = data.faltantes;
 
-            const suggestionsList = document.getElementById('errorSuggestions');
-            suggestionsList.innerHTML = data.sugerencias.map(s => `
+        const percent = Math.round((data.slots_generados / data.usuarios_pendientes) * 100);
+        document.getElementById('errorPercentText').textContent = `${percent}%`;
+
+        const suggestionsList = document.getElementById('errorSuggestions');
+        suggestionsList.innerHTML = data.sugerencias.map(s => `
             <li class="flex items-start gap-2 text-xs text-gray-600 font-medium">
                 <span class="text-blue-500 mt-0.5">•</span>
                 ${s}
             </li>
         `).join('');
 
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
 
-            // Animations
-            setTimeout(() => {
-                container.classList.remove('scale-95', 'opacity-0');
-                container.classList.add('scale-100', 'opacity-100');
-                document.getElementById('errorProgressBar').style.width = `${percent}%`;
-            }, 10);
-        }
+        // Animations
+        setTimeout(() => {
+            container.classList.remove('scale-95', 'opacity-0');
+            container.classList.add('scale-100', 'opacity-100');
+            document.getElementById('errorProgressBar').style.width = `${percent}%`;
+        }, 10);
+    }
 
-        function closeErrorModal() {
-            const modal = document.getElementById('errorModal');
-            const container = document.getElementById('errorModalContainer');
+    function closeErrorModal() {
+        const modal = document.getElementById('errorModal');
+        const container = document.getElementById('errorModalContainer');
 
-            container.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 200);
-        }
+        container.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 200);
+    }
 
-        function showNoPendingModal() {
-            // Simplified: Just show the format guide as it's the most likely solution
-            openExcelFormatModal();
-            showToast('No se encontraron datos pendientes para procesar.', 'warning');
-        }
+    function showNoPendingModal() {
+        // Simplified: Just show the format guide as it's the most likely solution
+        openExcelFormatModal();
+        showToast('No se encontraron datos pendientes para procesar.', 'warning');
+    }
 
-        function closeNoPendingModal() {
-            const modal = document.getElementById('noPendingModal');
-            const container = document.getElementById('noPendingModalContainer');
-            container.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }, 200);
-        }
+    function closeNoPendingModal() {
+        const modal = document.getElementById('noPendingModal');
+        const container = document.getElementById('noPendingModalContainer');
+        container.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 200);
+    }
 
-        function renderHolidays(dates) {
-            const list = document.getElementById('holidaysList');
-            if (!list) return;
-            list.innerHTML = dates.map(date => {
-                const [y, m, d] = date.split('-');
-                return `
+    function renderHolidays(dates) {
+        const list = document.getElementById('holidaysList');
+        if (!list) return;
+        list.innerHTML = dates.map(date => {
+            const [y, m, d] = date.split('-');
+            return `
                 <span class="bg-yellow-100 text-yellow-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1">
                     ${d}/${m}
                     <button onclick="removeFeriado('${date}')" class="hover:text-red-600">×</button>
                 </span>
             `;
-            }).join('');
+        }).join('');
+    }
+
+    async function addFeriado() {
+        const input = document.getElementById('newHolidayDate');
+        const date = input.value;
+        if (!date) return;
+
+        const resp = await fetch('{% url "add_feriado" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fecha: date })
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            renderHolidays(data.feriados);
+            input.value = '';
+            showToast('Feriado añadido');
+        } else {
+            showToast(data.message || 'Error', 'error');
         }
+    }
 
-        async function addFeriado() {
-            const input = document.getElementById('newHolidayDate');
-            const date = input.value;
-            if (!date) return;
-
-            const resp = await fetch('{% url "add_feriado" %}', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fecha: date })
-            });
-            const data = await resp.json();
-            if (resp.ok) {
-                renderHolidays(data.feriados);
-                input.value = '';
-                showToast('Feriado añadido');
-            } else {
-                showToast(data.message || 'Error', 'error');
-            }
+    async function removeFeriado(date) {
+        const resp = await fetch('{% url "remove_feriado" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fecha: date })
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            renderHolidays(data.feriados);
+            showToast('Feriado eliminado', 'info');
         }
+    }
 
-        async function removeFeriado(date) {
-            const resp = await fetch('{% url "remove_feriado" %}', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fecha: date })
-            });
-            const data = await resp.json();
-            if (resp.ok) {
-                renderHolidays(data.feriados);
-                showToast('Feriado eliminado', 'info');
-            }
-        }
-
-        async function resetSystem() {
-            showConfirmModal(
-                '⚠️ Reiniciar Sistema',
-                'ATENCIÓN: Esto borrará permanentemente todo el historial, configuraciones y usuarios. Esta acción no se puede deshacer.',
-                async () => {
-                    try {
-                        const resp = await fetch('{% url "reset_database" %}', {
-                            method: 'POST',
-                            headers: { 'X-CSRFToken': CSRF_TOKEN }
-                        });
-                        if (resp.ok) {
-                            showToast('Sistema reiniciado. Recargando...', 'success');
-                            setTimeout(() => location.reload(), 1500);
-                        } else {
-                            showToast('Error al reiniciar', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        showToast('Error de conexión', 'error');
+    async function resetSystem() {
+        showConfirmModal(
+            '⚠️ Reiniciar Sistema',
+            'ATENCIÓN: Esto borrará permanentemente todo el historial, configuraciones y usuarios. Esta acción no se puede deshacer.',
+            async () => {
+                try {
+                    const resp = await fetch('{% url "reset_database" %}', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': CSRF_TOKEN }
+                    });
+                    if (resp.ok) {
+                        showToast('Sistema reiniciado. Recargando...', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast('Error al reiniciar', 'error');
                     }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('Error de conexión', 'error');
                 }
-            );
+            }
+        );
+    }
+
+    function changeMonth(dir) {
+        currentMonth.setMonth(currentMonth.getMonth() + dir);
+        initCalendar();
+    }
+
+    function updateStats() {
+        const done = turnos.filter(t => t.estado === 'completado').length;
+        const pendingTotal = turnos.filter(t => t.estado !== 'completado').length;
+
+        // Update all possible stat elements
+        const elements = {
+            'statDone': done,
+            'statDoneCount': done,
+            'statPendingCount': pendingTotal
+        };
+
+        for (const [id, val] of Object.entries(elements)) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = val;
+        }
+    }
+
+    // --- LAYOUT & VIEWS LOGIC ---
+    function toggleSidebar() {
+        const sidebar = document.getElementById('leftSidebar');
+        if (sidebar.classList.contains('-translate-x-full')) {
+            sidebar.classList.remove('-translate-x-full', 'absolute', 'h-full', 'shadow-2xl');
+            sidebar.classList.add('relative');
+        } else {
+            sidebar.classList.add('-translate-x-full', 'absolute', 'h-full', 'shadow-2xl');
+            sidebar.classList.remove('relative');
+        }
+    }
+
+    let currentView = 'month'; // 'month', 'week', 'day'
+
+    function switchView(view) {
+        currentView = view;
+
+        // View Buttons
+        const btnMonth = document.getElementById('btnViewMonth');
+        const btnWeek = document.getElementById('btnViewWeek');
+        const btnDay = document.getElementById('btnViewDay');
+
+        [btnMonth, btnWeek, btnDay].forEach(btn => {
+            if (btn) {
+                btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
+                btn.classList.add('text-gray-500');
+            }
+        });
+
+        const activeBtn = { 'month': btnMonth, 'week': btnWeek, 'day': btnDay }[view];
+        if (activeBtn) {
+            activeBtn.classList.remove('text-gray-500');
+            activeBtn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
         }
 
-        function changeMonth(dir) {
+        // View Containers
+        const monthV = document.getElementById('monthView');
+        const weekV = document.getElementById('weekView');
+        const dayV = document.getElementById('dayView');
+
+        if (monthV) monthV.classList.add('hidden');
+        if (weekV) weekV.classList.add('hidden');
+        if (dayV) dayV.classList.add('hidden');
+
+        const activeView = { 'month': monthV, 'week': weekV, 'day': dayV }[view];
+        if (activeView) activeView.classList.remove('hidden');
+
+        const label = document.getElementById('currentViewLabel');
+        if (label) {
+            label.textContent = `Vista ${view === 'month' ? 'Mensual' : (view === 'week' ? 'Semanal' : 'Diaria')}`;
+        }
+
+        updateCalendarView();
+    }
+
+    function updateCalendarView() {
+        // Update Date Display
+        const dateDisplay = document.getElementById('calendarDateDisplay');
+
+        if (currentView === 'month') {
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            if (dateDisplay) dateDisplay.textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
+            initCalendar(); // Existing render logic
+        } else if (currentView === 'week') {
+            renderWeekView();
+        } else if (currentView === 'day') {
+            renderDayView();
+        }
+    }
+
+    function navigateCalendar(dir) {
+        const dateDisplay = document.getElementById('calendarDateDisplay');
+        if (currentView === 'month') {
             currentMonth.setMonth(currentMonth.getMonth() + dir);
-            initCalendar();
+        } else if (currentView === 'week') {
+            currentMonth.setDate(currentMonth.getDate() + (dir * 7));
+        } else if (currentView === 'day') {
+            currentMonth.setDate(currentMonth.getDate() + dir);
         }
+        updateCalendarView();
+    }
 
-        function updateStats() {
-            const done = turnos.filter(t => t.estado === 'completado').length;
-            const pendingTotal = turnos.filter(t => t.estado !== 'completado').length;
+    // --- WEEK VIEW IMPLEMENTATION ---
+    function renderWeekView() {
+        const container = document.getElementById('weekGrid');
+        const header = document.getElementById('weekHeader');
+        const dateDisplay = document.getElementById('calendarDateDisplay');
 
-            // Update all possible stat elements
-            const elements = {
-                'statDone': done,
-                'statDoneCount': done,
-                'statPendingCount': pendingTotal
-            };
+        // Find start of week (Sunday)
+        const startOfWeek = new Date(currentMonth);
+        startOfWeek.setDate(currentMonth.getDate() - currentMonth.getDay());
 
-            for (const [id, val] of Object.entries(elements)) {
-                const el = document.getElementById(id);
-                if (el) el.textContent = val;
-            }
-        }
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-        // --- LAYOUT & VIEWS LOGIC ---
-        function toggleSidebar() {
-            const sidebar = document.getElementById('leftSidebar');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full', 'absolute', 'h-full', 'shadow-2xl');
-                sidebar.classList.add('relative');
-            } else {
-                sidebar.classList.add('-translate-x-full', 'absolute', 'h-full', 'shadow-2xl');
-                sidebar.classList.remove('relative');
-            }
-        }
+        dateDisplay.textContent = `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('es-ES', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleString('es-ES', { month: 'short' })}`;
 
-        let currentView = 'month'; // 'month', 'week', 'day'
-
-        function switchView(view) {
-            currentView = view;
-            
-            // View Buttons
-            const btnMonth = document.getElementById('btnViewMonth');
-            const btnWeek = document.getElementById('btnViewWeek');
-            const btnDay = document.getElementById('btnViewDay');
-            
-            [btnMonth, btnWeek, btnDay].forEach(btn => {
-                if (btn) {
-                    btn.classList.remove('bg-white', 'text-gray-900', 'shadow-sm');
-                    btn.classList.add('text-gray-500');
-                }
-            });
-
-            const activeBtn = { 'month': btnMonth, 'week': btnWeek, 'day': btnDay }[view];
-            if (activeBtn) {
-                activeBtn.classList.remove('text-gray-500');
-                activeBtn.classList.add('bg-white', 'text-gray-900', 'shadow-sm');
-            }
-
-            // View Containers
-            const monthV = document.getElementById('monthView');
-            const weekV = document.getElementById('weekView');
-            const dayV = document.getElementById('dayView');
-            
-            if (monthV) monthV.classList.add('hidden');
-            if (weekV) weekV.classList.add('hidden');
-            if (dayV) dayV.classList.add('hidden');
-
-            const activeView = { 'month': monthV, 'week': weekV, 'day': dayV }[view];
-            if (activeView) activeView.classList.remove('hidden');
-
-            const label = document.getElementById('currentViewLabel');
-            if (label) {
-                label.textContent = `Vista ${view === 'month' ? 'Mensual' : (view === 'week' ? 'Semanal' : 'Diaria')}`;
-            }
-
-            updateCalendarView();
-        }
-
-        function updateCalendarView() {
-            // Update Date Display
-            const dateDisplay = document.getElementById('calendarDateDisplay');
-            
-            if (currentView === 'month') {
-                const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                if (dateDisplay) dateDisplay.textContent = `${months[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
-                initCalendar(); // Existing render logic
-            } else if (currentView === 'week') {
-                renderWeekView();
-            } else if (currentView === 'day') {
-                renderDayView();
-            }
-        }
-
-        function navigateCalendar(dir) {
-            const dateDisplay = document.getElementById('calendarDateDisplay');
-            if (currentView === 'month') {
-                currentMonth.setMonth(currentMonth.getMonth() + dir);
-            } else if (currentView === 'week') {
-                currentMonth.setDate(currentMonth.getDate() + (dir * 7));
-            } else if (currentView === 'day') {
-                currentMonth.setDate(currentMonth.getDate() + dir);
-            }
-            updateCalendarView();
-        }
-
-        // --- WEEK VIEW IMPLEMENTATION ---
-        function renderWeekView() {
-            const container = document.getElementById('weekGrid');
-            const header = document.getElementById('weekHeader');
-            const dateDisplay = document.getElementById('calendarDateDisplay');
-
-            // Find start of week (Sunday)
-            const startOfWeek = new Date(currentMonth);
-            startOfWeek.setDate(currentMonth.getDate() - currentMonth.getDay());
-            
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            
-            dateDisplay.textContent = `${startOfWeek.getDate()} ${startOfWeek.toLocaleString('es-ES', { month: 'short' })} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleString('es-ES', { month: 'short' })}`;
-
-            // Render Header
-            let headerHTML = '<div class="p-3 border-r border-gray-100 text-[10px] text-gray-400 font-bold text-center">HORA</div>';
-            const weekDays = [];
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(startOfWeek);
-                d.setDate(startOfWeek.getDate() + i);
-                weekDays.push(d);
-                const isToday = new Date().toDateString() === d.toDateString();
-                headerHTML += `
+        // Render Header
+        let headerHTML = '<div class="p-3 border-r border-gray-100 text-[10px] text-gray-400 font-bold text-center">HORA</div>';
+        const weekDays = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+            weekDays.push(d);
+            const isToday = new Date().toDateString() === d.toDateString();
+            headerHTML += `
                     <div class="p-2 text-center border-r border-gray-100 cursor-pointer hover:bg-gray-100 transition ${isToday ? 'bg-blue-50' : ''}"
                          onclick="event.stopPropagation(); openDayDetailPanel('${d.toISOString().split('T')[0]}')">
                         <div class="text-[10px] font-bold text-gray-400 uppercase">${d.toLocaleString('es-ES', { weekday: 'short' })}</div>
                         <div class="text-lg font-black ${isToday ? 'text-blue-600' : 'text-gray-900'}">${d.getDate()}</div>
                     </div>
                 `;
-            }
-            header.innerHTML = headerHTML;
+        }
+        header.innerHTML = headerHTML;
 
-            // Render Grid (Time slots 8am - 6pm)
-            let gridHTML = '';
-            for (let hour = 8; hour <= 18; hour++) {
-                const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-                gridHTML += `<div class="grid grid-cols-8 border-b border-gray-100 min-h-[80px]">`;
-                gridHTML += `<div class="p-2 text-center text-xs text-gray-400 font-bold border-r border-gray-100 sticky left-0 bg-white">${timeStr}</div>`;
-                
-                for (let i = 0; i < 7; i++) {
-                    const d = weekDays[i];
-                    const dStr = d.toISOString().split('T')[0];
-                    const slotTurnos = turnos.filter(t => t.fecha === dStr && t.hora.startsWith(hour.toString().padStart(2, '0')));
-                    
-                    const isExcluded = isDayExcluded(dStr);
-                    const cellClass = isExcluded ? "bg-gray-100/50" : "hover:bg-gray-50 cursor-pointer";
-                    // Remove handleDayDrop to enforce Swap-Only in Weekly View
-                    // Only keep onclick for opening day panel if user clicks the cell background
-                    const interactionHandlers = isExcluded ? "" : `onclick="if(event.target === this) openManualTurnModal('${dStr}', '${timeStr}')"`;
+        // Render Grid (Time slots 8am - 6pm)
+        let gridHTML = '';
+        for (let hour = 8; hour <= 18; hour++) {
+            const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+            gridHTML += `<div class="grid grid-cols-8 border-b border-gray-100 min-h-[80px]">`;
+            gridHTML += `<div class="p-2 text-center text-xs text-gray-400 font-bold border-r border-gray-100 sticky left-0 bg-white">${timeStr}</div>`;
 
-                    gridHTML += `<div class="p-1 border-r border-gray-100 relative group transition-colors ${cellClass}"
+            for (let i = 0; i < 7; i++) {
+                const d = weekDays[i];
+                const dStr = d.toISOString().split('T')[0];
+                const slotTurnos = turnos.filter(t => t.fecha === dStr && t.hora.startsWith(hour.toString().padStart(2, '0')));
+
+                const isExcluded = isDayExcluded(dStr);
+                const cellClass = isExcluded ? "bg-gray-100/50" : "hover:bg-gray-50 cursor-pointer";
+                // Remove handleDayDrop to enforce Swap-Only in Weekly View
+                // Only keep onclick for opening day panel if user clicks the cell background
+                const interactionHandlers = isExcluded ? "" : `onclick="if(event.target === this) openManualTurnModal('${dStr}', '${timeStr}')"`;
+
+                gridHTML += `<div class="p-1 border-r border-gray-100 relative group transition-colors ${cellClass}"
                                      ${interactionHandlers} title="${isExcluded ? 'Día no laborable' : 'Haga clic para añadir turno en esta hora'}">`;
-                    
-                        slotTurnos.forEach(t => {
-                            const card = createCard(t);
-                            card.classList.add('mb-1');
-                            gridHTML += card.outerHTML;
-                        });
-                    
-                    gridHTML += `</div>`;
-                }
+
+                slotTurnos.forEach(t => {
+                    const card = createCard(t);
+                    card.classList.add('mb-1');
+                    gridHTML += card.outerHTML;
+                });
+
                 gridHTML += `</div>`;
             }
-            container.innerHTML = gridHTML;
-            lucide.createIcons();
+            gridHTML += `</div>`;
         }
+        container.innerHTML = gridHTML;
+        lucide.createIcons();
+    }
 
-        // --- DAY VIEW IMPLEMENTATION ---
-        function renderDayView() {
-            const container = document.getElementById('dayListContainer');
-            const title = document.getElementById('dayViewTitle');
-            const countBadge = document.getElementById('dayViewCount');
-            const dateDisplay = document.getElementById('calendarDateDisplay');
+    // --- DAY VIEW IMPLEMENTATION ---
+    function renderDayView() {
+        const container = document.getElementById('dayListContainer');
+        const title = document.getElementById('dayViewTitle');
+        const countBadge = document.getElementById('dayViewCount');
+        const dateDisplay = document.getElementById('calendarDateDisplay');
 
-            const dStr = currentMonth.toISOString().split('T')[0];
-            dateDisplay.textContent = currentMonth.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            
-            title.textContent = dateDisplay.textContent.toUpperCase();
+        const dStr = currentMonth.toISOString().split('T')[0];
+        dateDisplay.textContent = currentMonth.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-            const dayTurnos = turnos.filter(t => t.fecha === dStr);
-            dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora)); // Sort by time
+        title.textContent = dateDisplay.textContent.toUpperCase();
 
-            countBadge.textContent = `${dayTurnos.length} Turnos`;
+        const dayTurnos = turnos.filter(t => t.fecha === dStr);
+        dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora)); // Sort by time
 
-            if (dayTurnos.length === 0) {
-                container.innerHTML = `
+        countBadge.textContent = `${dayTurnos.length} Turnos`;
+
+        if (dayTurnos.length === 0) {
+            container.innerHTML = `
                     <div class="flex flex-col items-center justify-center h-64 text-gray-400 p-8 text-center border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
                         <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm">
                             <i data-lucide="calendar-plus" class="w-10 h-10 text-blue-500 opacity-40"></i>
@@ -2616,22 +2651,22 @@
                         </button>
                     </div>
                 `;
-            } else {
-                container.innerHTML = '';
-                dayTurnos.forEach(t => {
-                    const card = createShiftCardForPanel(t);
-                    card.removeAttribute('draggable');
-                    container.appendChild(card);
-                });
-            }
-            lucide.createIcons();
+        } else {
+            container.innerHTML = '';
+            dayTurnos.forEach(t => {
+                const card = createShiftCardForPanel(t);
+                card.removeAttribute('draggable');
+                container.appendChild(card);
+            });
         }
+        lucide.createIcons();
+    }
 
-        window.onload = () => {
-            initCalendar();
-            updateStats();
-            renderPendingAssets();
-            updateStepStatus();
-        };
-    </script>
-    {% endblock %}
+    window.onload = () => {
+        initCalendar();
+        updateStats();
+        renderPendingAssets();
+        updateStepStatus();
+    };
+</script>
+{% endblock %}
