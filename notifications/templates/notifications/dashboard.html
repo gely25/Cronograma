@@ -158,6 +158,66 @@
     <!-- Main Content Container: Radar Removed -->
 
 
+    <!-- Stats Dashboard Section -->
+    <div class="max-w-[1600px] mx-auto w-full px-12 pt-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <!-- Personas a Notificar -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition duration-300">
+                <div class="p-4 bg-blue-50 text-blue-600 rounded-xl no-shrink">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Personas a Notificar</p>
+                    <h4 class="text-2xl font-black text-gray-900 leading-none mt-1">{{ metrics.total_volumen }}</h4>
+                </div>
+            </div>
+
+            <!-- Equipos Registrados -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition duration-300">
+                <div class="p-4 bg-indigo-50 text-indigo-600 rounded-xl no-shrink">
+                    <i data-lucide="monitor" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Equipos Registrados</p>
+                    <h4 class="text-2xl font-black text-gray-900 leading-none mt-1">{{ metrics.total_equipos }}</h4>
+                </div>
+            </div>
+
+            <!-- Enviados -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition duration-300">
+                <div class="p-4 bg-green-50 text-green-600 rounded-xl no-shrink">
+                    <i data-lucide="check-circle" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Enviados con Éxito</p>
+                    <h4 class="text-2xl font-black text-gray-900 leading-none mt-1">{{ metrics.total_exitosas }}</h4>
+                </div>
+            </div>
+
+            <!-- Errores -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition duration-300">
+                <div class="p-4 bg-red-50 text-red-600 rounded-xl no-shrink">
+                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Con Errores</p>
+                    <h4 class="text-2xl font-black text-gray-900 leading-none mt-1">{{ metrics.total_errores }}</h4>
+                </div>
+            </div>
+
+            <!-- Pendientes -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-5 hover:shadow-md transition duration-300">
+                <div class="p-4 bg-amber-50 text-amber-600 rounded-xl no-shrink">
+                    <i data-lucide="clock" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pendientes</p>
+                    <h4 class="text-2xl font-black text-gray-900 leading-none mt-1">{{ metrics.total_pendientes }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- History Tab Content (Always Visible) -->
     <div id="main-content-history" class="max-w-[1600px] mx-auto w-full px-12 py-10">
         <!-- Historial de Notificaciones Card -->

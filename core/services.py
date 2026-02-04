@@ -69,7 +69,16 @@ def procesar_archivo_activos(archivo):
         total_responsables = Responsable.objects.count()
         total_equipos = Equipo.objects.count()
         total_turnos = Turno.objects.count()
-        print(f"✅ Datos procesados: {total_responsables} responsables, {total_equipos} equipos, {total_turnos} turnos")
+        print(f"✅ Datos procesados exitosamente:")
+        print(f"   - Filas de datos (sin contar encabezado): {len(df)}")
+        print(f"   - Equipos registrados: {total_equipos}")
+        print(f"   - Personas únicas (Turnos): {total_turnos}")
+        
+        return {
+            'filas_leidas': len(df),
+            'equipos': total_equipos,
+            'responsables': total_turnos
+        }
 
 def generar_slots(config):
     """

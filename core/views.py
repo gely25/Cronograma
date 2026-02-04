@@ -17,10 +17,11 @@ def upload_excel(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                procesar_archivo_activos(request.FILES['archivo'])
+                res = procesar_archivo_activos(request.FILES['archivo'])
+                msg = f"✅ Archivo procesado: {res['filas_leidas']} filas leídas ({res['equipos']} equipos) agrupados en {res['responsables']} personas a notificar."
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax'):
-                    return JsonResponse({'status': 'ok', 'message': "Archivo procesado con éxito."})
-                messages.success(request, "Archivo procesado con éxito.")
+                    return JsonResponse({'status': 'ok', 'message': msg})
+                messages.success(request, msg)
                 return redirect('ver_cronograma')
             except Exception as e:
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax'):
@@ -62,6 +63,10 @@ def api_get_datos(request):
         'config': {
             'inicio': config.fecha_inicio.strftime('%Y-%m-%d') if config and config.fecha_inicio else '',
             'fin': config.fecha_fin.strftime('%Y-%m-%d') if config and config.fecha_fin else '',
+            'hora_inicio': config.hora_inicio.strftime('%H:%M') if config and config.hora_inicio else '08:00',
+            'hora_fin': config.hora_fin.strftime('%H:%M') if config and config.hora_fin else '17:00',
+            'duracion_turno': config.duracion_turno if config else 30,
+            'modo_exclusion': config.modo_exclusion if config else 'weekends',
         }
     }
     return JsonResponse(data)

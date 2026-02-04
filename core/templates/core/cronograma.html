@@ -631,7 +631,7 @@
                     <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                         <div>
                             <h3 class="text-lg font-black text-gray-900" id="dayViewTitle">-</h3>
-                            <p class="text-xs text-gray-500 font-bold">Detalle de turnos</p>
+                            <p class="text-xs text-gray-500 font-bold">Jornada: <span id="dayViewJornadaHeader">{{ config.hora_inicio|time:'H:i' }} - {{ config.hora_fin|time:'H:i' }}</span></p>
                         </div>
                         <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black" id="dayViewCount">0 Turnos</span>
                     </div>
@@ -1257,9 +1257,14 @@
     ];
 
     let config = {
-        inicio: "{% if config %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}",
-        fin: "{% if config %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}",
+        inicio: "{% if config and config.fecha_inicio %}{{ config.fecha_inicio|date:'Y-m-d' }}{% endif %}",
+        fin: "{% if config and config.fecha_fin %}{{ config.fecha_fin|date:'Y-m-d' }}{% endif %}",
         modo_exclusion: "{{ config.modo_exclusion|default:'weekends' }}",
+        hora_inicio: "{% if config %}{{ config.hora_inicio|time:'H:i' }}{% else %}08:00{% endif %}",
+        hora_fin: "{% if config %}{{ config.hora_fin|time:'H:i' }}{% else %}17:00{% endif %}",
+        duracion_turno: {{ config.duracion_turno|default:30 }},
+        duracion_almuerzo: {{ config.duracion_almuerzo|default:60 }},
+        hora_almuerzo: "{% if config %}{{ config.hora_almuerzo|time:'H:i' }}{% else %}12:00{% endif %}",
     };
 
     let currentMonth = new Date();
@@ -3055,9 +3060,10 @@
             d.setDate(startOfWeek.getDate() + i);
             weekDays.push(d);
             const isToday = new Date().toDateString() === d.toDateString();
+            const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             headerHTML += `
                     <div class="p-2 text-center border-r border-gray-100 cursor-pointer hover:bg-gray-100 transition ${isToday ? 'bg-blue-50' : ''}"
-                         onclick="event.stopPropagation(); openDayDetailPanel('${d.toISOString().split('T')[0]}')">
+                         onclick="event.stopPropagation(); openDayDetailPanel('${dStr}')">
                         <div class="text-[10px] font-bold text-gray-400 uppercase">${d.toLocaleString('es-ES', { weekday: 'short' })}</div>
                         <div class="text-lg font-black ${isToday ? 'text-blue-600' : 'text-gray-900'}">${d.getDate()}</div>
                     </div>
@@ -3065,17 +3071,21 @@
         }
         header.innerHTML = headerHTML;
 
-        // Render Grid (Time slots 8am - 6pm)
+        // Render Grid (Dynamic hours based on config)
         let gridHTML = '';
-        for (let hour = 8; hour <= 18; hour++) {
+        const startH = config.hora_inicio ? parseInt(config.hora_inicio.split(':')[0], 10) : 8;
+        const endH = config.hora_fin ? parseInt(config.hora_fin.split(':')[0], 10) : 17;
+
+        for (let hour = startH; hour <= endH; hour++) {
             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
             gridHTML += `<div class="grid grid-cols-8 border-b border-gray-100 min-h-[80px]">`;
             gridHTML += `<div class="p-2 text-center text-xs text-gray-400 font-bold border-r border-gray-100 sticky left-0 bg-white">${timeStr}</div>`;
 
             for (let i = 0; i < 7; i++) {
                 const d = weekDays[i];
-                const dStr = d.toISOString().split('T')[0];
-                const slotTurnos = turnos.filter(t => t.fecha === dStr && t.hora.startsWith(hour.toString().padStart(2, '0')));
+                const dStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const hourPrefix = hour.toString().padStart(2, '0');
+                const slotTurnos = turnos.filter(t => t.fecha === dStr && (t.hora || '').startsWith(hourPrefix));
 
                 const isExcluded = isDayExcluded(dStr);
                 const cellClass = isExcluded ? "bg-gray-100/50" : "hover:bg-gray-50 cursor-pointer";
@@ -3111,6 +3121,12 @@
         dateDisplay.textContent = currentMonth.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
         title.textContent = dateDisplay.textContent.toUpperCase();
+        
+        // Update Jornada header
+        const jornadaEl = document.getElementById('dayViewJornadaHeader');
+        if (jornadaEl && config.hora_inicio && config.hora_fin) {
+            jornadaEl.textContent = `${config.hora_inicio} - ${config.hora_fin}`;
+        }
 
         const dayTurnos = turnos.filter(t => t.fecha === dStr);
         dayTurnos.sort((a, b) => a.hora.localeCompare(b.hora)); // Sort by time

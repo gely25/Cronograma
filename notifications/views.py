@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import json
 from .models import ConfiguracionNotificacion, HistorialEnvio, NotificacionEncolada, AuditLogNotificaciones
 from .services import NotificationService
-from core.models import Turno
+from core.models import Turno, Equipo, Responsable, ConfiguracionCronograma
 
 def dashboard(request):
     """
@@ -19,13 +19,12 @@ def dashboard(request):
     config = ConfiguracionNotificacion.get_solo()
     
     # Calcular métricas para el nuevo dashboard
-    hoy = timezone.now().date()
-    
     metrics = {
-        'total_enviadas': HistorialEnvio.objects.count(),
-        'exitosas': HistorialEnvio.objects.filter(estado='enviado').count(),
-        'con_errores': HistorialEnvio.objects.filter(estado='fallido').count(),
-        'enviadas_hoy': HistorialEnvio.objects.filter(fecha_envio__date=hoy).count(),
+        'total_volumen': NotificacionEncolada.objects.count(),
+        'total_exitosas': HistorialEnvio.objects.filter(estado='enviado').count(),
+        'total_errores': HistorialEnvio.objects.filter(estado='fallido').count(),
+        'total_pendientes': NotificacionEncolada.objects.filter(estado__in=['pendiente', 'error_temporal']).count(),
+        'total_equipos': Equipo.objects.count(),
     }
     
 
@@ -56,7 +55,6 @@ def dashboard(request):
             modelo = "General"
             
         # Obtener duración real
-        from core.models import ConfiguracionCronograma
         crono = ConfiguracionCronograma.objects.first()
         duracion = crono.duracion_turno if crono else 30
             
@@ -185,7 +183,7 @@ def stream_envio_masivo(request):
     final_queue_ids = []
     
     # Lógica de Generación "Just Code" (replicada de generar_desde_proyeccion simplificada)
-    from core.models import Turno 
+    
     
     # Separar IDs simples (cola) de complejos (proyección)
     projection_items = [x for x in raw_list if ':' in x]
@@ -286,7 +284,6 @@ def generar_desde_proyeccion(request):
                     continue
                     
                 t_id, tipo = val.split(':')
-                from core.models import Turno 
                 turno = get_object_or_404(Turno, id=t_id)
                 
                 try:
@@ -543,7 +540,6 @@ def get_recipient_candidates(request):
     API endpoint para obtener lista de funcionarios con turnos próximos.
     Para el Paso 2 del wizard de creación manual.
     """
-    from core.models import Responsable
     from datetime import timedelta
     
     # Obtener turnos de los próximos 30 días
@@ -568,7 +564,6 @@ def get_recipient_candidates(request):
             continue
         vistos.add(turno.responsable.id)
         
-        from core.models import ConfiguracionCronograma
         config_crono = ConfiguracionCronograma.objects.first()
         duracion = config_crono.duracion_turno if config_crono else 30
         
@@ -607,7 +602,6 @@ def send_manual_notifications(request):
             return JsonResponse({'error': 'Debes seleccionar al menos un destinatario'}, status=400)
         
         # Crear notificaciones para cada destinatario
-        from core.models import Responsable
         notificaciones_creadas = []
         
         for resp_id in recipient_ids:
