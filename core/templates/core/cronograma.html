@@ -23,7 +23,7 @@
         transform: translateY(-2px);
     }
 
-    .calendar-day.weekend {
+    .calendar-day.excluded {
         background: #f8f9fa;
         opacity: 0.6;
     }
@@ -1335,18 +1335,23 @@
             const cellDate = new Date(year, month, d);
             // Fix timezone issue by manually formatting YYYY-MM-DD
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const isWeekend = cellDate.getDay() === 0 || cellDate.getDay() === 6;
             const isHoliday = feriados.includes(dateStr);
             const isToday = new Date().toDateString() === cellDate.toDateString();
             const dayTurnos = turnos.filter(t => t.fecha === dateStr);
             const turnosCount = dayTurnos.length;
 
             const cell = document.createElement('div');
-            cell.className = `calendar-day ${isWeekend ? 'weekend' : ''} ${isHoliday ? 'holiday' : ''} ${isToday ? 'today' : ''}`;
+            const isExcluded = isDayExcluded(dateStr);
+            let dayClasses = `calendar-day ${isToday ? 'today' : ''}`;
+            if (isExcluded) dayClasses += ' excluded';
+            if (isHoliday) dayClasses += ' holiday';
+            // isWeekend here is just for "visual" Sat/Sun styling if wanted, 
+            // but we'll stick to 'excluded' for the opacity/background block.
+            
+            cell.className = dayClasses;
             cell.dataset.date = dateStr;
-
             // Click handler to open day detail panel
-            if (!isWeekend && !isHoliday) {
+            if (!isExcluded) {
                 cell.onclick = (e) => {
                     e.stopPropagation();
                     console.log('Click on day:', dateStr);
@@ -1548,6 +1553,7 @@
     }
 
     function isDayExcluded(dateStr) {
+        if (feriados.includes(dateStr)) return true;
         const date = new Date(dateStr + 'T00:00:00');
         const day = date.getDay(); // 0 Sun, 6 Sat
 
