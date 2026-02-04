@@ -148,6 +148,20 @@
     .tag-purple { background-color: rgba(250, 245, 255, 0.8) !important; border-color: #f3e8ff !important; color: #9333ea !important; }
     .tag-indigo { background-color: rgba(238, 242, 255, 0.8) !important; border-color: #e0e7ff !important; color: #4f46e5 !important; }
 
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #e2e8f0;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #cbd5e1;
+    }
+
     /* Integrated Editor Toolbar */
     .ql-toolbar.ql-snow {
         border: none !important;
@@ -1112,7 +1126,7 @@
                     </div>
                 </div>
 
-                <div id="recipientsList" class="space-y-3">
+                <div id="recipientsList" class="space-y-3 overflow-y-auto custom-scrollbar pr-2" style="max-height: 450px;">
                     <!-- Accordion Items injected via JS -->
                 </div>
             </div>
@@ -1182,8 +1196,8 @@
         </div>
 
         <div class="space-y-2">
-            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight">Enviando Notificaciones</h3>
-            <p id="streamStatusText" class="text-xs text-gray-500 font-medium italic">Iniciando proceso...</p>
+            <h3 class="text-xl font-black text-gray-900 uppercase tracking-tight">Procesando Notificaciones</h3>
+            <p id="streamStatusText" class="text-xs text-gray-500 font-medium italic">Iniciando envío...</p>
         </div>
 
         <div class="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden border border-gray-50">
@@ -3416,7 +3430,7 @@
                            </div>
                            <i id="wiz-arrow-${dateStr}" data-lucide="chevron-down" class="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
                     </div>
-                    <div id="wiz-content-${dateStr}" class="hidden p-2 bg-white space-y-1 border-t border-gray-100">
+                    <div id="wiz-content-${dateStr}" class="hidden p-2 bg-white space-y-1 border-t border-gray-100 overflow-y-auto custom-scrollbar" style="max-height: 250px;">
             `;
 
             // Turnos Items

@@ -74,7 +74,7 @@ class NotificationService:
         from core.models import Turno
         from django.utils import timezone
         
-        # 1. Recuperar items 'procesando' (huérfanos de hilos que crashearon o reiniciaron)
+        # 1. Recuperar items 'procesando' (huérfanos de procesos que crashearon o reiniciaron)
         # Si llevan más de 1 hora en 'procesando', los volvemos a 'pendiente'
         una_hora_atras = timezone.now() - timedelta(hours=1)
         stuck = NotificacionEncolada.objects.filter(estado='procesando', fecha_programada__lte=una_hora_atras)
@@ -366,7 +366,7 @@ class NotificationService:
         BATCH_SIZE = 10 
         MAX_WORKERS = 3
         total = len(ids_to_process)
-        print(f"🚀 Iniciando envío masivo SÍNCRONO de {total} correos (3 threads safe)...")
+        print(f"🚀 Iniciando envío masivo SÍNCRONO de {total} correos...")
         
         # ... (cache logic skipped in replacement as it is unchanged) ...
 
@@ -434,11 +434,11 @@ class NotificationService:
                                 )
                             except: pass
                     except Exception as send_err:
-                        print(f"Error Thread {batch_num}: {send_err}")
+                        print(f"Error Proceso {batch_num}: {send_err}")
                         local_errors += len(msgs)
                         v_ids = [x.id for x in valid_objs]
                         NotificacionEncolada.objects.filter(id__in=v_ids).update(
-                            estado='error_temporal', ultimo_error=f"ThreadErr: {str(send_err)[:100]}"
+                            estado='error_temporal', ultimo_error=f"ErrEnvio: {str(send_err)[:100]}"
                         )
                         # Sync Turnos Error
                         error_turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
@@ -447,7 +447,7 @@ class NotificationService:
                             Turno.objects.filter(id__in=error_turno_ids).update(notificacion_error=True)
             except Exception as conn_err:
                 local_errors += len(batch_ids)
-                print(f"Error Conn Thread {batch_num}: {conn_err}")
+                print(f"Error Conn Proceso {batch_num}: {conn_err}")
             finally:
                 try: conn.close()
                 except: pass
@@ -464,7 +464,7 @@ class NotificationService:
                     errores += e
                     time_module.sleep(1.0)
                 except Exception as exc:
-                    print(f"Excepción hilo sync: {exc}")
+                    print(f"Excepción proceso sync: {exc}")
                     # No sumamos errores aqui porque se manejan dentro, pero por seguridad
                     pass
 
@@ -576,7 +576,7 @@ class NotificationService:
             e = min((i + 1) * BATCH_SIZE, total)
             batches.append(ids_to_process[s:e])
             
-        yield json.dumps({'progress': 5, 'status': f'🚀 Iniciando envío rápido ({MAX_WORKERS} hilos)...', 'total': total})
+        yield json.dumps({'progress': 5, 'status': f'🚀 Procesando entrega rápida...', 'total': total})
         
         connection_open = False # Ya no abrimos conexión de prueba aquí
         
@@ -585,7 +585,7 @@ class NotificationService:
             try: connection.close()
             except: pass
 
-        # Función Worker para cada hilo
+        # Función Worker para cada tarea
         def process_batch_thread(batch_ids, batch_num):
             from django.db import connection as db_connection
             # Timeout robusto 45s
@@ -649,11 +649,11 @@ class NotificationService:
                             HistorialEnvio.objects.bulk_create(historial_list)
                             
                     except Exception as send_err:
-                        print(f"Error Thread Batch {batch_num}: {send_err}")
+                        print(f"Error Proceso Batch {batch_num}: {send_err}")
                         local_errors += len(msgs)
                         v_ids = [x.id for x in valid_objs]
                         NotificacionEncolada.objects.filter(id__in=v_ids).update(
-                            estado='error_temporal', ultimo_error=f"ThreadErr: {str(send_err)[:100]}"
+                            estado='error_temporal', ultimo_error=f"ErrEnvio: {str(send_err)[:100]}"
                         )
                         # Sync Turnos Error
                         error_turno_ids = [vo.turno.id for vo in valid_objs if vo.turno]
@@ -662,7 +662,7 @@ class NotificationService:
                             Turno.objects.filter(id__in=error_turno_ids).update(notificacion_error=True)
             except Exception as conn_err:
                 local_errors += len(batch_ids)
-                print(f"Error Conexión Thread {batch_num}: {conn_err}")
+                print(f"Error Conexión Proceso {batch_num}: {conn_err}")
             finally:
                 try: conn.close()
                 except: pass
