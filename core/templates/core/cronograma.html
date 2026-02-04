@@ -853,35 +853,46 @@
                 </div>
 
                 <!-- EXCEL SIMULATION -->
-                <div class="border border-gray-200 rounded-xl overflow-hidden shadow-inner bg-gray-100">
-                    <!-- Column Letters -->
-                    <div class="flex bg-gray-200 border-b border-gray-300">
-                        <div class="w-10 h-6"></div>
-                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">A</div>
-                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">B</div>
-                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">C</div>
-                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">D</div>
-                        <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center">E</div>
-                    </div>
+                <div class="border border-gray-200 rounded-xl overflow-x-auto shadow-inner bg-gray-100">
+                    <div class="min-w-[800px]">
+                        <!-- Column Letters -->
+                        <div class="flex bg-gray-200 border-b border-gray-300">
+                            <div class="w-10 h-6"></div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">A</div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">B</div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">C</div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">D</div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">E</div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">F</div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center border-r border-gray-300">G</div>
+                            <div class="flex-1 flex text-[9px] font-bold text-gray-500 items-center justify-center">H</div>
+                        </div>
 
-                    <!-- Header Row -->
-                    <div class="flex bg-white border-b border-gray-200">
-                        <div class="w-10 bg-gray-100 border-r border-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-400">1</div>
-                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">RESPONSABLE</div>
-                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">EMAIL</div>
-                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">MARCA</div>
-                        <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">MODELO</div>
-                        <div class="flex-1 p-2 text-[10px] font-black text-indigo-700 bg-indigo-50/50">DESCRIPCIÓN</div>
-                    </div>
+                        <!-- Header Row -->
+                        <div class="flex bg-white border-b border-gray-200">
+                            <div class="w-10 bg-gray-100 border-r border-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-400">1</div>
+                            <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">RESPONSABLE</div>
+                            <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">CODIGO INTERNO</div>
+                            <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">CPDOGP GOBIERNO</div>
+                            <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">FECHA INGRESO</div>
+                            <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">DESCRIPCIÓN</div>
+                            <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">MODELO</div>
+                            <div class="flex-1 p-2 border-r border-gray-200 text-[10px] font-black text-indigo-700 bg-indigo-50/50">MARCA</div>
+                            <div class="flex-1 p-2 text-[10px] font-black text-indigo-700 bg-indigo-50/50">EMAIL</div>
+                        </div>
 
-                    <!-- Example Rows -->
-                    <div class="flex bg-white border-b border-gray-100">
-                        <div class="w-10 bg-gray-100 border-r border-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-400">2</div>
-                        <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">Juan Pérez</div>
-                        <div class="flex-1 p-2 border-r border-gray-200 text-[9px] text-gray-500 italic">juan@mail.com</div>
-                        <div class="flex-1 p-2 border-r border-gray-200 text-[9px] text-gray-500">Lenovo</div>
-                        <div class="flex-1 p-2 border-r border-gray-200 text-[9px] text-gray-500">ThinkPad</div>
-                        <div class="flex-1 p-2 text-[9px] text-gray-500 text-xs text-truncate">Portátil i7...</div>
+                        <!-- Example Rows -->
+                        <div class="flex bg-white border-b border-gray-100">
+                            <div class="w-10 bg-gray-100 border-r border-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-400">2</div>
+                            <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">Juan Pérez</div>
+                            <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">23252147</div>
+                            <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">GOB-UNEMI-001</div>
+                            <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">2024-01-15</div>
+                            <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">Portátil i7...</div>
+                            <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">ThinkPad L14</div>
+                            <div class="flex-1 p-2 border-r border-gray-100 text-[9px] text-gray-500">Lenovo</div>
+                            <div class="flex-1 p-2 text-[9px] text-gray-500 italic">juan@mail.com</div>
+                        </div>
                     </div>
                 </div>
 
@@ -3327,17 +3338,17 @@
         lucide.createIcons();
     }
 
-    function moveStep(step) {
+    async function moveStep(step) {
         if (step > wizardCurrentStep) {
             // Validate Step 1
             if (wizardCurrentStep === 1) {
                 if (!wizardQuill || wizardQuill.getText().trim().length < 5) {
-                    showToast('Escribe un mensaje válida (mínimo 5 caracteres)', 'error');
+                    await showAlertModal('Mensaje Incompleto', 'Por favor, escribe un mensaje válido (mínimo 5 caracteres) antes de continuar.', 'error');
                     return;
                 }
                 const asunto = document.getElementById('wizardAsunto').value;
                 if (!asunto) {
-                    showToast('El asunto es obligatorio', 'error');
+                    await showAlertModal('Asunto Requerido', 'El asunto del mensaje es obligatorio para poder continuar.', 'error');
                     return;
                 }
                 loadRecipients(); // Trigger load when moving to 2
@@ -3345,14 +3356,20 @@
             // Validate Step 2
             if (wizardCurrentStep === 2) {
                 if (selectedRecipients.size === 0) {
-                    showToast('Selecciona al menos un destinatario', 'error');
+                    await showAlertModal('Sin Destinatarios', 'Debes seleccionar al menos un destinatario para proceder a la confirmación.', 'error');
                     return;
                 }
             }
         }
-
-        wizardCurrentStep = step;
-        updateWizardUI();
+        
+        if (step > 0 && step <= 3) {
+            wizardCurrentStep = step;
+            updateWizardUI();
+            
+            // Update progress bar
+            const prog = document.getElementById('wizardProgress');
+            if (prog) prog.style.width = (step * 33.33) + '%';
+        }
     }
 
     function loadRecipients() {
@@ -3617,7 +3634,7 @@
     // --- STREAMING SENDING PROCESS ---
     async function startSendingProcess() {
         if (selectedRecipients.size === 0) {
-            showToast('Selecciona al menos un destinatario', 'error');
+            await showAlertModal('Sin Destinatarios', 'Por favor, selecciona al menos un destinatario antes de iniciar el envío.', 'error');
             return;
         }
 
@@ -3653,7 +3670,7 @@
             if (!saveResp.ok) throw new Error('No se pudo guardar la configuración');
 
         } catch (err) {
-            showToast('Error al preparar envío: ' + err.message, 'error');
+            await showAlertModal('Error de Configuración', 'No se pudo preparar el envío: ' + err.message, 'error');
             modal.classList.add('hidden');
             return;
         }
