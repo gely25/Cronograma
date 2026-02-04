@@ -3493,17 +3493,25 @@
     function toggleDayWizardSelection(dateStr, select, e) {
         if (e) e.stopPropagation();
         const dayTurnos = groupedRecipients[dateStr] || [];
+        const now = new Date();
         dayTurnos.forEach(t => {
+            // Expiry Check: Only add to selection if it's in the future
+            const turnDateTime = new Date(`${t.fecha}T${t.hora}:00`);
+            if (turnDateTime <= now) return;
+
             const itemKey = `${t.id}:anticipado`;
             if (select) selectedRecipients.add(itemKey);
             else selectedRecipients.delete(itemKey);
         });
 
-        // Update checkboxes UI
+        // Update checkboxes UI inside the day group
         const content = document.getElementById(`wiz-content-${dateStr}`);
         if (content) {
             const checks = content.querySelectorAll('input[type="checkbox"]');
-            checks.forEach(c => c.checked = select);
+            checks.forEach(c => {
+                // If the individual checkbox is disabled (expired), don't check/uncheck it
+                if (!c.disabled) c.checked = select;
+            });
         }
 
         document.getElementById('wizardSelectedCount').textContent = selectedRecipients.size;
@@ -3512,8 +3520,19 @@
     function toggleAllWizard(select) {
         const checkboxes = document.querySelectorAll('#recipientsList input[type="checkbox"]');
         checkboxes.forEach(cb => {
-            cb.checked = select;
+            // CRITICAL: Skip expired/disabled turns
+            if (cb.disabled) return;
+            
             const id = cb.value;
+            // CRITICAL: Only add actual turn identifiers (e.g. "123:anticipado")
+            // This prevents "on" (from master checkboxes) being added to the Set
+            if (!id || !id.includes(':')) {
+                // For day-level master checkboxes, we just want to update their visual state
+                cb.checked = select;
+                return;
+            }
+
+            cb.checked = select;
             if (select) selectedRecipients.add(id);
             else selectedRecipients.delete(id);
         });
