@@ -3,7 +3,7 @@ ULTRA-RESILIENT SMTP Backend para Gmail con SSL directo
 - Fuerza IPv4 para evitar timeouts de IPv6 en Windows.
 - Fuerza Puerto 465 si se detecta puerto 587 (SSL no funciona en 587).
 - Diagnóstico de socket previo a la conexión.
-- Logging exhaustivo en c:\\Cronograma\\smtp_diagnosis.log
+- Logging exhaustivo en el archivo smtp_diagnosis.log dentro de BASE_DIR.
 """
 import smtplib
 import ssl
@@ -34,14 +34,20 @@ class DirectSSLEmailBackend(BaseEmailBackend):
         self.password = password or getattr(settings, 'EMAIL_HOST_PASSWORD', '')
         self.timeout = timeout or 60
         self.connection = None
-        self.log_file = "c:\\Cronograma\\smtp_diagnosis.log"
+        
+        # LOGGING PORTABLE: Usar BASE_DIR en lugar de ruta absoluta de Windows
+        try:
+            self.log_file = os.path.join(settings.BASE_DIR, "smtp_diagnosis.log")
+        except:
+            self.log_file = "smtp_diagnosis.log"
 
     def log(self, msg):
         try:
             with open(self.log_file, "a", encoding='utf-8') as f:
                 f.write(f"DEBUG: {msg}\n")
         except:
-            pass
+            # Fallback a consola si falla el archivo (permisos, etc)
+            print(f"SMTP_LOG: {msg}")
 
     def open(self):
         if self.connection:
